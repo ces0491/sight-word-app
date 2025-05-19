@@ -1,10 +1,10 @@
-// components/StoryGenerator.js
-import React, { useState, useEffect } from 'react';
+// components/fixedComponents/StoryGenerator.js
+import React, { useState, useEffect, useCallback } from 'react';
 import { Zap } from 'lucide-react';
-import { generateCoherentStory } from '../lib/storyGeneration';
+import { generateCoherentStory } from '../../lib/storyGeneration';
 
 /**
- * Enhanced Story Generator Component
+ * Enhanced Story Generator Component with ESLint fixes
  * 
  * Creates more coherent stories with better sentence structure
  * based on user-provided sight words and learning considerations.
@@ -84,19 +84,19 @@ const StoryGenerator = ({
    * Calculate a quality score based on the number of words
    * @returns {string} - Quality description
    */
-  const calculateStoryQuality = () => {
+  const calculateStoryQuality = useCallback(() => {
     if (words.length < 3) return 'limited';
     if (words.length < 6) return 'basic';
     if (words.length < 10) return 'good';
     return 'excellent';
-  };
+  }, [words.length]);
   
   /**
    * Update story quality when words change
    */
   useEffect(() => {
     setStoryQuality(calculateStoryQuality());
-  }, [words]);
+  }, [calculateStoryQuality]);
   
   return (
     <div className="space-y-6">

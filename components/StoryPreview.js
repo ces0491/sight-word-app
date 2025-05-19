@@ -1,17 +1,18 @@
-// components/StoryPreview.js
-import React, { useState, useEffect } from 'react';
+// components/fixedComponents/StoryPreview.js
+import React, { useState, useEffect, useCallback } from 'react';
 import { Printer, Save, Share2, Download, Book } from 'lucide-react';
 import Image from 'next/image';
-import { svgToDataURL } from '../lib/imageGeneration';
+import { svgToDataURL } from '../../lib/imageGeneration';
 
 /**
- * Enhanced Story Preview Component
+ * Enhanced Story Preview Component with ESLint fixes
  * 
  * Features:
  * - Improved visualization of sight words based on format
  * - Better adaptations for different learning needs
  * - Higher contrast and readability
  * - Responsive design for all devices
+ * - Fixed ESLint warnings with useCallback
  */
 const StoryPreview = ({ 
   story,
@@ -39,6 +40,52 @@ const StoryPreview = ({
     
     return activeNeeds;
   };
+  
+  // Simplified SVG generation function if image generation library isn't available
+  const generateSVGForSentence = useCallback(async (sentence) => {
+    // This is a fallback implementation if your real implementation isn't ready
+    // It creates a simple SVG with the first letter of the sentence
+    const firstLetter = sentence.charAt(0).toUpperCase();
+    const colors = ['#4299E1', '#48BB78', '#F6AD55', '#F56565', '#9F7AEA', '#ED64A6'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    
+    return `<svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="200" fill="#f8fafc" />
+      <circle cx="200" cy="100" r="80" fill="${color}" opacity="0.2" />
+      <text x="200" y="130" font-family="Arial" font-size="100" text-anchor="middle" fill="${color}">${firstLetter}</text>
+    </svg>`;
+  }, []);
+  
+  // Generate an illustration for a sentence - wrapped in useCallback to fix ESLint warning
+  const getIllustrationForSentence = useCallback(async (sentence) => {
+    // Check if we already have an illustration for this sentence
+    if (aiIllustrations[sentence]) {
+      return aiIllustrations[sentence];
+    }
+    
+    // Mark this sentence as loading an illustration
+    setIsGeneratingImages(prev => ({ ...prev, [sentence]: true }));
+    
+    try {
+      // Generate SVG illustration from the sentence content
+      const svgIllustration = await generateSVGForSentence(sentence);
+      
+      // Convert SVG to a data URL for display
+      const imageUrl = svgToDataURL(svgIllustration);
+      
+      // Save the illustration for this sentence
+      setAiIllustrations(prev => ({ ...prev, [sentence]: imageUrl }));
+      setIsGeneratingImages(prev => ({ ...prev, [sentence]: false }));
+      
+      return imageUrl;
+    } catch (error) {
+      console.error('Failed to generate image:', error);
+      setIsGeneratingImages(prev => ({ ...prev, [sentence]: false }));
+      
+      // Fallback to a placeholder image
+      return `https://picsum.photos/seed/${encodeURIComponent(sentence)}/400/240`;
+    }
+  }, [aiIllustrations, generateSVGForSentence]);
   
   // Apply CSS variables based on learning needs
   useEffect(() => {
@@ -98,7 +145,7 @@ const StoryPreview = ({
         getIllustrationForSentence(sentence);
       });
     }
-  }, [story]);
+  }, [story, getIllustrationForSentence]);
   
   // Process text based on selected word format
   const renderHighlightedText = (text) => {
@@ -136,54 +183,6 @@ const StoryPreview = ({
       default:
         return sentence;
     }
-  };
-  
-  // Generate an illustration for a sentence
-  const getIllustrationForSentence = async (sentence) => {
-    // Check if we already have an illustration for this sentence
-    if (aiIllustrations[sentence]) {
-      return aiIllustrations[sentence];
-    }
-    
-    // Mark this sentence as loading an illustration
-    setIsGeneratingImages(prev => ({ ...prev, [sentence]: true }));
-    
-    try {
-      // Generate SVG illustration from the sentence content
-      // This uses the SVG generation function from your enhanced imageGeneration.js
-      // Assuming you've implemented that as discussed earlier
-      const svgIllustration = await generateSVGForSentence(sentence);
-      
-      // Convert SVG to a data URL for display
-      const imageUrl = svgToDataURL(svgIllustration);
-      
-      // Save the illustration for this sentence
-      setAiIllustrations(prev => ({ ...prev, [sentence]: imageUrl }));
-      setIsGeneratingImages(prev => ({ ...prev, [sentence]: false }));
-      
-      return imageUrl;
-    } catch (error) {
-      console.error('Failed to generate image:', error);
-      setIsGeneratingImages(prev => ({ ...prev, [sentence]: false }));
-      
-      // Fallback to a placeholder image
-      return `https://picsum.photos/seed/${encodeURIComponent(sentence)}/400/240`;
-    }
-  };
-  
-  // Simplified SVG generation function if image generation library isn't available
-  const generateSVGForSentence = async (sentence) => {
-    // This is a fallback implementation if your real implementation isn't ready
-    // It creates a simple SVG with the first letter of the sentence
-    const firstLetter = sentence.charAt(0).toUpperCase();
-    const colors = ['#4299E1', '#48BB78', '#F6AD55', '#F56565', '#9F7AEA', '#ED64A6'];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    
-    return `<svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
-      <rect width="400" height="200" fill="#f8fafc" />
-      <circle cx="200" cy="100" r="80" fill="${color}" opacity="0.2" />
-      <text x="200" y="130" font-family="Arial" font-size="100" text-anchor="middle" fill="${color}">${firstLetter}</text>
-    </svg>`;
   };
   
   if (!story) return <div>No story to preview</div>;

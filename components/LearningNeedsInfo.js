@@ -49,7 +49,7 @@ const LearningNeedsInfo = ({ isOpen, onClose }) => {
                 <div className="ml-5">
                   <h3 className="text-xl font-bold text-blue-900 mb-3">ADHD</h3>
                   <p className="text-blue-900 font-medium mb-4">
-                    Attention-Deficit/Hyperactivity Disorder affects a student's ability to maintain focus, control impulses, and regulate activity levels.
+                    Attention-Deficit/Hyperactivity Disorder affects a student&apos;s ability to maintain focus, control impulses, and regulate activity levels.
                   </p>
                   
                   <h4 className="font-bold text-blue-800 mb-2">How our stories adapt:</h4>
@@ -301,7 +301,7 @@ const LearningNeedsInfo = ({ isOpen, onClose }) => {
                         <span className="ml-2 text-yellow-800">
                           The child walked through the museum. 
                           The child looked at the old things. 
-                          The child said, "These are amazing!"
+                          The child said, &quot;These are amazing!&quot;
                         </span>
                       </div>
                     </div>
@@ -321,7 +321,7 @@ const LearningNeedsInfo = ({ isOpen, onClose }) => {
                 <div className="ml-5">
                   <h3 className="text-xl font-bold text-red-900 mb-3">Visual Processing</h3>
                   <p className="text-red-900 font-medium mb-4">
-                    Visual processing difficulties affect how the brain processes visual information, impacting a student's ability to interpret what they see.
+                    Visual processing difficulties affect how the brain processes visual information, impacting a student&apos;s ability to interpret what they see.
                   </p>
                   
                   <h4 className="font-bold text-red-800 mb-2">How our stories adapt:</h4>
