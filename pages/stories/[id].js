@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
@@ -8,7 +8,13 @@ import StorySharing from '../../components/story/StorySharing';
 export default function StoryPage() {
   const router = useRouter();
   const { id } = router.query;
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession({
+    required: false,
+    onUnauthenticated() {
+      router.push('/auth/signin?callbackUrl=/stories');
+    }
+  });
+  
   const [story, setStory] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,9 +26,10 @@ export default function StoryPage() {
     } else if (status === 'authenticated' && id) {
       fetchStory();
     }
-  }, [status, router, id, fetchStory]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, router, id]);
   
-  const fetchStory = useCallback(async () => {
+  const fetchStory = async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/stories/${id}`);
@@ -44,7 +51,7 @@ export default function StoryPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  };
   
   const handleBack = () => {
     router.push('/stories');
@@ -106,4 +113,10 @@ export default function StoryPage() {
       </div>
     </>
   );
+}
+
+export async function getServerSideProps(context) {
+  return {
+    props: {}
+  }
 }

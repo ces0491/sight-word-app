@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import StoryViewer from '../../components/story/StoryViewer';
@@ -14,9 +14,10 @@ export default function SharedStoryPage() {
     if (id && token) {
       fetchSharedStory();
     }
-  }, [id, token, fetchSharedStory]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, token]);
   
-  const fetchSharedStory =  useCallback(async () => {
+  const fetchSharedStory = async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/shared-stories/${id}?token=${token}`);
@@ -40,7 +41,7 @@ export default function SharedStoryPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [id, token]);
+  };
   
   const handleBack = () => {
     router.push('/');
@@ -102,4 +103,10 @@ export default function SharedStoryPage() {
       </div>
     </>
   );
+}
+
+export async function getServerSideProps(context) {
+  return {
+    props: {}
+  }
 }

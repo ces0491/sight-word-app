@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
@@ -6,12 +6,18 @@ import StoryEditor from '../../components/story/StoryEditor';
 
 export default function NewStoryPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession({
+    required: false,
+    onUnauthenticated() {
+      router.push('/auth/signin?callbackUrl=/stories/new');
+    }
+  });
   
-  useState(() => {
+  useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin?callbackUrl=/stories/new');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router]);
   
   const handleSave = async (storyData) => {
@@ -66,4 +72,10 @@ export default function NewStoryPage() {
       </div>
     </>
   );
+}
+
+export async function getServerSideProps(context) {
+  return {
+    props: {}
+  }
 }

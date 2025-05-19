@@ -5,7 +5,13 @@ import { useSession } from 'next-auth/react';
 import { BookOpen, Plus, Search, Trash2, Edit, Book } from 'lucide-react';
 
 export default function StoriesPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession({
+    required: false,
+    onUnauthenticated() {
+      router.push('/auth/signin?callbackUrl=/stories');
+    }
+  });
+  
   const router = useRouter();
   const [stories, setStories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,6 +24,7 @@ export default function StoriesPage() {
     } else if (status === 'authenticated') {
       fetchStories();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router]);
   
   const fetchStories = async () => {
@@ -221,4 +228,10 @@ export default function StoriesPage() {
       </div>
     </>
   );
+}
+
+export async function getServerSideProps(context) {
+  return {
+    props: {}
+  }
 }
