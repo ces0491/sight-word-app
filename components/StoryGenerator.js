@@ -1,15 +1,17 @@
-// components/fixedComponents/StoryGenerator.js
+// components/storyGenerator.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { Zap } from 'lucide-react';
-import { generateCoherentStory } from '../lib/storyGeneration';
+import { generateEnhancedStory } from '../lib/storyGeneration';
 
 /**
- * Enhanced Story Generator Component with ESLint fixes
+ * Improved Story Generator Component
  * 
- * Creates more coherent stories with better sentence structure
- * based on user-provided sight words and learning considerations.
+ * Uses enhanced story generation algorithm to:
+ * 1. Add randomness to story generation (different stories each time)
+ * 2. Ensure all sight words are used when possible
+ * 3. Track which words were actually used for better feedback
  */
-const StoryGenerator = ({ 
+const ImprovedStoryGenerator = ({ 
   words, 
   grade, 
   learningNeeds, 
@@ -21,6 +23,7 @@ const StoryGenerator = ({
   const [storyQuality, setStoryQuality] = useState('normal');
   const [readabilityLevel, setReadabilityLevel] = useState('auto');
   const [usedWordCount, setUsedWordCount] = useState(0);
+  const [lastGeneratedStory, setLastGeneratedStory] = useState(null);
   
   // Calculate the readability level based on grade and learning needs
   useEffect(() => {
@@ -40,22 +43,22 @@ const StoryGenerator = ({
   }, [grade, learningNeeds]);
   
   /**
-   * Handle story generation with improved structure
+   * Handle story generation with improved algorithm
    */
   const handleGenerateStory = async () => {
     if (words.length === 0 || isGeneratingStory) return;
     
     try {
       // Generate a coherent story using the enhanced engine
-      const storyData = generateCoherentStory(
+      const storyData = generateEnhancedStory(
         words, 
         grade,
         learningNeeds
       );
       
-      // Calculate metrics for the generated story
-      const usedWords = storyData.usedWords || [];
-      setUsedWordCount(usedWords.length);
+      // Update used word count for stats display
+      setUsedWordCount(storyData.usedWords.length);
+      setLastGeneratedStory(storyData);
       
       // Create the full story object with all needed metadata
       const story = {
@@ -63,7 +66,7 @@ const StoryGenerator = ({
         title: storyData.title,
         content: storyData.content,
         words: [...words],
-        usedWords: usedWords,
+        usedWords: storyData.usedWords || [], // Track which words were actually used
         format: storyFormat,
         includeImages,
         grade,
@@ -129,6 +132,15 @@ const StoryGenerator = ({
             <span className="text-sm text-gray-700">Words Available:</span>
             <span className="text-sm font-medium text-blue-700">{words.length}</span>
           </div>
+          
+          {lastGeneratedStory && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-700">Words Used in Story:</span>
+              <span className="text-sm font-medium text-blue-700">
+                {lastGeneratedStory.usedWords.length}/{words.length}
+              </span>
+            </div>
+          )}
           
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-700">Reading Level:</span>
@@ -199,4 +211,4 @@ const StoryGenerator = ({
   );
 };
 
-export default StoryGenerator;
+export default ImprovedStoryGenerator;
