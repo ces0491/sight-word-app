@@ -2,7 +2,7 @@
 
 An educational web application that helps teachers create custom stories featuring sight words for early readers. The application is especially valuable for students with different learning needs.
 
-![Sight Word Story Generator](sight-word-app.vercel.app)
+![Sight Word Story Generator](https://sight-word-app.vercel.app/)
 
 ## Features
 
@@ -25,7 +25,7 @@ An educational web application that helps teachers create custom stories featuri
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/sight-word-story-generator.git
+   git clone https://github.com/ces0491/sight-word-app.git
    cd sight-word-story-generator
    ```
 

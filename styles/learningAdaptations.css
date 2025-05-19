@@ -1,0 +1,305 @@
+/* styles/learningAdaptations.css */
+
+/**
+ * Enhanced CSS for Learning Adaptations
+ * 
+ * This stylesheet provides improved styling for different learning needs.
+ * It includes higher contrast colors, better spacing, and more readable fonts
+ * to ensure the app is accessible to all students.
+ */
+
+/* CSS Variables for theming based on learning needs */
+:root {
+  /* Base variables */
+  --font-size-base: 1rem;
+  --line-spacing: 1.5;
+  --word-spacing: normal;
+  --letter-spacing: normal;
+  --highlight-color: #FFC107; /* High contrast yellow */
+  --text-color: #1a202c;
+  --background-color: #ffffff;
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  
+  /* Animation speed control */
+  --transition-speed: 0.3s;
+  
+  /* Focus indicators */
+  --focus-ring-color: rgba(59, 130, 246, 0.5);
+  
+  /* Dyslexia-friendly colors */
+  --dyslexia-background: #f8f9fa;
+  --dyslexia-text: #000000;
+  
+  /* ADHD-friendly colors */
+  --adhd-highlight: #48BB78; /* Green */
+  
+  /* Visual processing friendly colors */
+  --visual-highlight: #FF9800; /* Orange */
+  --visual-background: #f8f9fa;
+  --visual-text: #000000;
+}
+
+/* Font loading for dyslexia-friendly display */
+@font-face {
+  font-family: 'Comic Neue';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/comic-neue-v8-latin-regular.woff2') format('woff2'),
+       url('/fonts/comic-neue-v8-latin-regular.woff') format('woff');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Comic Neue';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/fonts/comic-neue-v8-latin-700.woff2') format('woff2'),
+       url('/fonts/comic-neue-v8-latin-700.woff') format('woff');
+  font-display: swap;
+}
+
+/* Base Typography */
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-spacing);
+  color: var(--text-color);
+  background-color: var(--background-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Story Typography */
+.story-page p {
+  font-size: var(--font-size-base);
+  line-height: var(--line-spacing);
+  word-spacing: var(--word-spacing);
+  letter-spacing: var(--letter-spacing);
+  color: var(--text-color);
+  transition: font-size var(--transition-speed), line-height var(--transition-speed), word-spacing var(--transition-speed);
+}
+
+/* Enhanced Word Highlighting */
+.highlighted-text .highlight {
+  background-color: var(--highlight-color);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  margin: 0 0.125rem;
+  display: inline-block;
+  transition: background-color var(--transition-speed);
+}
+
+/* Dyslexia Adaptations */
+.dyslexia-enabled {
+  --font-family: 'Comic Neue', cursive;
+  --font-size-base: 1.25rem;
+  --line-spacing: 2.2;
+  --word-spacing: 0.3em;
+  --letter-spacing: 0.05em;
+  --highlight-color: #9F7AEA; /* Purple */
+  --text-color: var(--dyslexia-text);
+  --background-color: var(--dyslexia-background);
+}
+
+.dyslexia-enabled .story-page {
+  max-width: 38em; /* Optimal reading width for improved readability */
+}
+
+/* ADHD Adaptations */
+.adhd-enabled {
+  --highlight-color: var(--adhd-highlight);
+  --line-spacing: 1.8;
+}
+
+.adhd-enabled .story-sentence {
+  margin-bottom: 2rem;
+  border-left: 4px solid transparent;
+  padding-left: 0.5rem;
+  transition: border-color var(--transition-speed);
+}
+
+.adhd-enabled .story-sentence:hover {
+  border-left-color: var(--adhd-highlight);
+}
+
+/* Visual Processing Adaptations */
+.visual-processing-enabled {
+  --highlight-color: var(--visual-highlight);
+  --font-size-base: 1.2rem;
+  --line-spacing: 2;
+  --word-spacing: 0.25em;
+  --text-color: var(--visual-text);
+  --background-color: var(--visual-background);
+}
+
+.visual-processing-enabled .story-page {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Autism Spectrum Adaptations */
+.autism-enabled {
+  --line-spacing: 1.8;
+}
+
+.autism-enabled .story-page {
+  margin-bottom: 1.5rem;
+  border: 2px solid transparent;
+  transition: border-color var(--transition-speed);
+}
+
+.autism-enabled .story-sentence:nth-child(odd) .story-page {
+  border-left-color: #48BB78; /* Green */
+}
+
+.autism-enabled .story-sentence:nth-child(even) .story-page {
+  border-left-color: #4299E1; /* Blue */
+}
+
+/* ESL Adaptations */
+.esl-enabled {
+  --word-spacing: 0.2em;
+}
+
+.esl-enabled .highlighted-text .highlight {
+  border-bottom: 2px solid currentColor;
+}
+
+/* Focus states for better accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+/* Grade Level Adaptations */
+.grade-k .story-page p,
+.grade-1 .story-page p {
+  --font-size-base: 1.3rem;
+  --line-spacing: 2;
+}
+
+.grade-2 .story-page p,
+.grade-3 .story-page p {
+  --font-size-base: 1.15rem;
+  --line-spacing: 1.8;
+}
+
+.grade-4 .story-page p,
+.grade-5 .story-page p {
+  --font-size-base: 1.1rem;
+  --line-spacing: 1.7;
+}
+
+/* Touch-friendly controls for mobile */
+@media (max-width: 640px) {
+  button {
+    min-height: 44px; /* Minimum touch target size */
+  }
+  
+  /* Larger targets for checkboxes on mobile */
+  input[type="checkbox"] {
+    min-width: 20px;
+    min-height: 20px;
+  }
+  
+  /* Larger font for mobile to improve readability */
+  :root {
+    --font-size-base: 1.1rem;
+  }
+}
+
+/* Animations for page transitions to help focus attention */
+.story-sentence {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Print styles for better printing */
+@media print {
+  body {
+    --font-size-base: 12pt;
+    --line-spacing: 1.4;
+    --word-spacing: normal;
+    --letter-spacing: normal;
+  }
+  
+  .story-book {
+    padding: 0 !important;
+    background: white !important;
+  }
+  
+  .story-page {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0;
+  }
+  
+  header, footer, button, .control-panel {
+    display: none !important;
+  }
+  
+  /* Ensure sight words are visible even on black & white printers */
+  .highlighted-text .highlight {
+    background-color: transparent !important;
+    border: 1px solid #000;
+    padding: 0 2px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-color: #e2e8f0;
+    --background-color: #1a202c;
+    --highlight-color: #F59E0B; /* Amber */
+  }
+  
+  .story-page {
+    background-color: #2D3748;
+  }
+  
+  /* Ensure contrast remains high in dark mode */
+  .dyslexia-enabled,
+  .visual-processing-enabled {
+    --text-color: #000000;
+    --background-color: #f8f9fa;
+  }
+}
+
+/* Enhanced accessibility */
+.screen-reader-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to content for keyboard users */
+.skip-to-content {
+  position: absolute;
+  top: -9999px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  color: black;
+  padding: 0.5rem 1rem;
+  z-index: 100;
+  text-decoration: none;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
