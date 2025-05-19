@@ -24,7 +24,6 @@ export default function StoriesPage() {
     } else if (status === 'authenticated') {
       fetchStories();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router]);
   
   const fetchStories = async () => {

@@ -17,7 +17,6 @@ export default function NewStoryPage() {
     if (status === 'unauthenticated') {
       router.push('/auth/signin?callbackUrl=/stories/new');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router]);
   
   const handleSave = async (storyData) => {

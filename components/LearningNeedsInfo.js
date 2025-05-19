@@ -16,7 +16,7 @@ const LearningNeedsInfo = ({ isOpen, onClose }) => {
         <div className="space-y-6">
           <div className="border-l-4 border-blue-500 pl-4">
             <h3 className="text-xl font-semibold mb-2">ADHD</h3>
-            <p className="mb-2">Attention-Deficit/Hyperactivity Disorder affects a student's ability to maintain focus, control impulses, and regulate activity levels.</p>
+            <p className="mb-2">Attention-Deficit/Hyperactivity Disorder affects a student&apos;s ability to maintain focus, control impulses, and regulate activity levels.</p>
             <h4 className="font-medium text-blue-600 mt-3">How our stories adapt:</h4>
             <ul className="list-disc ml-5 space-y-1">
               <li>Shorter, more focused story segments to maintain attention</li>
@@ -72,7 +72,7 @@ const LearningNeedsInfo = ({ isOpen, onClose }) => {
           
           <div className="border-l-4 border-red-500 pl-4">
             <h3 className="text-xl font-semibold mb-2">Visual Processing</h3>
-            <p className="mb-2">Visual processing difficulties affect how the brain processes visual information, impacting a student's ability to interpret what they see.</p>
+            <p className="mb-2">Visual processing difficulties affect how the brain processes visual information, impacting a student&apos;s ability to interpret what they see.</p>
             <h4 className="font-medium text-red-600 mt-3">How our stories adapt:</h4>
             <ul className="list-disc ml-5 space-y-1">
               <li>High contrast between text and background</li>
