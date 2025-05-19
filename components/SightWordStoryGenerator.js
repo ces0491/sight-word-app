@@ -4,17 +4,17 @@ import { useSession } from 'next-auth/react';
 import { 
   Book, ArrowLeft, Settings, List, BarChart
 } from 'lucide-react';
-import AuthDialog from '../auth/AuthDialog';
+import AuthDialog from './auth/AuthDialog';
 
 // Import our enhanced components
-import ImprovedImageUpload from '../ImageUpload';
-import LearningConsiderationsPanel from '../LearningConsiderationsPanel';
-import LearningNeedsInfo from '../LearningNeedsInfo';
+import ImprovedImageUpload from './ImageUpload';
+import LearningConsiderationsPanel from './LearningConsiderationsPanel';
+import LearningNeedsInfo from './LearningNeedsInfo';
 import StoryGenerator from './StoryGenerator'; // Using the fixed version
 import StoryPreview from './StoryPreview'; // Using the fixed version
 
 // Import other utilities and services
-import { trackWordUsage } from '../../lib/WordAnalytics';
+import { trackWordUsage } from '../lib/WordAnalytics';
 
 /**
  * Enhanced Sight Word Story Generator with ESLint fixes

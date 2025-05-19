@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Printer, Save, Share2, Download, Book } from 'lucide-react';
 import Image from 'next/image';
-import { svgToDataURL } from '../../lib/imageGeneration';
+import { svgToDataURL } from '../lib/imageGeneration';
 
 /**
  * Enhanced Story Preview Component with ESLint fixes

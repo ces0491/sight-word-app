@@ -1,7 +1,7 @@
 // components/fixedComponents/StoryGenerator.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { Zap } from 'lucide-react';
-import { generateCoherentStory } from '../../lib/storyGeneration';
+import { generateCoherentStory } from '../lib/storyGeneration';
 
 /**
  * Enhanced Story Generator Component with ESLint fixes
