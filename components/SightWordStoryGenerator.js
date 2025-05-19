@@ -11,8 +11,8 @@ import Image from 'next/image';
 // Import our custom components and utilities
 import LearningNeedsInfo from './LearningNeedsInfo';
 import AuthDialog from './auth/AuthDialog';
-import { performOCR } from '../utils/ocr';
-import { generateSVGIllustration, svgToDataURL } from '../utils/imageGeneration';
+import { performOCR } from '../lib/ocr';
+import { generateSVGIllustration, svgToDataURL } from '../lib/imageGeneration';
 
 const SightWordStoryGenerator = () => {
   // Auth state
