@@ -1,6 +1,6 @@
 // components/ImageUpload.js
 import React, { useState, useRef } from 'react';
-import { Camera, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { Camera, X, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { performEnhancedOCR } from '../lib/ocr';
 

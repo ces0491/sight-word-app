@@ -14,7 +14,6 @@ import StoryGenerator from './StoryGenerator'; // Using the fixed version
 import StoryPreview from './StoryPreview'; // Using the fixed version
 
 // Import other utilities and services
-import { performEnhancedOCR } from '../../lib/ocr';
 import { trackWordUsage } from '../../lib/WordAnalytics';
 
 /**

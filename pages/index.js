@@ -1,10 +1,10 @@
-// pages/index.js
+// pages/index.js - Fixed version without custom font loading
 import Head from 'next/head';
 import { SessionProvider } from 'next-auth/react';
-import EnhancedSightWordStoryGenerator from '../components/EnhancedSightWordStoryGenerator';
+import EnhancedSightWordStoryGenerator from '../components/SightWordStoryGenerator';
 
 /**
- * Main application page
+ * Main application page with fixed font loading
  * 
  * This page includes all the necessary improvements:
  * - Better story generation with coherent sentence structure
@@ -12,6 +12,8 @@ import EnhancedSightWordStoryGenerator from '../components/EnhancedSightWordStor
  * - Mobile-friendly image upload with access to photo library
  * - Improved readability of learning considerations
  * - Real adaptations for different learning needs
+ * 
+ * Custom fonts are now loaded in _document.js instead of here
  */
 export default function Home({ session }) {
   return (
@@ -33,16 +35,6 @@ export default function Home({ session }) {
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
-        
-        {/* Pre-connect to essential resources */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
-        {/* Comic Neue font for dyslexia-friendly reading */}
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" 
-          rel="stylesheet"
-        />
       </Head>
       
       {/* Load enhanced CSS for learning adaptations */}
