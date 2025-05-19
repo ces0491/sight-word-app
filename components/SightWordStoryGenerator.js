@@ -981,7 +981,7 @@ const SightWordStoryGenerator = () => {
               <div className="p-8 text-center">
                 <BookOpen size={48} className="mx-auto text-gray-300 mb-4" />
                 <h3 className="text-lg font-medium text-gray-700 mb-2">No stories yet</h3>
-                <p className="text-gray-500 mb-4">You haven't saved any stories. Generate and save a story to see it here.</p>
+                <p className="text-gray-500 mb-4">You haven&apos;t saved any stories. Generate and save a story to see it here.</p>
                 <button
                   onClick={() => setCurrentTab('input')}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md"
