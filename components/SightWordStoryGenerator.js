@@ -430,7 +430,7 @@ const SightWordStoryGenerator = () => {
       {/* Header */}
       <header className="bg-blue-600 text-white p-4">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Sight Word Story Generator</h1>
+          <h1 className="text-2xl font-bold">Mason&apos;s Sight Word Story Generator</h1>
           <nav className="flex items-center space-x-4">
             <button 
               className={`px-3 py-1 rounded-md ${currentTab === 'input' ? 'bg-white text-blue-600' : 'bg-blue-700'}`}
@@ -851,13 +851,110 @@ const SightWordStoryGenerator = () => {
           </div>
         )}
         
-        {/* Story Preview Panel */}
-        {currentTab === 'preview' && generatedStory && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            {/* Story preview content remains the same */}
-            {/* ... existing code ... */}
-          </div>
+        // Replace the Story Preview Panel section with this properly implemented code
+{/* Story Preview Panel */}
+{currentTab === 'preview' && generatedStory && (
+  <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-2xl font-bold text-gray-800">{generatedStory.title}</h2>
+      <div className="flex gap-2">
+        <button 
+          onClick={() => window.print()}
+          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md"
+        >
+          <Printer size={16} /> Print
+        </button>
+        <button 
+          onClick={saveStory}
+          disabled={isSavingStory}
+          className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-md disabled:bg-green-300"
+        >
+          {isSavingStory ? (
+            <>
+              <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save size={16} /> Save Story
+            </>
+          )}
+        </button>
+        {session?.user && (
+          <button 
+            onClick={() => setShowShareDialog(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-md"
+          >
+            <Share2 size={16} /> Share
+          </button>
         )}
+      </div>
+    </div>
+    
+    <div className="mb-4">
+      <p className="text-sm text-gray-500">
+        Contains {generatedStory.words.length} sight words • Grade {generatedStory.grade} level
+        {Object.entries(generatedStory.learningNeeds)
+          .filter(([_, value]) => value)
+          .map(([key]) => key)
+          .length > 0 && ` • Optimized for ${Object.entries(generatedStory.learningNeeds)
+            .filter(([_, value]) => value)
+            .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1))
+            .join(', ')}`
+        }
+      </p>
+    </div>
+    
+    <div className="story-book bg-gray-50 rounded-lg p-6 max-w-3xl mx-auto">
+      {generatedStory.content.map((sentence, index) => (
+        <div key={index} className="mb-8">
+          <div className="story-page p-4 bg-white rounded-lg shadow-md">
+            <p className="text-xl leading-relaxed mb-4 font-comic text-gray-800">
+              {formatText(sentence)}
+            </p>
+            
+            {generatedStory.includeImages && (
+              <div className="h-40 relative">
+                {isGeneratingImages[sentence] ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-md">
+                    <div className="text-center">
+                      <span className="block animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></span>
+                      <span className="text-sm text-gray-500">Generating illustration...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <Image 
+                    src={aiIllustrations[sentence] || getIllustrationForSentence(sentence)}
+                    alt={`Illustration for: ${sentence}`}
+                    className="w-full h-full object-cover rounded-md"
+                    width={400}
+                    height={240}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://picsum.photos/seed/error/400/240";
+                    }}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+      
+      {/* Words List */}
+      <div className="mt-8 p-4 bg-white rounded-lg shadow-md">
+        <h3 className="text-lg font-semibold mb-2 text-gray-800">Sight Words Used:</h3>
+        <div className="flex flex-wrap gap-2">
+          {generatedStory.words.map((word, index) => (
+            <span key={index} className="bg-blue-100 px-3 py-1 rounded-full text-blue-800">
+              {word}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
         
         {/* Saved Stories Panel */}
         {currentTab === 'saved' && (
