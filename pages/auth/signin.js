@@ -4,6 +4,7 @@ import Head from 'next/head';
 import LoginForm from '../../components/auth/LoginForm';
 import RegisterForm from '../../components/auth/RegisterForm';
 import { BookOpen } from 'lucide-react';
+import Link from 'next/link';
 
 export default function SignIn() {
   const [mode, setMode] = useState('login'); // 'login' or 'register'
@@ -49,12 +50,12 @@ export default function SignIn() {
           </div>
           
           <div className="mt-6 text-center">
-            <a 
+            <Link 
               href="/"
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               Back to Home
-            </a>
+            </Link >
           </div>
         </div>
       </div>

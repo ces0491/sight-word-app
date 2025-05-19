@@ -14,9 +14,9 @@ export default function SharedStoryPage() {
     if (id && token) {
       fetchSharedStory();
     }
-  }, [id, token]);
+  }, [id, token, fetchSharedStory]);
   
-  const fetchSharedStory = async () => {
+  const fetchSharedStory =  useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/shared-stories/${id}?token=${token}`);
@@ -40,7 +40,7 @@ export default function SharedStoryPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id, token]);
   
   const handleBack = () => {
     router.push('/');

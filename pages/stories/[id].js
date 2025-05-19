@@ -20,9 +20,9 @@ export default function StoryPage() {
     } else if (status === 'authenticated' && id) {
       fetchStory();
     }
-  }, [status, router, id]);
+  }, [status, router, id, fetchStory]);
   
-  const fetchStory = async () => {
+  const fetchStory = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/stories/${id}`);
@@ -44,7 +44,7 @@ export default function StoryPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
   
   const handleBack = () => {
     router.push('/stories');
