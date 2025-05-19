@@ -1,7 +1,7 @@
 // components/storyGenerator.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { Zap } from 'lucide-react';
-import { generateEnhancedStory } from '../lib/storyGeneration';
+import { generateStory } from '../lib/storyGeneration';
 
 /**
  * Improved Story Generator Component
@@ -50,7 +50,7 @@ const ImprovedStoryGenerator = ({
     
     try {
       // Generate a coherent story using the enhanced engine
-      const storyData = generateEnhancedStory(
+      const storyData = generateStory(
         words, 
         grade,
         learningNeeds
