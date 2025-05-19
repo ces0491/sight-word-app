@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { 
   Camera, FileUp, Edit3, Save, Book, Printer, BookOpen, 
-  Image, Zap, List, UserCheck, PlayCircle, Download, 
+  Zap, List, UserCheck, PlayCircle, Download, 
   Share2, Info, LineChart, User, LogIn, BarChart
 } from 'lucide-react';
 import LearningNeedsInfo from './LearningNeedsInfo';
 import AuthDialog from './auth/AuthDialog';
+import Image from 'next/image';
 
 const SightWordStoryGenerator = () => {
   // Auth state
@@ -558,7 +559,14 @@ const SightWordStoryGenerator = () => {
                   <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
                     {previewImage ? (
                       <div className="space-y-4">
-                        <img src={previewImage} alt="Preview" className="max-h-40 mx-auto" />
+                        <Image 
+							src={previewImage} 
+							alt="Preview" 
+							className="max-h-40 mx-auto" 
+							width={200} 
+							height={160}
+							style={{ objectFit: 'contain' }}
+						/>
                         <button 
                           onClick={() => setPreviewImage(null)}
                           className="text-red-600 text-sm font-medium"
@@ -885,14 +893,16 @@ const SightWordStoryGenerator = () => {
                             </div>
                           </div>
                         ) : (
-                          <img 
+                          <Image  
                             src={aiIllustrations[sentence] || getIllustrationForSentence(sentence)}
-                            alt={`Illustration for: ${sentence}`}
-                            className="w-full h-full object-cover rounded-md"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = "https://picsum.photos/seed/error/400/240";
-                            }}
+							alt={`Illustration for: ${sentence}`}
+							className="w-full h-full object-cover rounded-md"
+							width={400}
+							height={240}
+							onError={(e) => {
+								e.target.onerror = null;
+								e.target.src = "https://picsum.photos/seed/error/400/240";
+							}}
                           />
                         )}
                       </div>

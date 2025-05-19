@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Printer, Share2, Download, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 
 const StoryViewer = ({ story, onBack, showShareDialog }) => {
   const router = useRouter();
@@ -152,14 +153,16 @@ const StoryViewer = ({ story, onBack, showShareDialog }) => {
                       </div>
                     </div>
                   ) : (
-                    <img 
-                      src={aiIllustrations[sentence] || getIllustrationForSentence(sentence)}
-                      alt={`Illustration for: ${sentence}`}
-                      className="w-full h-full object-cover rounded-md"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "https://picsum.photos/seed/error/400/240";
-                      }}
+                    <Image 
+						src={aiIllustrations[sentence] || getIllustrationForSentence(sentence)}
+						alt={`Illustration for: ${sentence}`}
+						className="w-full h-full object-cover rounded-md"
+						width={400}
+						height={240}
+						onError={(e) => {
+							e.target.onerror = null;
+							e.target.src = "https://picsum.photos/seed/error/400/240";
+						}}
                     />
                   )}
                 </div>
