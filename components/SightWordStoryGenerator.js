@@ -210,7 +210,7 @@ const SightWordStoryGenerator = () => {
       // Pick a random story template
       const storyType = storyTypes[Math.floor(Math.random() * storyTypes.length)];
       
-      // Fill in the template with words, or use defaults if we don't have matching words
+      // Fill in the template with words, or use defaults if we do not have matching words
       let storyText = storyType.template;
       const selectedSubject = subjects.length > 0 ? subjects[Math.floor(Math.random() * subjects.length)] : 'I';
       storyText = storyText.replace(/SUBJECT/g, selectedSubject);
