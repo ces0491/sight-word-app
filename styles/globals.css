@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-size-base: 1rem;
+  --line-spacing: 1.5;
+  --word-spacing: normal;
+  --highlight-color: #FFEB3B;
 }
 
 @theme inline {
@@ -23,4 +27,59 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.saved-story-title {
+  color: #2c3e50 !important;
+}
+
+.saved-story-metadata {
+  color: #4b5563 !important;
+}
+
+.story-page p {
+  font-size: var(--font-size-base, 1rem);
+  line-height: var(--line-spacing, 1.5);
+  word-spacing: var(--word-spacing, normal);
+}
+
+.highlighted-text .highlight {
+  background-color: var(--highlight-color);
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
+@font-face {
+  font-family: 'Comic Neue';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/comic-neue-v8-latin-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Comic Neue';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/fonts/comic-neue-v8-latin-700.woff2') format('woff2');
+}
+
+.font-comic {
+  font-family: 'Comic Neue', cursive;
+}
+
+@media print {
+  header, footer, button {
+    display: none !important;
+  }
+  
+  .story-book {
+    background: white !important;
+    padding: 0 !important;
+  }
+  
+  .story-page {
+    break-inside: avoid;
+    margin-bottom: 20px;
+    box-shadow: none !important;
+  }
 }
