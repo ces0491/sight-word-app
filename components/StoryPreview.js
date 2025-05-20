@@ -1,44 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { generateStory } from '../lib/storyGeneration';
+import React from 'react';
 import StoryIllustration from './EnhancedIllustration';
 
 /**
- * Enhanced Story Preview Component
+ * StoryPreview Component
  * 
- * Displays a story with sight words highlighted and illustrations
+ * Displays a generated story with sight words highlighted and illustrations
+ * 
+ * @param {object} props.story - The generated story to display
+ * @param {function} props.onSave - Function to call when saving the story
+ * @param {function} props.onShare - Function to call when sharing the story
+ * @param {function} props.onPrint - Function to call when printing the story
+ * @param {function} props.onDownload - Function to call when downloading the story
+ * @param {boolean} props.isAuthenticated - Whether the user is authenticated
+ * @param {boolean} props.isSaving - Whether the story is currently being saved
  */
-const EnhancedStoryPreview = ({ 
-  words = [], 
-  grade = 1, 
-  highlightColor = '#FFEB3B' 
+const StoryPreview = ({ 
+  story, 
+  onSave, 
+  onShare, 
+  onPrint, 
+  onDownload, 
+  isAuthenticated = false,
+  isSaving = false
 }) => {
-  const [story, setStory] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  // Generate story when words change
-  useEffect(() => {
-    if (words.length === 0) {
-      setStory(null);
-      return;
-    }
-
-    setIsGenerating(true);
-    
-    // Use setTimeout to avoid blocking the UI
-    setTimeout(() => {
-      try {
-        const generatedStory = generateStory(words, grade);
-        setStory(generatedStory);
-      } catch (error) {
-        console.error('Error generating story:', error);
-      } finally {
-        setIsGenerating(false);
-      }
-    }, 100);
-  }, [words, grade]);
+  // Ensure we have a story to display
+  if (!story) {
+    return (
+      <div className="bg-white rounded-lg p-6 max-w-3xl mx-auto text-center">
+        <p className="text-gray-500">Add some sight words to generate a story</p>
+      </div>
+    );
+  }
 
   // Highlight sight words in the text
-  const highlightSightWords = (text) => {
+  const highlightSightWords = (text, words) => {
     if (!words || words.length === 0) return text;
 
     let highlightedText = text;
@@ -52,52 +47,142 @@ const EnhancedStoryPreview = ({
     return highlightedText;
   };
 
-  if (isGenerating) {
-    return (
-      <div className="animate-pulse bg-white rounded-lg p-6 max-w-3xl mx-auto">
-        <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-        <div className="space-y-3">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-full"></div>
-          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-        </div>
-        <div className="h-40 bg-gray-200 rounded mt-4"></div>
-      </div>
-    );
-  }
-
-  if (!story) {
-    return (
-      <div className="bg-white rounded-lg p-6 max-w-3xl mx-auto text-center">
-        <p className="text-gray-500">Add some sight words to generate a story</p>
-      </div>
-    );
-  }
+  // Format the displayed text based on selected format
+  const formatText = (sentence, words, format = story.format || 'highlighted') => {
+    switch (format) {
+      case 'highlighted':
+        return <span dangerouslySetInnerHTML={{ __html: highlightSightWords(sentence, words) }} className="highlighted-text" />;
+      case 'bold':
+        return <span dangerouslySetInnerHTML={{ 
+          __html: highlightSightWords(sentence, words).replace(
+            /<span class="highlight">(.*?)<\/span>/g, 
+            '<strong>$1</strong>'
+          ) 
+        }} />;
+      case 'underlined':
+        return <span dangerouslySetInnerHTML={{ 
+          __html: highlightSightWords(sentence, words).replace(
+            /<span class="highlight">(.*?)<\/span>/g, 
+            '<u>$1</u>'
+          ) 
+        }} />;
+      case 'normal':
+      default:
+        return sentence;
+    }
+  };
 
   return (
     <div className="bg-white rounded-lg p-6 max-w-3xl mx-auto">
-      {/* Story title */}
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">{story.title}</h2>
+      {/* Story Control Buttons */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">{story.title}</h2>
+        
+        <div className="flex gap-2">
+          {onPrint && (
+            <button 
+              onClick={onPrint}
+              className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              Print
+            </button>
+          )}
+          
+          {onDownload && (
+            <button 
+              onClick={onDownload}
+              className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Download
+            </button>
+          )}
+          
+          {isAuthenticated && onSave && (
+            <button 
+              onClick={onSave}
+              disabled={isSaving}
+              className="flex items-center gap-1 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-purple-300"
+            >
+              {isSaving ? (
+                <>
+                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  Save
+                </>
+              )}
+            </button>
+          )}
+          
+          {isAuthenticated && onShare && (
+            <button 
+              onClick={onShare}
+              className="flex items-center gap-1 px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+              Share
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {/* Story metadata */}
+      <div className="mb-4">
+        <p className="text-sm text-gray-500">
+          Contains {story.words.length} sight words • Grade {story.grade} level
+          {story.learningNeeds && Object.entries(story.learningNeeds)
+            .filter(([_, value]) => value)
+            .map(([key]) => key)
+            .length > 0 && ` • Optimized for ${Object.entries(story.learningNeeds)
+              .filter(([_, value]) => value)
+              .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1))
+              .join(', ')}`
+          }
+        </p>
+      </div>
       
       {/* Story content with illustrations */}
       <div className="space-y-8">
         {story.content.map((sentence, index) => (
           <div key={index} className="story-page p-4 bg-white rounded-lg shadow-md">
             {/* Text with highlighted sight words */}
-            <p 
-              className="text-xl leading-relaxed mb-4 font-comic text-gray-800"
-              dangerouslySetInnerHTML={{ __html: highlightSightWords(sentence) }}
-              style={{ '--highlight-color': highlightColor }}
-            ></p>
+            <p className="text-xl leading-relaxed mb-4 font-comic text-gray-800">
+              {formatText(sentence, story.words)}
+            </p>
             
             {/* Illustration for this sentence */}
-            <StoryIllustration 
-              sentence={sentence} 
-              width="100%" 
-              height={200} 
-              alt={`Illustration for: ${sentence}`}
-              className="mt-2"
-            />
+            {story.includeImages && (
+              <StoryIllustration 
+                sentence={sentence} 
+                width="100%" 
+                height={200} 
+                alt={`Illustration for: ${sentence}`}
+                className="mt-2"
+              />
+            )}
           </div>
         ))}
       </div>
@@ -106,11 +191,10 @@ const EnhancedStoryPreview = ({
       <div className="mt-8 p-4 bg-gray-50 rounded-lg">
         <h3 className="text-lg font-semibold mb-2 text-gray-800">Sight Words Used:</h3>
         <div className="flex flex-wrap gap-2">
-          {words.map((word, index) => (
+          {story.words.map((word, index) => (
             <span 
               key={index} 
-              className="px-3 py-1 rounded-full text-gray-800"
-              style={{ backgroundColor: highlightColor }}
+              className="bg-blue-100 px-3 py-1 rounded-full text-blue-800"
             >
               {word}
             </span>
@@ -121,4 +205,4 @@ const EnhancedStoryPreview = ({
   );
 };
 
-export default EnhancedStoryPreview;
+export default StoryPreview;

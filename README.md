@@ -2,7 +2,7 @@
 
 An educational web application that helps teachers create custom stories featuring sight words for early readers. The application is especially valuable for students with different learning needs.
 
-![Sight Word Story Generator](https://sight-word-app.vercel.app/)
+[Sight Word Story Generator](https://sight-word-app.vercel.app/)
 
 ## Features
 
