@@ -1,4 +1,4 @@
-// components/fixedComponents/EnhancedSightWordStoryGenerator.js
+// components/SightWordStoryGenerator.js
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
@@ -156,16 +156,60 @@ const SightWordStoryGenerator = () => {
   /**
    * Handle story generation
    */
-  const handleGenerateStory = (storyData) => {
-    setGeneratedStory(storyData);
-    setCurrentTab('preview');
-    setIsGeneratingStory(false);
+  // components/StoryGenerator.js - Update the handleGenerateStory function
+
+const handleGenerateStory = async () => {
+  // Check if words is defined and has a length property
+  if (!words || !Array.isArray(words) || words.length === 0 || isGeneratingStory) {
+    console.error('Cannot generate story: words array is invalid or empty');
+    return;
+  }
+  
+  try {
+    console.log('Generating story with words:', words);
     
-    // Track word usage for analytics if signed in
-    if (session?.user) {
-      trackWordUsage(words, grade);
+    // Generate a coherent story using the enhanced engine
+    const storyData = generateStory(
+      words, 
+      grade || 1, // Provide default if grade is undefined
+      learningNeeds || {} // Provide default if learningNeeds is undefined
+    );
+    
+    // Defensively check if storyData and storyData.usedWords exist
+    const usedWords = storyData?.usedWords || [];
+    
+    // Update used word count for stats display (with defensive checks)
+    setUsedWordCount(usedWords.length);
+    setLastGeneratedStory(storyData);
+    
+    // Create the full story object with all needed metadata
+    const story = {
+      id: Date.now(),
+      title: storyData?.title || 'My Story',
+      content: storyData?.content || ['Once upon a time...'],
+      words: Array.isArray(words) ? [...words] : [],
+      usedWords: usedWords,
+      format: storyFormat || 'highlighted',
+      includeImages: includeImages || true,
+      grade: grade || 1,
+      learningNeeds: {...(learningNeeds || {})},
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('Generated story:', story);
+    
+    // Pass the generated story back to the parent component
+    if (typeof onGenerateStory === 'function') {
+      onGenerateStory(story);
+    } else {
+      console.error('onGenerateStory is not a function');
     }
-  };
+    
+  } catch (error) {
+    console.error('Story generation error:', error);
+    // Handle generation errors
+  }
+};
   
   /**
    * Save the current story

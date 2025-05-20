@@ -4,6 +4,10 @@ const nextConfig = {
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   },
-};
+  webpack: (config) => {
+    // Add proper handling for CSS
+    return config;
+  },
+}
 
-export default nextConfig;
+module.exports = nextConfig;

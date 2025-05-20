@@ -50,11 +50,9 @@ const ImprovedStoryGenerator = ({
     
     try {
       // Generate a coherent story using the enhanced engine
-      const storyData = generateStory(
-        words, 
-        grade,
-        learningNeeds
-      );
+      console.log("Generating story with words:", words);
+      const storyData = generateStory(words, grade, learningNeeds);
+      console.log("Story generated:", storyData);
       
       // Update used word count for stats display
       setUsedWordCount(storyData.usedWords.length);
