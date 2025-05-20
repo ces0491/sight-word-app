@@ -11,7 +11,7 @@ import { generateStory } from '../lib/storyGeneration';
  * 2. Ensure all sight words are used when possible
  * 3. Track which words were actually used for better feedback
  */
-const ImprovedStoryGenerator = ({ 
+const StoryGenerator = ({ 
   words, 
   grade, 
   learningNeeds, 
@@ -209,4 +209,4 @@ const ImprovedStoryGenerator = ({
   );
 };
 
-export default ImprovedStoryGenerator;
+export default StoryGenerator;
