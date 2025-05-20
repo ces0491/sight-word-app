@@ -1,4 +1,5 @@
-// components/storyGenerator.js
+// components/StoryGenerator.js - Fixed version
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Zap } from 'lucide-react';
 import { generateStory } from '../lib/storyGeneration';
@@ -27,7 +28,7 @@ const StoryGenerator = ({
   
   // Calculate the readability level based on grade and learning needs
   useEffect(() => {
-    if (learningNeeds.dyslexia || learningNeeds.visualProcessing) {
+    if (learningNeeds?.dyslexia || learningNeeds?.visualProcessing) {
       // Lower readability level for students with these learning needs
       setReadabilityLevel('simplified');
     } else if (grade <= 1) {
@@ -46,37 +47,42 @@ const StoryGenerator = ({
    * Handle story generation with improved algorithm
    */
   const handleGenerateStory = async () => {
-    if (words.length === 0 || isGeneratingStory) return;
+    if (!words || words.length === 0 || isGeneratingStory) return;
     
     try {
       // Generate a coherent story using the enhanced engine
-      console.log("Generating story with words:", words);
-      const storyData = generateStory(words, grade, learningNeeds);
-      console.log("Story generated:", storyData);
+      const storyData = generateStory(words, grade || 1, learningNeeds || {});
       
       // Update used word count for stats display
-      setUsedWordCount(storyData.usedWords.length);
+      setUsedWordCount(storyData.usedWords?.length || 0);
       setLastGeneratedStory(storyData);
       
       // Create the full story object with all needed metadata
       const story = {
         id: Date.now(),
-        title: storyData.title,
-        content: storyData.content,
+        title: storyData.title || "My Story",
+        content: storyData.content || ["Once upon a time..."],
         words: [...words],
-        usedWords: storyData.usedWords || [], // Track which words were actually used
-        format: storyFormat,
-        includeImages,
-        grade,
-        learningNeeds: {...learningNeeds},
+        usedWords: storyData.usedWords || words, // Track which words were actually used
+        format: storyFormat || "highlighted",
+        includeImages: includeImages !== undefined ? includeImages : true,
+        grade: grade || 1,
+        learningNeeds: {...(learningNeeds || {})},
         timestamp: new Date().toISOString()
       };
       
+      console.log("Story generated successfully:", story);
+      
       // Pass the generated story back to the parent component
-      onGenerateStory(story);
+      if (typeof onGenerateStory === 'function') {
+        onGenerateStory(story);
+      } else {
+        console.error('onGenerateStory is not a function or not provided');
+      }
       
     } catch (error) {
       console.error('Story generation error:', error);
+      alert('There was an error generating your story. Please try again.');
       // Handle generation errors
     }
   };
@@ -86,11 +92,11 @@ const StoryGenerator = ({
    * @returns {string} - Quality description
    */
   const calculateStoryQuality = useCallback(() => {
-    if (words.length < 3) return 'limited';
+    if (!words || words.length < 3) return 'limited';
     if (words.length < 6) return 'basic';
     if (words.length < 10) return 'good';
     return 'excellent';
-  }, [words.length]);
+  }, [words]);
   
   /**
    * Update story quality when words change
@@ -128,14 +134,14 @@ const StoryGenerator = ({
           
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-700">Words Available:</span>
-            <span className="text-sm font-medium text-blue-700">{words.length}</span>
+            <span className="text-sm font-medium text-blue-700">{words ? words.length : 0}</span>
           </div>
           
           {lastGeneratedStory && (
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-700">Words Used in Story:</span>
               <span className="text-sm font-medium text-blue-700">
-                {lastGeneratedStory.usedWords.length}/{words.length}
+                {lastGeneratedStory.usedWords?.length || 0}/{words ? words.length : 0}
               </span>
             </div>
           )}
@@ -172,9 +178,9 @@ const StoryGenerator = ({
       
       <button
         onClick={handleGenerateStory}
-        disabled={words.length === 0 || isGeneratingStory}
+        disabled={!words || words.length === 0 || isGeneratingStory}
         className={`w-full py-3 rounded-md flex items-center justify-center gap-2 
-          ${words.length === 0 || isGeneratingStory 
+          ${!words || words.length === 0 || isGeneratingStory 
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
             : 'bg-green-600 text-white hover:bg-green-700'}`}
         aria-label="Generate story with current words"
@@ -192,7 +198,7 @@ const StoryGenerator = ({
         )}
       </button>
       
-      {words.length > 0 && !isGeneratingStory && (
+      {words && words.length > 0 && !isGeneratingStory && (
         <div className="text-sm text-gray-600 text-center">
           {storyQuality === 'limited' ? (
             <p>Adding more words will help create a better story. Try adding at least 5 words.</p>

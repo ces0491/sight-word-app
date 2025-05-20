@@ -156,25 +156,57 @@ const SightWordStoryGenerator = () => {
   /**
    * Handle story generation
    */
-  const handleGenerateStory = (story) => {
-    // Set the generated story in state
-    setGeneratedStory(story);
-  
-    // Switch to the preview tab to show the generated story
-    setCurrentTab('preview');
-  
-    // Track word usage for analytics if available
-    if (session?.user) {
-      try {
-        trackWordUsage(story.words, grade);
-      } catch (error) {
-        console.error('Error tracking word usage:', error);
-        // Non-critical error, don't alert the user
-      }
+  const handleGenerateStory = () => {
+    // Check if words array is valid
+    if (!words || !Array.isArray(words) || words.length === 0) {
+      console.error('Cannot generate story: no words available');
+      return;
     }
   
-    // For development/debugging
-    console.log('Story generated successfully:', story.title);
+    // Set the generating state to true to show loading indicator
+    setIsGeneratingStory(true);
+  
+    try {
+      // Import the story generation function directly
+      const { generateStory } = require('../lib/storyGeneration');
+    
+      // Generate the story
+      const storyData = generateStory(words, grade, learningNeeds);
+      console.log('Story generated:', storyData);
+    
+      // Create the full story object with all metadata
+      const story = {
+        id: Date.now(),
+        title: storyData.title || 'My Story',
+        content: storyData.content || ['Once upon a time...'],
+        words: [...words],
+        usedWords: storyData.usedWords || words,
+        format: storyFormat,
+        includeImages,
+        grade,
+        learningNeeds: {...learningNeeds},
+        timestamp: new Date().toISOString()
+      };
+    
+      // Set the generated story in state
+      setGeneratedStory(story);
+    
+      // Switch to preview tab
+      setCurrentTab('preview');
+    
+      // Track word usage for analytics
+      if (session?.user) {
+        trackWordUsage(words, grade).catch(err => 
+          console.error('Error tracking word usage:', err)
+        );
+      }
+    } catch (error) {
+      console.error('Error generating story:', error);
+      alert('There was an error generating your story. Please try again.');
+    } finally {
+      // Always set generating state back to false
+      setIsGeneratingStory(false);
+    }
   };
   
   /**
