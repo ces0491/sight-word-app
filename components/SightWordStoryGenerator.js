@@ -1,26 +1,26 @@
-// components/SightWordStoryGenerator.js
+// components/SightWordStoryGenerator.js - Complete rewrite
+
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
-  Book, ArrowLeft, Settings, List, BarChart
+  Book, ArrowLeft, Settings, List, BarChart, Camera, Trash2,
+  ArrowUp
 } from 'lucide-react';
-import AuthDialog from './auth/AuthDialog';
 
-// Import our enhanced components
+// Import our components
 import ImprovedImageUpload from './ImageUpload';
 import LearningConsiderationsPanel from './LearningConsiderationsPanel';
 import LearningNeedsInfo from './LearningNeedsInfo';
-import StoryGenerator from './StoryGenerator'; // Using the fixed version
-import StoryPreview from './StoryPreview'; // Using the fixed version
+import StoryGenerator from './StoryGenerator';
+import StoryPreview from './StoryPreview';
+import AuthDialog from './auth/AuthDialog';
 
-// Import other utilities and services
+// Import utilities
+import { generateStory } from '../lib/storyGeneration';
 import { trackWordUsage } from '../lib/WordAnalytics';
 
 /**
- * Enhanced Sight Word Story Generator with ESLint fixes
- * 
- * Main application component that integrates all the enhanced components
- * and provides a better user experience for story generation.
+ * Main Sight Word Story Generator Component
  */
 const SightWordStoryGenerator = () => {
   // Auth state
@@ -154,31 +154,27 @@ const SightWordStoryGenerator = () => {
   };
   
   /**
-   * Handle story generation
+   * Handle story generation - FIXED VERSION
    */
-  const handleGenerateStory = () => {
-    // Check if words array is valid
-    if (!words || !Array.isArray(words) || words.length === 0) {
-      console.error('Cannot generate story: no words available');
+  const handleGenerateStory = async () => {
+    // Validation checks
+    if (words.length === 0 || isGeneratingStory) {
       return;
     }
-  
-    // Set the generating state to true to show loading indicator
+    
+    // Set the loading state
     setIsGeneratingStory(true);
-  
+    
     try {
-      // Import the story generation function directly
-      const { generateStory } = require('../lib/storyGeneration');
-    
-      // Generate the story
+      // Generate the story using our utility
+      console.log('Generating story with words:', words);
       const storyData = generateStory(words, grade, learningNeeds);
-      console.log('Story generated:', storyData);
-    
-      // Create the full story object with all metadata
+      
+      // Create a complete story object with all metadata
       const story = {
         id: Date.now(),
-        title: storyData.title || 'My Story',
-        content: storyData.content || ['Once upon a time...'],
+        title: storyData.title,
+        content: storyData.content,
         words: [...words],
         usedWords: storyData.usedWords || words,
         format: storyFormat,
@@ -187,24 +183,28 @@ const SightWordStoryGenerator = () => {
         learningNeeds: {...learningNeeds},
         timestamp: new Date().toISOString()
       };
-    
-      // Set the generated story in state
+      
+      console.log('Story generated:', story);
+      
+      // Set the story in state
       setGeneratedStory(story);
-    
+      
       // Switch to preview tab
       setCurrentTab('preview');
-    
+      
       // Track word usage for analytics
       if (session?.user) {
-        trackWordUsage(words, grade).catch(err => 
-          console.error('Error tracking word usage:', err)
-        );
+        try {
+          await trackWordUsage(words, grade);
+        } catch (err) {
+          console.error('Error tracking word usage:', err);
+        }
       }
     } catch (error) {
       console.error('Error generating story:', error);
       alert('There was an error generating your story. Please try again.');
     } finally {
-      // Always set generating state back to false
+      // Always reset loading state
       setIsGeneratingStory(false);
     }
   };
@@ -306,19 +306,14 @@ const SightWordStoryGenerator = () => {
   };
   
   /**
-   * Download story as PDF (placeholder)
+   * Download story as PDF
    */
   const downloadStory = () => {
     alert("PDF download will be implemented in a future update.");
-    // In a full implementation, you would use a library like jsPDF
-    // to generate and download a PDF of the story
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Skip to content link for accessibility */}
-      <a href="#main-content" className="skip-to-content">Skip to content</a>
-      
       {/* Header */}
       <header className="bg-blue-700 text-white p-4 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
@@ -386,13 +381,13 @@ const SightWordStoryGenerator = () => {
                   className={`flex items-center gap-2 px-4 py-2 rounded-md ${inputMethod === 'file' ? 'bg-blue-100 text-blue-700 font-medium' : 'bg-gray-100 text-gray-700'}`}
                   onClick={() => setInputMethod('file')}
                 >
-                  <ArrowLeft size={18} /> Upload File
+                  <ArrowUp size={18} /> Upload File
                 </button>
                 <button 
                   className={`flex items-center gap-2 px-4 py-2 rounded-md ${inputMethod === 'image' ? 'bg-blue-100 text-blue-700 font-medium' : 'bg-gray-100 text-gray-700'}`}
                   onClick={() => setInputMethod('image')}
                 >
-                  <Settings size={18} /> Take Picture
+                  <Camera size={18} /> Take Picture
                 </button>
               </div>
               
@@ -470,9 +465,9 @@ const SightWordStoryGenerator = () => {
                   {words.length > 0 && (
                     <button 
                       onClick={resetForm}
-                      className="text-sm text-red-600 hover:text-red-800"
+                      className="text-sm text-red-600 hover:text-red-800 flex items-center"
                     >
-                      Clear All
+                      <Trash2 size={16} className="mr-1" /> Clear All
                     </button>
                   )}
                 </div>
@@ -497,7 +492,7 @@ const SightWordStoryGenerator = () => {
                 )}
               </div>
               
-              {/* Story Generator Component */}
+              {/* Story Generator Component - Revised to directly call our handler */}
               <StoryGenerator
                 words={words}
                 grade={grade}
@@ -734,7 +729,7 @@ const SightWordStoryGenerator = () => {
       {/* Footer */}
       <footer className="bg-gray-100 border-t py-4">
         <div className="container mx-auto px-4 text-center text-gray-600">
-          <p>© 2025 Sight Word Story Generator • An educational tool for teachers and students</p>
+          <p>© 2025 Sight Word Story Generator • An educational reading tool</p>
         </div>
       </footer>
       

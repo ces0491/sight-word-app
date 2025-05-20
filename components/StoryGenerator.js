@@ -1,109 +1,84 @@
-// components/StoryGenerator.js - Fixed version
+// components/StoryGenerator.js - Complete rewrite
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Zap } from 'lucide-react';
-import { generateStory } from '../lib/storyGeneration';
 
 /**
- * Improved Story Generator Component
- * 
- * Uses enhanced story generation algorithm to:
- * 1. Add randomness to story generation (different stories each time)
- * 2. Ensure all sight words are used when possible
- * 3. Track which words were actually used for better feedback
+ * StoryGenerator Component
+ * Shows story quality preview and generates stories from sight words
  */
 const StoryGenerator = ({ 
-  words, 
-  grade, 
-  learningNeeds, 
-  includeImages, 
-  storyFormat,
+  words = [], 
+  grade = 1, 
+  learningNeeds = {}, 
+  includeImages = true, 
+  storyFormat = 'highlighted',
   onGenerateStory,
-  isGeneratingStory
+  isGeneratingStory = false
 }) => {
-  const [storyQuality, setStoryQuality] = useState('normal');
-  const [readabilityLevel, setReadabilityLevel] = useState('auto');
-  const [usedWordCount, setUsedWordCount] = useState(0);
-  const [lastGeneratedStory, setLastGeneratedStory] = useState(null);
+  const [storyQuality, setStoryQuality] = useState('limited');
+  const [readabilityLevel, setReadabilityLevel] = useState('basic');
   
-  // Calculate the readability level based on grade and learning needs
+  /**
+   * Update story quality based on number of words
+   */
   useEffect(() => {
-    if (learningNeeds?.dyslexia || learningNeeds?.visualProcessing) {
-      // Lower readability level for students with these learning needs
+    if (words.length < 3) {
+      setStoryQuality('limited');
+    } else if (words.length < 6) {
+      setStoryQuality('basic');
+    } else if (words.length < 10) {
+      setStoryQuality('good');
+    } else {
+      setStoryQuality('excellent');
+    }
+  }, [words]);
+  
+  /**
+   * Set readability level based on grade and learning needs
+   */
+  useEffect(() => {
+    if (learningNeeds.dyslexia || learningNeeds.visualProcessing) {
       setReadabilityLevel('simplified');
     } else if (grade <= 1) {
-      // Very simple for kindergarten and 1st grade
       setReadabilityLevel('basic');
     } else if (grade <= 3) {
-      // Standard for 2nd-3rd grade
       setReadabilityLevel('standard');
     } else {
-      // More advanced for 4th-5th grade
       setReadabilityLevel('advanced');
     }
   }, [grade, learningNeeds]);
   
   /**
-   * Handle story generation with improved algorithm
+   * Handle generate story button click
    */
-  const handleGenerateStory = async () => {
-    if (!words || words.length === 0 || isGeneratingStory) return;
-    
-    try {
-      // Generate a coherent story using the enhanced engine
-      const storyData = generateStory(words, grade || 1, learningNeeds || {});
-      
-      // Update used word count for stats display
-      setUsedWordCount(storyData.usedWords?.length || 0);
-      setLastGeneratedStory(storyData);
-      
-      // Create the full story object with all needed metadata
-      const story = {
-        id: Date.now(),
-        title: storyData.title || "My Story",
-        content: storyData.content || ["Once upon a time..."],
-        words: [...words],
-        usedWords: storyData.usedWords || words, // Track which words were actually used
-        format: storyFormat || "highlighted",
-        includeImages: includeImages !== undefined ? includeImages : true,
-        grade: grade || 1,
-        learningNeeds: {...(learningNeeds || {})},
-        timestamp: new Date().toISOString()
-      };
-      
-      console.log("Story generated successfully:", story);
-      
-      // Pass the generated story back to the parent component
-      if (typeof onGenerateStory === 'function') {
-        onGenerateStory(story);
-      } else {
-        console.error('onGenerateStory is not a function or not provided');
-      }
-      
-    } catch (error) {
-      console.error('Story generation error:', error);
-      alert('There was an error generating your story. Please try again.');
-      // Handle generation errors
+  const handleClick = () => {
+    if (typeof onGenerateStory === 'function') {
+      onGenerateStory();
+    } else {
+      console.error('onGenerateStory callback not provided to StoryGenerator');
     }
   };
   
-  /**
-   * Calculate a quality score based on the number of words
-   * @returns {string} - Quality description
-   */
-  const calculateStoryQuality = useCallback(() => {
-    if (!words || words.length < 3) return 'limited';
-    if (words.length < 6) return 'basic';
-    if (words.length < 10) return 'good';
-    return 'excellent';
-  }, [words]);
+  // Helper function to get quality bar width
+  const getQualityWidth = () => {
+    switch (storyQuality) {
+      case 'excellent': return '100%';
+      case 'good': return '75%';
+      case 'basic': return '50%';
+      default: return '25%';
+    }
+  };
   
-  /**
-   * Update story quality when words change
-   */
-  useEffect(() => {
-    setStoryQuality(calculateStoryQuality());
-  }, [calculateStoryQuality]);
+  // Helper function to get quality bar color
+  const getQualityColor = () => {
+    switch (storyQuality) {
+      case 'excellent': return 'bg-green-600';
+      case 'good': return 'bg-blue-600';
+      case 'basic': return 'bg-yellow-500';
+      default: return 'bg-red-500';
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -117,34 +92,15 @@ const StoryGenerator = ({
           
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div 
-              className={`h-2.5 rounded-full ${
-                storyQuality === 'excellent' ? 'bg-green-600' : 
-                storyQuality === 'good' ? 'bg-blue-600' : 
-                storyQuality === 'basic' ? 'bg-yellow-500' : 'bg-red-500'
-              }`} 
-              style={{ 
-                width: `${
-                  storyQuality === 'excellent' ? '100%' : 
-                  storyQuality === 'good' ? '75%' : 
-                  storyQuality === 'basic' ? '50%' : '25%'
-                }` 
-              }}
+              className={`h-2.5 rounded-full ${getQualityColor()}`} 
+              style={{ width: getQualityWidth() }}
             ></div>
           </div>
           
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-700">Words Available:</span>
-            <span className="text-sm font-medium text-blue-700">{words ? words.length : 0}</span>
+            <span className="text-sm font-medium text-blue-700">{words.length}</span>
           </div>
-          
-          {lastGeneratedStory && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-700">Words Used in Story:</span>
-              <span className="text-sm font-medium text-blue-700">
-                {lastGeneratedStory.usedWords?.length || 0}/{words ? words.length : 0}
-              </span>
-            </div>
-          )}
           
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-700">Reading Level:</span>
@@ -177,10 +133,10 @@ const StoryGenerator = ({
       </div>
       
       <button
-        onClick={handleGenerateStory}
-        disabled={!words || words.length === 0 || isGeneratingStory}
+        onClick={handleClick}
+        disabled={words.length === 0 || isGeneratingStory}
         className={`w-full py-3 rounded-md flex items-center justify-center gap-2 
-          ${!words || words.length === 0 || isGeneratingStory 
+          ${words.length === 0 || isGeneratingStory 
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
             : 'bg-green-600 text-white hover:bg-green-700'}`}
         aria-label="Generate story with current words"
@@ -198,7 +154,7 @@ const StoryGenerator = ({
         )}
       </button>
       
-      {words && words.length > 0 && !isGeneratingStory && (
+      {words.length > 0 && !isGeneratingStory && (
         <div className="text-sm text-gray-600 text-center">
           {storyQuality === 'limited' ? (
             <p>Adding more words will help create a better story. Try adding at least 5 words.</p>
