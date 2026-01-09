@@ -315,13 +315,6 @@ const SightWordStoryGenerator = () => {
   const printStory = () => {
     window.print();
   };
-  
-  /**
-   * Download story as PDF
-   */
-  const downloadStory = () => {
-    toast.info("PDF download feature coming soon!");
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -638,7 +631,6 @@ const SightWordStoryGenerator = () => {
             onSave={saveStory}
             onShare={() => setShowShareDialog(true)}
             onPrint={printStory}
-            onDownload={downloadStory}
             isAuthenticated={!!session?.user}
             isSaving={isSavingStory}
           />
