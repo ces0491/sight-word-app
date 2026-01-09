@@ -3,12 +3,11 @@ import { Printer, Share2, Download, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
+import StoryIllustration from '../EnhancedIllustration';
 
 const StoryViewer = ({ story, onBack, showShareDialog }) => {
   const router = useRouter();
   const { data: session } = useSession();
-  const [aiIllustrations, setAiIllustrations] = useState({});
-  const [isGeneratingImages, setIsGeneratingImages] = useState({});
 
   // Highlighted text rendering
   const renderHighlightedText = (text, words) => {
@@ -44,45 +43,6 @@ const StoryViewer = ({ story, onBack, showShareDialog }) => {
     }
   };
 
-  // Generate an illustration based on a sentence
-  const getIllustrationForSentence = async (sentence) => {
-    // Check if we already have an illustration for this sentence
-    if (aiIllustrations[sentence]) {
-      return aiIllustrations[sentence];
-    }
-    
-    // Mark this sentence as loading an illustration
-    setIsGeneratingImages(prev => ({ ...prev, [sentence]: true }));
-    
-    try {
-      // In a production app, this would call an API to generate an image
-      // For now, we'll use placeholder images but simulate a delay for realism
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Placeholder illustrations (in production, would be AI generated)
-      const illustrations = [
-        "https://picsum.photos/seed/img1/400/240",
-        "https://picsum.photos/seed/img2/400/240",
-        "https://picsum.photos/seed/img3/400/240"
-      ];
-      
-      // Use a hash of the sentence to consistently get the same illustration for the same sentence
-      const hash = sentence.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const imageUrl = illustrations[hash % illustrations.length];
-      
-      // Save the illustration for this sentence
-      setAiIllustrations(prev => ({ ...prev, [sentence]: imageUrl }));
-      setIsGeneratingImages(prev => ({ ...prev, [sentence]: false }));
-      
-      return imageUrl;
-    } catch (error) {
-      console.error('Failed to generate image:', error);
-      setIsGeneratingImages(prev => ({ ...prev, [sentence]: false }));
-      
-      // Fallback to a default image
-      return "https://picsum.photos/seed/fallback/400/240";
-    }
-  };
 
   if (!story) return <div>No story found</div>;
 
@@ -144,28 +104,13 @@ const StoryViewer = ({ story, onBack, showShareDialog }) => {
               </p>
               
               {story.includeImages && (
-                <div className="h-40 relative">
-                  {isGeneratingImages[sentence] ? (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-md">
-                      <div className="text-center">
-                        <span className="block animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></span>
-                        <span className="text-sm text-gray-500">Generating illustration...</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <Image 
-						src={aiIllustrations[sentence] || getIllustrationForSentence(sentence)}
-						alt={`Illustration for: ${sentence}`}
-						className="w-full h-full object-cover rounded-md"
-						width={400}
-						height={240}
-						onError={(e) => {
-							e.target.onerror = null;
-							e.target.src = "https://picsum.photos/seed/error/400/240";
-						}}
-                    />
-                  )}
-                </div>
+                <StoryIllustration
+                  sentence={sentence}
+                  width={400}
+                  height={200}
+                  className="rounded-md"
+                  alt={`Illustration for: ${sentence}`}
+                />
               )}
             </div>
           </div>

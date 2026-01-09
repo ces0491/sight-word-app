@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { 
+import {
   Book, ArrowLeft, Settings, List, BarChart, Camera, Trash2,
   ArrowUp
 } from 'lucide-react';
@@ -14,10 +14,13 @@ import LearningNeedsInfo from './LearningNeedsInfo';
 import StoryGenerator from './StoryGenerator';
 import StoryPreview from './StoryPreview';
 import AuthDialog from './auth/AuthDialog';
+import { ToastContainer } from './Toast';
+import WordUsageDashboard from './analytics/WordUsageDashboard';
 
 // Import utilities
 import { generateStory } from '../lib/storyGeneration';
 import { trackWordUsage } from '../lib/WordAnalytics';
+import { useToast } from '../hooks/useToast';
 
 /**
  * Main Sight Word Story Generator Component
@@ -26,7 +29,10 @@ const SightWordStoryGenerator = () => {
   // Auth state
   const { data: session, status } = useSession();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
-  
+
+  // Toast notifications
+  const toast = useToast();
+
   // Main state management
   const [words, setWords] = useState([]);
   const [inputMethod, setInputMethod] = useState('manual');
@@ -202,7 +208,7 @@ const SightWordStoryGenerator = () => {
       }
     } catch (error) {
       console.error('Error generating story:', error);
-      alert('There was an error generating your story. Please try again.');
+      toast.error('There was an error generating your story. Please try again.');
     } finally {
       // Always reset loading state
       setIsGeneratingStory(false);
@@ -235,14 +241,14 @@ const SightWordStoryGenerator = () => {
       if (response.ok) {
         const savedStory = await response.json();
         setSavedStories([savedStory, ...savedStories]);
-        alert("Story saved successfully!");
+        toast.success("Story saved successfully!");
       } else {
         console.error('Failed to save story');
-        alert("Failed to save story. Please try again.");
+        toast.error("Failed to save story. Please try again.");
       }
     } catch (error) {
       console.error('Error saving story:', error);
-      alert("An error occurred while saving the story.");
+      toast.error("An error occurred while saving the story.");
     } finally {
       setIsSavingStory(false);
     }
@@ -268,15 +274,20 @@ const SightWordStoryGenerator = () => {
       });
       
       if (response.ok) {
-        alert(`Story shared with ${shareEmail} successfully!`);
+        toast.success(`Story shared with ${shareEmail} successfully!`);
         setShareEmail('');
         setShowShareDialog(false);
       } else {
-        alert("Failed to share story. Please try again.");
+        const errorData = await response.json();
+        if (errorData.code === 'EMAIL_NOT_CONFIGURED') {
+          toast.warning("Email sharing is not configured yet. Please contact support.");
+        } else {
+          toast.error(errorData.message || "Failed to share story. Please try again.");
+        }
       }
     } catch (error) {
       console.error('Error sharing story:', error);
-      alert("An error occurred while sharing the story.");
+      toast.error("An error occurred while sharing the story.");
     } finally {
       setIsSharing(false);
     }
@@ -309,7 +320,7 @@ const SightWordStoryGenerator = () => {
    * Download story as PDF
    */
   const downloadStory = () => {
-    alert("PDF download will be implemented in a future update.");
+    toast.info("PDF download feature coming soon!");
   };
 
   return (
@@ -717,11 +728,11 @@ const SightWordStoryGenerator = () => {
           </div>
         )}
         
-        {/* Analytics Panel Placeholder */}
+        {/* Analytics Panel */}
         {currentTab === 'analytics' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-6 text-gray-800">Word Usage Analytics</h2>
-            <p className="text-center text-gray-600">Analytics dashboard would be displayed here.</p>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Word Usage Analytics</h2>
+            <WordUsageDashboard />
           </div>
         )}
       </main>
@@ -787,6 +798,9 @@ const SightWordStoryGenerator = () => {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
     </div>
   );
 };

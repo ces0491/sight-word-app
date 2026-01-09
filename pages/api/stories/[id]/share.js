@@ -21,27 +21,35 @@ export default async function handler(req, res) {
   }
   
   await dbConnect();
-  
+
   try {
     const story = await Story.findOne({
       _id: id,
       userId: session.user.id
     });
-    
+
     if (!story) {
       return res.status(404).json({ message: 'Story not found' });
     }
-    
+
     // Add email to sharedWith array if it's not already there
     if (!story.sharedWith.includes(email)) {
       story.sharedWith.push(email);
       await story.save();
     }
-    
+
     // Generate unique access link
     const shareToken = Buffer.from(`${story._id}-${Date.now()}`).toString('base64');
     const shareLink = `${process.env.NEXTAUTH_URL}/shared-stories/${story._id}?token=${shareToken}`;
-    
+
+    // Check if email configuration is available
+    if (!process.env.EMAIL_SERVER_HOST || !process.env.EMAIL_SERVER_USER) {
+      return res.status(503).json({
+        message: 'Email service not configured. Please contact the administrator.',
+        code: 'EMAIL_NOT_CONFIGURED'
+      });
+    }
+
     // Set up email transporter
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_SERVER_HOST,
