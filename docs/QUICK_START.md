@@ -36,19 +36,23 @@ cp .env.example .env.local
 
 **Edit `.env.local`** with your actual values:
 
+> **⚠️ Security Note**: Never commit the `.env.local` file to Git. It contains sensitive credentials and is already included in `.gitignore`.
+
 ### Required Variables
 
 ```bash
 # 1. MongoDB (REQUIRED)
-# Get from: https://cloud.mongodb.com/
-MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/
+# Get your connection string from: https://cloud.mongodb.com/
+# Replace <username>, <password>, and <cluster> with your actual values
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/sight-words
 
 # 2. NextAuth (REQUIRED)
 # Use your local or production URL
 NEXTAUTH_URL=http://localhost:3000
 
-# Generate a secret with: openssl rand -base64 32
-NEXTAUTH_SECRET=your-32-character-secret-here
+# Generate a random secret with: openssl rand -base64 32
+# Replace the example below with your generated secret
+NEXTAUTH_SECRET=<generate-random-32-character-secret>
 ```
 
 ### Optional Variables
