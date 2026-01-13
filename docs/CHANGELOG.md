@@ -4,6 +4,61 @@ All notable changes to the Sight Word Story Generator project.
 
 ---
 
+## [1.1.0] - 2026-01-13
+
+### Scene-Based Story Composition System
+
+**Status**: ✅ Complete
+
+Major enhancement to story generation that produces coherent, temporally-ordered narratives instead of disconnected sentences.
+
+#### Added
+
+**Story Composition System**:
+
+- `lib/storyScenes.js` - Library of 40+ modular scenes organized into 10 temporal phases
+- `lib/storyComposer.js` - Intelligent scene selection based on sight word coverage
+- Stories now follow natural day progression: wake up → morning routine → leave home → activities → return home → evening → bedtime
+
+**Temporal Phases (10 stages)**:
+
+1. WAKE_UP - Character wakes up in the morning
+2. MORNING_ROUTINE - Wash up, get dressed, eat breakfast
+3. LEAVE_HOME - Go outside
+4. TRAVEL - Walk or bike somewhere
+5. ACTIVITY_1-3 - Main activities of the day
+6. RETURN_HOME - Say goodbye, walk home
+7. EVENING - Dinner, bedtime reading
+8. BEDTIME - Go to sleep
+
+#### Changed
+
+**Story Generation**:
+
+- Refactored `lib/storyGeneration.js` to use new scene composition system
+- Stories now have logical flow with proper transitions
+- No more temporal jumps (e.g., washing up after breakfast)
+- No contradictory scenes (e.g., breakfast appearing twice)
+
+**Image Generation**:
+
+- Refactored `lib/imageGeneration.js` for better context-aware illustrations
+- Improved sentence analysis for location/action/weather detection
+- Better variety in generated illustrations
+
+**Story Preview**:
+
+- Fixed `components/StoryPreview.js` to show accurate sight word usage counts
+- Now displays `usedWords` (actually used) vs `words` (all input)
+
+#### Fixed
+
+- Stories no longer have temporal inconsistencies
+- Sight word count now reflects actual words used in the story
+- Illustrations better match sentence content
+
+---
+
 ## [1.0.0] - 2026-01-09
 
 ### 🎉 Production Ready Release
@@ -443,8 +498,8 @@ MongoDB credentials were exposed during development session.
 
 ---
 
-**Last Updated**: 2026-01-09
+**Last Updated**: 2026-01-13
 
-**Current Version**: 0.9.0 (Pre-Release)
+**Current Version**: 1.1.0
 
-**Status**: Ready for Soft Launch ✅
+**Status**: Production Ready ✅
