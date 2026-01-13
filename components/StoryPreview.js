@@ -136,7 +136,9 @@ const StoryPreview = ({
       {/* Story metadata */}
       <div className="mb-4">
         <p className="text-sm text-gray-500">
-          Contains {story.words.length} sight words • Grade {story.grade} level
+          Uses {(story.usedWords || story.words).length} of {story.words?.length || 0} sight words
+          {story.coveragePercent && ` (${story.coveragePercent}% coverage)`}
+          {' '} • Grade {story.grade} level
           {story.learningNeeds && Object.entries(story.learningNeeds)
             .filter(([_, value]) => value)
             .map(([key]) => key)
@@ -154,7 +156,7 @@ const StoryPreview = ({
           <div key={index} className="story-page p-4 bg-white rounded-lg shadow-md">
             {/* Text with highlighted sight words */}
             <p className="text-xl leading-relaxed mb-4 font-comic text-gray-800">
-              {formatText(sentence, story.words)}
+              {formatText(sentence, story.usedWords || story.words)}
             </p>
             
             {/* Illustration for this sentence */}
@@ -175,9 +177,9 @@ const StoryPreview = ({
       <div className="mt-8 p-4 bg-gray-50 rounded-lg">
         <h3 className="text-lg font-semibold mb-2 text-gray-800">Sight Words Used:</h3>
         <div className="flex flex-wrap gap-2">
-          {story.words.map((word, index) => (
-            <span 
-              key={index} 
+          {(story.usedWords || story.words).map((word, index) => (
+            <span
+              key={index}
               className="bg-blue-100 px-3 py-1 rounded-full text-blue-800"
             >
               {word}
