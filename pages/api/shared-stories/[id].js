@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import dbConnect from '../../../lib/dbConnect';
 import Story from '../../../models/Story';
-import { methodNotAllowed } from '../../../lib/apiHelpers';
+import { methodNotAllowed, withApiErrors } from '../../../lib/apiHelpers';
 
 /** Constant-time comparison of two strings. */
 const tokensMatch = (expected, provided) => {
@@ -11,7 +11,7 @@ const tokensMatch = (expected, provided) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
 
   const { id, token } = req.query;
@@ -48,3 +48,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Error fetching story' });
   }
 }
+
+export default withApiErrors(handler);

@@ -95,8 +95,10 @@ Size limits on stories and AI requests, and the per-user rate limits on AI gener
    - Visit [Vercel New Project](https://vercel.com/new)
    - Connect to your Git repository
    - Select the repository
-   - Add the environment variables from the table above (`MONGODB_URI`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET` at least; `EMAIL_*` for sharing; `ANTHROPIC_API_KEY` for AI mode)
+   - Add the environment variables from the table above (`MONGODB_URI`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET` at least; `EMAIL_*` for sharing; `ANTHROPIC_API_KEY` for AI mode) for both Production and Preview
    - Click "Deploy"
+
+   Vercel applies variable changes only to new deployments, so redeploy after adding or changing them. Without `MONGODB_URI`, API routes that need the database return a 503 with code `SERVICE_NOT_CONFIGURED`.
 3. Vercel will build the app and provide a URL
 
 The [Production Readiness](docs/PRODUCTION_READY.md) page has a list of checks to run after deploying.

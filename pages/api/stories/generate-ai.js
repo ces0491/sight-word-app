@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
 import dbConnect from '../../../lib/dbConnect';
-import { requireSession, methodNotAllowed, sendValidationError } from '../../../lib/apiHelpers';
+import { requireSession, methodNotAllowed, sendValidationError, withApiErrors } from '../../../lib/apiHelpers';
 import { aiStoryRequestSchema } from '../../../lib/validation';
 import { enforceRateLimit } from '../../../lib/rateLimit';
 import { RATE_LIMITS, STORY_LIMITS } from '../../../lib/limits';
@@ -89,7 +89,7 @@ function describeApiError(error) {
   return { status: 502, message: 'AI story generation failed. Please try again.' };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
 
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -143,3 +143,5 @@ export default async function handler(req, res) {
     usedWords: findUsedWords(sentences, words),
   });
 }
+
+export default withApiErrors(handler);

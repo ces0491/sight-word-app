@@ -1,6 +1,6 @@
 import dbConnect from '../../../lib/dbConnect';
 import WordAnalytics from '../../../models/WordAnalytics';
-import { requireSession, methodNotAllowed } from '../../../lib/apiHelpers';
+import { requireSession, methodNotAllowed, withApiErrors } from '../../../lib/apiHelpers';
 import { gradeSchema } from '../../../lib/validation';
 
 // Define common sight words by grade level
@@ -13,7 +13,7 @@ const commonSightWords = {
   5: ['though', 'thought', 'enough', 'different', 'language', 'important', 'together', 'between', 'against', 'special']
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
 
   const session = await requireSession(req, res);
@@ -50,3 +50,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Error fetching suggested words' });
   }
 }
+
+export default withApiErrors(handler);
