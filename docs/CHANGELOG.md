@@ -8,6 +8,7 @@ All notable changes to the Sight Word Story Generator project.
 
 ### Added
 
+- `MONGODB_DB` names the database inside the cluster. Connection strings from hosting integrations often have no database name, and the driver then uses `test`.
 - **A picture-book redesign for children and their parents**, named Sight Word Stories on screen:
   - Story time: the words as big tappable cards and one button to make a story
   - A reader that shows one page at a time, with Back and Next buttons and the arrow keys

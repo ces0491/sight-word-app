@@ -44,7 +44,9 @@ cp .env.example .env.local
 # 1. MongoDB (REQUIRED)
 # Get your connection string from: https://cloud.mongodb.com/
 # Replace <username>, <password>, and <cluster> with your actual values
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/sight-words
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/
+# The database inside the cluster that the app uses
+MONGODB_DB=sight-word-stories
 
 # 2. NextAuth (REQUIRED)
 # Use your local or production URL

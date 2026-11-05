@@ -68,6 +68,7 @@ Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's fr
    | Variable | Required | Purpose |
    | --- | --- | --- |
    | `MONGODB_URI` | Yes | MongoDB connection string |
+   | `MONGODB_DB` | Recommended | Database name inside the cluster, e.g. `sight-word-stories`. Without it the name comes from the connection string, and the driver falls back to `test` |
    | `NEXTAUTH_URL` | Yes | Base URL, e.g. `http://localhost:3000`. Also used in share links |
    | `NEXTAUTH_SECRET` | Yes | Session signing secret. Generate with `openssl rand -base64 32` |
    | `EMAIL_SERVER_HOST`, `EMAIL_SERVER_PORT`, `EMAIL_SERVER_USER`, `EMAIL_SERVER_PASSWORD`, `EMAIL_FROM` | For sharing | SMTP settings. Port 465 uses implicit TLS; other ports use STARTTLS |
@@ -103,7 +104,7 @@ Size limits on stories and AI requests, and the per-user rate limits on AI gener
    - Visit [Vercel New Project](https://vercel.com/new)
    - Connect to your Git repository
    - Select the repository
-   - Add the environment variables from the table above (`MONGODB_URI`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET` at least; `EMAIL_*` for sharing; `ANTHROPIC_API_KEY` for AI mode) for both Production and Preview
+   - Add the environment variables from the table above (`MONGODB_URI`, `MONGODB_DB`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET` at least; `EMAIL_*` for sharing; `ANTHROPIC_API_KEY` for AI mode) for both Production and Preview
    - Click "Deploy"
 
    Vercel applies variable changes only to new deployments, so redeploy after adding or changing them. Without `MONGODB_URI`, API routes that need the database return a 503 with code `SERVICE_NOT_CONFIGURED`.
