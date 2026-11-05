@@ -11,22 +11,26 @@ export default function SharedStoryPage() {
   const [error, setError] = useState(null);
   
   useEffect(() => {
+    if (!router.isReady) return;
     if (id && token) {
       fetchSharedStory();
+    } else {
+      setError('This story link is invalid or no longer available.');
+      setIsLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, token]);
-  
+  }, [router.isReady, id, token]);
+
   const fetchSharedStory = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/shared-stories/${id}?token=${token}`);
+      const response = await fetch(
+        `/api/shared-stories/${encodeURIComponent(id)}?token=${encodeURIComponent(token)}`
+      );
       
       if (!response.ok) {
         if (response.status === 404) {
-          setError('Story not found');
-        } else if (response.status === 401) {
-          setError('Unauthorized access');
+          setError('This story link is invalid or no longer available.');
         } else {
           setError('Error loading the story');
         }

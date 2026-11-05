@@ -1,5 +1,6 @@
 import React from 'react';
 import StoryIllustration from './EnhancedIllustration';
+import StoryText from './story/StoryText';
 
 /**
  * StoryPreview Component
@@ -29,46 +30,6 @@ const StoryPreview = ({
       </div>
     );
   }
-
-  // Highlight sight words in the text
-  const highlightSightWords = (text, words) => {
-    if (!words || words.length === 0) return text;
-
-    let highlightedText = text;
-    
-    words.forEach(word => {
-      // Create a regex that matches the whole word with word boundaries
-      const regex = new RegExp(`\\b${word}\\b`, 'gi');
-      highlightedText = highlightedText.replace(regex, `<span class="highlight">$&</span>`);
-    });
-    
-    return highlightedText;
-  };
-
-  // Format the displayed text based on selected format
-  const formatText = (sentence, words, format = story.format || 'highlighted') => {
-    switch (format) {
-      case 'highlighted':
-        return <span dangerouslySetInnerHTML={{ __html: highlightSightWords(sentence, words) }} className="highlighted-text" />;
-      case 'bold':
-        return <span dangerouslySetInnerHTML={{ 
-          __html: highlightSightWords(sentence, words).replace(
-            /<span class="highlight">(.*?)<\/span>/g, 
-            '<strong>$1</strong>'
-          ) 
-        }} />;
-      case 'underlined':
-        return <span dangerouslySetInnerHTML={{ 
-          __html: highlightSightWords(sentence, words).replace(
-            /<span class="highlight">(.*?)<\/span>/g, 
-            '<u>$1</u>'
-          ) 
-        }} />;
-      case 'normal':
-      default:
-        return sentence;
-    }
-  };
 
   return (
     <div className="bg-white rounded-lg p-6 max-w-3xl mx-auto">
@@ -156,7 +117,11 @@ const StoryPreview = ({
           <div key={index} className="story-page p-4 bg-white rounded-lg shadow-md">
             {/* Text with highlighted sight words */}
             <p className="text-xl leading-relaxed mb-4 font-comic text-gray-800">
-              {formatText(sentence, story.usedWords || story.words)}
+              <StoryText
+                sentence={sentence}
+                words={story.usedWords || story.words}
+                format={story.format || 'highlighted'}
+              />
             </p>
             
             {/* Illustration for this sentence */}

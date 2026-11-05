@@ -223,7 +223,7 @@ const WordUsageDashboard = () => {
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-600 font-bold">•</span>
-            <span><strong>Grade Distribution:</strong> Shows which grade levels you focus on most. Try to maintain consistency within each student's level.</span>
+            <span><strong>Grade Distribution:</strong> Shows which grade levels you focus on most. Try to maintain consistency within each student&apos;s level.</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-600 font-bold">•</span>

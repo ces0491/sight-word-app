@@ -61,7 +61,7 @@ class ErrorBoundary extends React.Component {
             </h1>
 
             <p className="text-gray-600 text-center mb-6">
-              We're sorry for the inconvenience. The application encountered an unexpected error.
+              We&apos;re sorry for the inconvenience. The application encountered an unexpected error.
             </p>
 
             {/* Show error details in development */}

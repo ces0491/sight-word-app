@@ -4,45 +4,11 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import StoryIllustration from '../EnhancedIllustration';
+import StoryText from './StoryText';
 
 const StoryViewer = ({ story, onBack, showShareDialog }) => {
   const router = useRouter();
   const { data: session } = useSession();
-
-  // Highlighted text rendering
-  const renderHighlightedText = (text, words) => {
-    return words.reduce((acc, word) => {
-      // Create a regular expression that matches the whole word (with word boundaries)
-      const regex = new RegExp(`\\b${word}\\b`, 'gi');
-      return acc.replace(regex, `<span class="highlight">$&</span>`);
-    }, text);
-  };
-
-  // Format the displayed text based on selected format
-  const formatText = (sentence, words, format) => {
-    switch (format) {
-      case 'highlighted':
-        return <span dangerouslySetInnerHTML={{ __html: renderHighlightedText(sentence, words) }} className="highlighted-text" />;
-      case 'bold':
-        return <span dangerouslySetInnerHTML={{ 
-          __html: renderHighlightedText(sentence, words).replace(
-            /<span class="highlight">(.*?)<\/span>/g, 
-            '<strong>$1</strong>'
-          ) 
-        }} />;
-      case 'underlined':
-        return <span dangerouslySetInnerHTML={{ 
-          __html: renderHighlightedText(sentence, words).replace(
-            /<span class="highlight">(.*?)<\/span>/g, 
-            '<u>$1</u>'
-          ) 
-        }} />;
-      case 'normal':
-      default:
-        return sentence;
-    }
-  };
-
 
   if (!story) return <div>No story found</div>;
 
@@ -100,7 +66,7 @@ const StoryViewer = ({ story, onBack, showShareDialog }) => {
           <div key={index} className="mb-8">
             <div className="story-page p-4 bg-white rounded-lg shadow-md">
               <p className="text-xl leading-relaxed mb-4 font-comic text-gray-800">
-                {formatText(sentence, story.words, story.format)}
+                <StoryText sentence={sentence} words={story.words} format={story.format} />
               </p>
               
               {story.includeImages && (

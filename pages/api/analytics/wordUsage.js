@@ -1,17 +1,13 @@
 import dbConnect from '../../../lib/dbConnect';
 import WordAnalytics from '../../../models/WordAnalytics';
 import Story from '../../../models/Story';
-import { getSession } from 'next-auth/react';
+import { requireSession, methodNotAllowed } from '../../../lib/apiHelpers';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-  
-  const session = await getSession({ req });
-  if (!session) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+
+  const session = await requireSession(req, res);
+  if (!session) return;
   
   await dbConnect();
   
