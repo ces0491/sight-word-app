@@ -153,7 +153,7 @@ Create a new story.
 }
 ```
 
-`title`, `content`, `words` and `grade` (integer 0-5) are required. `format` defaults to `highlighted`, `includeImages` to `true` and `learningNeeds` to `{}`. The server sets `userId` and computes `usedWords` (the sight words that appear in `content`); values for those, or for `sharedWith`, in the body are ignored.
+`title`, `content`, `words` and `grade` (integer 0-5) are required. `format` defaults to `highlighted`, `includeImages` to `true`, `learningNeeds` to `{}` and `scenes` to `[]`. `scenes` holds the scene id behind each sentence (or `null`) for Classic stories; the illustrations use it. A `PUT` that changes `content` without sending `scenes` clears them. The server sets `userId` and computes `usedWords` (the sight words that appear in `content`); values for those, or for `sharedWith`, in the body are ignored.
 
 **Response** (201 Created):
 
@@ -594,6 +594,7 @@ Other endpoints are not rate limited.
   content: string[], // Array of sentences
   words: string[], // Array of sight words
   usedWords: string[], // Sight words that appear in content (set by the server)
+  scenes: (string | null)[], // Scene id behind each sentence, for the illustrations
   format: 'highlighted' | 'bold' | 'underlined' | 'normal',
   includeImages: boolean,
   grade: number, // 0-5 (0 = Kindergarten)

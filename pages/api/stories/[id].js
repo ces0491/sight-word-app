@@ -43,6 +43,10 @@ export default async function handler(req, res) {
       if (!story) return res.status(404).json({ message: 'Story not found' });
 
       story.set(parsed.data);
+      if (parsed.data.content && !parsed.data.scenes) {
+        // Edited sentences no longer line up with the stored scene ids
+        story.scenes = [];
+      }
       if (parsed.data.content || parsed.data.words) {
         story.usedWords = findUsedWords(story.content, story.words);
       }

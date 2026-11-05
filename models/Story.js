@@ -18,6 +18,10 @@ const StorySchema = new mongoose.Schema({
     type: String,
     required: true,
   }],
+  // Scene id behind each sentence (null where there isn't one), used to draw the illustrations.
+  scenes: [{
+    type: String,
+  }],
   // Sight words that appear in `content`, computed on the server when the story is saved.
   usedWords: [{
     type: String,

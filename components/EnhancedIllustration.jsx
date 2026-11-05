@@ -4,14 +4,24 @@ import { generateIllustration, svgToDataURL } from '../lib/imageGeneration';
 /**
  * StoryIllustration Component
  * Generates and displays illustrations for sight word stories
+ *
+ * @param {object} props
+ * @param {string} props.sentence
+ * @param {{ storySeed?: number, scene?: string|null, location?: string }} [props.options]
+ *   This page's entry from planIllustrations(story), so pages share one cast and setting
  */
-const StoryIllustration = ({ 
-  sentence, 
-  width = 400, 
-  height = 200, 
+const StoryIllustration = ({
+  sentence,
+  options,
+  width = 400,
+  height = 200,
   alt,
-  className = '' 
+  className = ''
 }) => {
+  const storySeed = options?.storySeed;
+  const scene = options?.scene;
+  const location = options?.location;
+
   const [imageUrl, setImageUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -22,8 +32,8 @@ const StoryIllustration = ({
     }
 
     try {
-      // Generate SVG based on the sentence content
-      const svg = generateIllustration(sentence);
+      // Generate SVG from the scene, or from the sentence's keywords
+      const svg = generateIllustration(sentence, { storySeed, scene, location });
       
       // Convert to data URL for the img src
       const url = svgToDataURL(svg);
@@ -34,7 +44,7 @@ const StoryIllustration = ({
       console.error('Error generating illustration:', error);
       setIsLoading(false);
     }
-  }, [sentence]);
+  }, [sentence, storySeed, scene, location]);
 
   // Accessible alt text
   const illustrationAlt = alt || `Illustration for: ${sentence}`;

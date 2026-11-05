@@ -15,7 +15,7 @@ A free educational web application that helps teachers create custom stories fea
   - **AI** writes a story with Claude Haiku 4.5. It needs a signed-in account and `ANTHROPIC_API_KEY`, and each story is billed by Anthropic. If AI generation fails, the app falls back to Classic.
 - **Multiple Input Methods**: Add words manually, upload word lists, or use image recognition (OCR)
 - **Learning Accommodations**: Tailor stories for students with ADHD, dyslexia, autism, ESL needs, and visual processing differences
-- **Visual Supports**: Automatically generates SVG illustrations for each story sentence
+- **Visual Supports**: An SVG illustration for each sentence, with the same characters on every page and settings that follow the story (bedroom, kitchen, park, classroom and more)
 - **Format Options**: Display sight words as highlighted, bold, or underlined text
 - **Save & Share**: Save stories to your account and email a share link to students or colleagues (needs SMTP settings)
 - **Printable Format**: Print stories for classroom use
@@ -156,7 +156,7 @@ Documentation is available in the [docs](docs/) folder:
 - **[API Documentation](docs/API.md)** - Endpoint reference
 - **[Production Readiness](docs/PRODUCTION_READY.md)** - What is in place and what remains
 - **[Why It's Free](docs/FREE_AND_OPEN.md)** - How the free tier setup works
-- **[SVG Enhancements](docs/SVG_ENHANCEMENT_SUMMARY.md)** - Dynamic illustration system
+- **[Illustrations](docs/ILLUSTRATIONS.md)** - How story pictures are drawn
 - **[Changelog](docs/CHANGELOG.md)** - Version history and updates
 
 ## Contributing
