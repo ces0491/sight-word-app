@@ -1,236 +1,175 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
-import { useSession } from 'next-auth/react';
-import { BookOpen, Plus, Search, Trash2, Edit, Book } from 'lucide-react';
+import Link from 'next/link';
+import { BookOpen, Plus, Search, Trash2, Pencil } from 'lucide-react';
+import GrownUpPage from '../../components/storybook/GrownUpPage';
+import StatusScreen from '../../components/storybook/StatusScreen';
+import Modal from '../../components/storybook/Modal';
+import { useSignedIn } from '../../hooks/useSignedIn';
 
+const SORTS = {
+  newest: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+  oldest: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+  title: (a, b) => a.title.localeCompare(b.title),
+  grade: (a, b) => a.grade - b.grade,
+};
+
+const gradeLabel = (grade) => (grade === 0 ? 'Kindergarten' : `Grade ${grade}`);
+
+/** The story library: every saved story, to read, edit or delete. */
 export default function StoriesPage() {
-  const { data: session, status } = useSession({
-    required: false,
-    onUnauthenticated() {
-      router.push('/auth/signin?callbackUrl=/stories');
-    }
-  });
-  
-  const router = useRouter();
+  const { status } = useSignedIn();
   const [stories, setStories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
-  
+  const [toDelete, setToDelete] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
+
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin?callbackUrl=/stories');
-    } else if (status === 'authenticated') {
-      fetchStories();
-    }
-  }, [status, router]);
-  
-  const fetchStories = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/stories');
-      if (response.ok) {
-        const data = await response.json();
-        setStories(data);
-      } else {
-        console.error('Failed to fetch stories');
+    if (status !== 'authenticated') return;
+    const fetchStories = async () => {
+      try {
+        const response = await fetch('/api/stories');
+        if (response.ok) {
+          setStories(await response.json());
+        } else {
+          console.error('Failed to fetch stories');
+        }
+      } catch (error) {
+        console.error('Error fetching stories:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching stories:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this story?')) return;
-    
+    };
+    fetchStories();
+  }, [status]);
+
+  const confirmDelete = async () => {
     try {
-      const response = await fetch(`/api/stories/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (response.ok) {
-        setStories(stories.filter(story => story._id !== id));
-      } else {
-        console.error('Failed to delete story');
-      }
+      const response = await fetch(`/api/stories/${toDelete._id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete story');
+      setStories((current) => current.filter((story) => story._id !== toDelete._id));
+      setToDelete(null);
     } catch (error) {
       console.error('Error deleting story:', error);
+      setDeleteError('The story could not be deleted. Please try again.');
     }
   };
-  
-  const filteredStories = stories.filter(story => 
-    story.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    story.words.some(word => word.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-  
-  const sortedStories = [...filteredStories].sort((a, b) => {
-    if (sortBy === 'newest') {
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    } else if (sortBy === 'oldest') {
-      return new Date(a.createdAt) - new Date(b.createdAt);
-    } else if (sortBy === 'title') {
-      return a.title.localeCompare(b.title);
-    } else if (sortBy === 'grade') {
-      return a.grade - b.grade;
-    }
-    return 0;
-  });
-  
-  if (status === 'loading' || (status === 'authenticated' && isLoading)) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-        <p className="mt-4 text-gray-600">Loading stories...</p>
-      </div>
-    );
-  }
-  
-  return (
-    <>
-      <Head>
-        <title>My Stories | Sight Word Story Generator</title>
-        <meta name="description" content="Manage your saved sight word stories" />
-      </Head>
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-blue-600 text-white p-4">
-          <div className="container mx-auto flex justify-between items-center">
-            <h1 className="text-2xl font-bold">My Stories</h1>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/stories/new')}
-                className="flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                <Plus size={18} className="mr-1" /> New Story
-              </button>
-              <button
-                onClick={() => router.push('/')}
-                className="flex items-center px-3 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800"
-              >
-                <Book size={18} className="mr-1" /> Generator
-              </button>
-            </div>
-          </div>
-        </header>
-        
-        <main className="container mx-auto p-4 md:p-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            {/* Search and Filter Controls */}
-            <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
-              <div className="relative flex-grow max-w-md">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <Search size={18} className="text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3"
-                  placeholder="Search stories or words..."
-                />
-              </div>
-              <div className="flex items-center">
-                <label className="mr-2 text-sm text-gray-700">Sort by:</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="border border-gray-300 rounded-md py-2 px-3 text-gray-700"
-                >
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="title">Title</option>
-                  <option value="grade">Grade Level</option>
-                </select>
-              </div>
-            </div>
-            
-            {/* Stories List */}
-            {sortedStories.length === 0 ? (
-              <div className="text-center py-12">
-                <BookOpen size={64} className="mx-auto text-gray-300" />
-                <h2 className="mt-4 text-xl font-medium text-gray-600">No stories found</h2>
-                <p className="mt-2 text-gray-500">
-                  {searchTerm 
-                    ? "No stories match your search. Try different keywords." 
-                    : "You haven't created any stories yet."}
-                </p>
-                {!searchTerm && (
-                  <button
-                    onClick={() => router.push('/stories/new')}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md"
-                  >
-                    Create Your First Story
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {sortedStories.map((story) => (
-                  <div key={story._id} className="border rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-800">{story.title}</h3>
-                        <p className="text-sm text-gray-500">
-                          {new Date(story.createdAt).toLocaleDateString()} • 
-                          {story.words.length} words • Grade {story.grade}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => router.push(`/stories/${story._id}`)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
-                          title="View Story"
-                        >
-                          <Book size={18} />
-                        </button>
-                        <button 
-                          onClick={() => router.push(`/stories/${story._id}/edit`)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-md"
-                          title="Edit Story"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(story._id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-md"
-                          title="Delete Story"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <p className="text-gray-700 line-clamp-2">
-                        {story.content[0]}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {story.words.slice(0, 5).map((word, idx) => (
-                          <span key={idx} className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded">
-                            {word}
-                          </span>
-                        ))}
-                        {story.words.length > 5 && (
-                          <span className="bg-gray-50 text-gray-500 text-xs px-2 py-1 rounded">
-                            +{story.words.length - 5} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
-    </>
-  );
-}
 
-export async function getServerSideProps(context) {
-  return {
-    props: {}
+  if (status !== 'authenticated' || isLoading) {
+    return <StatusScreen title="Opening your library…" />;
   }
+
+  const term = searchTerm.trim().toLowerCase();
+  const shown = stories
+    .filter((story) => !term || story.title.toLowerCase().includes(term) || story.words.some((w) => w.toLowerCase().includes(term)))
+    .sort(SORTS[sortBy]);
+
+  return (
+    <GrownUpPage
+      title="Story library"
+      actions={
+        <Link href="/stories/new" className="btn btn-sun">
+          <Plus size={20} strokeWidth={2.5} aria-hidden="true" /> Write a story
+        </Link>
+      }
+    >
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="relative flex-1">
+          <label htmlFor="library-search" className="sr-only">
+            Search stories or words
+          </label>
+          <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" aria-hidden="true" />
+          <input
+            id="library-search"
+            type="search"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="field pl-10"
+            placeholder="Search stories or words"
+          />
+        </div>
+        <div className="sm:w-48">
+          <label htmlFor="library-sort" className="mb-1 block font-display text-base text-ink">
+            Sort by
+          </label>
+          <select id="library-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="field">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="title">Title</option>
+            <option value="grade">Reading level</option>
+          </select>
+        </div>
+      </div>
+
+      {shown.length === 0 ? (
+        <div className="rounded-2xl border-2 border-ink/15 bg-paper p-10 text-center">
+          <BookOpen size={48} className="mx-auto text-ink/30" aria-hidden="true" />
+          <h2 className="mt-4 font-display text-2xl font-semibold text-ink">
+            {term ? 'No stories match that search' : 'No saved stories yet'}
+          </h2>
+          <p className="mt-2 font-display text-base text-ink/70">
+            {term ? 'Try another title or word.' : 'Make a story at story time and save it from its last page.'}
+          </p>
+        </div>
+      ) : (
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {shown.map((story) => (
+            <li key={story._id} className="rounded-2xl border-2 border-ink/15 bg-paper p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="font-display text-xl font-semibold text-ink">{story.title}</h2>
+                  <p className="font-display text-sm text-ink/60">
+                    {new Date(story.createdAt).toLocaleDateString()} · {gradeLabel(story.grade)} · {story.words.length} words
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <Link href={`/stories/${story._id}/edit`} className="grid h-10 w-10 place-items-center rounded-full hover:bg-ink/10" aria-label={`Edit ${story.title}`}>
+                    <Pencil size={18} aria-hidden="true" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteError('');
+                      setToDelete(story);
+                    }}
+                    className="grid h-10 w-10 place-items-center rounded-full hover:bg-berry/15"
+                    aria-label={`Delete ${story.title}`}
+                  >
+                    <Trash2 size={18} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              <p className="mt-3 line-clamp-2 font-read text-lg text-ink">{story.content[0]}</p>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <p className="truncate font-read text-base text-ink/70">{story.words.slice(0, 6).join(', ')}</p>
+                <Link href={`/stories/${story._id}`} className="btn-quiet shrink-0">
+                  <BookOpen size={18} aria-hidden="true" /> Read
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {toDelete && (
+        <Modal title="Delete this story?" onClose={() => setToDelete(null)} labelledBy="delete-title">
+          <p className="font-display text-base text-ink">&ldquo;{toDelete.title}&rdquo; will be deleted. This can&apos;t be undone.</p>
+          {deleteError && (
+            <p className="mt-3 rounded-xl bg-berry/10 p-3 font-display text-base text-ink" role="alert">
+              {deleteError}
+            </p>
+          )}
+          <div className="mt-6 flex justify-end gap-2">
+            <button type="button" onClick={() => setToDelete(null)} className="btn-quiet">
+              Keep it
+            </button>
+            <button type="button" onClick={confirmDelete} className="btn btn-berry">
+              <Trash2 size={18} aria-hidden="true" /> Delete
+            </button>
+          </div>
+        </Modal>
+      )}
+    </GrownUpPage>
+  );
 }

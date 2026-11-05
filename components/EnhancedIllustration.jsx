@@ -47,7 +47,8 @@ const StoryIllustration = ({
   }, [sentence, storySeed, scene, location]);
 
   // Accessible alt text
-  const illustrationAlt = alt || `Illustration for: ${sentence}`;
+  // alt="" marks a decorative picture (the sentence is shown beside it)
+  const illustrationAlt = alt ?? `Illustration for: ${sentence}`;
 
   // Show loading state
   if (isLoading) {

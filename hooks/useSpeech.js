@@ -1,0 +1,86 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+/** A slightly slow, clear pace for children learning to read. */
+const CHILD_RATE = 0.85;
+
+const isSpeechAvailable = () =>
+  typeof window !== 'undefined' &&
+  'speechSynthesis' in window &&
+  typeof window.SpeechSynthesisUtterance === 'function';
+
+/** Prefer an English voice that runs on the device, then any English voice. */
+const pickVoice = (voices) =>
+  voices.find((v) => v.lang?.toLowerCase().startsWith('en') && v.localService) ??
+  voices.find((v) => v.lang?.toLowerCase().startsWith('en')) ??
+  null;
+
+/**
+ * Read text aloud with the browser's built-in speech synthesis.
+ *
+ * `charIndex` is the position of the word being spoken when `speak` was
+ * called with `trackWords: true`, for highlighting it. Browsers that don't
+ * report word boundaries still speak; they just don't highlight.
+ */
+export function useSpeech() {
+  const [supported, setSupported] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [charIndex, setCharIndex] = useState(null);
+  const voiceRef = useRef(null);
+
+  useEffect(() => {
+    if (!isSpeechAvailable()) return undefined;
+    const synth = window.speechSynthesis;
+    setSupported(true);
+
+    const updateVoice = () => {
+      voiceRef.current = pickVoice(synth.getVoices());
+    };
+    updateVoice();
+    synth.addEventListener?.('voiceschanged', updateVoice);
+
+    return () => {
+      synth.removeEventListener?.('voiceschanged', updateVoice);
+      synth.cancel();
+    };
+  }, []);
+
+  const stop = useCallback(() => {
+    if (!isSpeechAvailable()) return;
+    window.speechSynthesis.cancel();
+    setSpeaking(false);
+    setCharIndex(null);
+  }, []);
+
+  const speak = useCallback((text, { trackWords = false } = {}) => {
+    if (!isSpeechAvailable() || !text) return;
+    const synth = window.speechSynthesis;
+    synth.cancel();
+
+    const utterance = new window.SpeechSynthesisUtterance(text);
+    utterance.rate = CHILD_RATE;
+    if (voiceRef.current) {
+      utterance.voice = voiceRef.current;
+      utterance.lang = voiceRef.current.lang;
+    } else {
+      utterance.lang = 'en-US';
+    }
+    if (trackWords) {
+      utterance.onboundary = (event) => {
+        if (!event.name || event.name === 'word') setCharIndex(event.charIndex);
+      };
+    }
+    utterance.onstart = () => setSpeaking(true);
+    utterance.onend = () => {
+      setSpeaking(false);
+      setCharIndex(null);
+    };
+    utterance.onerror = utterance.onend;
+
+    setCharIndex(trackWords ? 0 : null);
+    synth.speak(utterance);
+  }, []);
+
+  return { supported, speaking, charIndex, speak, stop };
+}
+
+export default useSpeech;

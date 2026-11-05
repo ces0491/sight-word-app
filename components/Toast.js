@@ -23,43 +23,22 @@ const Toast = ({ message, type = 'info', onClose, duration = 4000 }) => {
     info: <Info className="w-5 h-5" />
   };
 
-  const bgColors = {
-    success: 'bg-green-50 border-green-500',
-    error: 'bg-red-50 border-red-500',
-    warning: 'bg-yellow-50 border-yellow-500',
-    info: 'bg-blue-50 border-blue-500'
-  };
-
-  const textColors = {
-    success: 'text-green-800',
-    error: 'text-red-800',
-    warning: 'text-yellow-800',
-    info: 'text-blue-800'
-  };
-
-  const iconColors = {
-    success: 'text-green-600',
-    error: 'text-red-600',
-    warning: 'text-yellow-600',
-    info: 'text-blue-600'
+  const accents = {
+    success: 'bg-leaf text-white',
+    error: 'bg-berry text-white',
+    warning: 'bg-sun text-ink',
+    info: 'bg-card-blue text-ink',
   };
 
   return (
-    <div className={`${bgColors[type]} border-l-4 p-4 rounded-md shadow-lg flex items-start justify-between gap-3 min-w-[300px] max-w-[500px] animate-slide-in`}>
-      <div className="flex items-start gap-3 flex-1">
-        <div className={iconColors[type]}>
-          {icons[type]}
-        </div>
-        <p className={`${textColors[type]} text-sm font-medium flex-1`}>
-          {message}
-        </p>
-      </div>
-      <button
-        onClick={onClose}
-        className={`${textColors[type]} hover:opacity-70 flex-shrink-0`}
-        aria-label="Close notification"
-      >
-        <X className="w-4 h-4" />
+    <div
+      className="cutout flex min-w-[280px] max-w-[460px] items-start gap-3 p-3 animate-slide-in"
+      role={type === 'error' ? 'alert' : 'status'}
+    >
+      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${accents[type]}`}>{icons[type]}</span>
+      <p className="flex-1 pt-1 font-display text-base text-ink">{message}</p>
+      <button onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-ink/10" aria-label="Close notification">
+        <X className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
   );
@@ -71,7 +50,7 @@ const Toast = ({ message, type = 'info', onClose, duration = 4000 }) => {
  */
 export const ToastContainer = ({ toasts, removeToast }) => {
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+    <div className="no-print fixed right-4 top-4 z-[60] flex flex-col gap-2">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}

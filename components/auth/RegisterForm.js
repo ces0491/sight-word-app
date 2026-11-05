@@ -63,24 +63,24 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
+        <div className="p-3 bg-berry/15 text-ink rounded-xl text-sm">
           {error}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Full Name
+        <label className="block text-sm font-medium text-ink mb-1">
+          Name
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <User size={18} className="text-gray-400" />
+            <User size={18} className="text-ink/40" />
           </div>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="John Smith"
             required
           />
@@ -88,18 +88,18 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Email Address
+        <label className="block text-sm font-medium text-ink mb-1">
+          Email address
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Mail size={18} className="text-gray-400" />
+            <Mail size={18} className="text-ink/40" />
           </div>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="you@example.com"
             required
           />
@@ -107,18 +107,18 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-ink mb-1">
           Password
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Lock size={18} className="text-gray-400" />
+            <Lock size={18} className="text-ink/40" />
           </div>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="••••••••"
             required
             minLength={8}
@@ -129,25 +129,25 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center"
+        className="btn btn-sun w-full"
       >
         {isSubmitting ? (
           <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
         ) : (
           <>
             <UserPlus size={18} className="mr-2" />
-            Create Account
+            Create account
           </>
         )}
       </button>
 
       <div className="text-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-ink/70">
           Already have an account?{' '}
           <button
             type="button"
             onClick={onToggleMode}
-            className="text-blue-600 hover:text-blue-800 font-medium"
+            className="text-ink hover:text-ink/70 font-medium"
           >
             Sign in
           </button>
