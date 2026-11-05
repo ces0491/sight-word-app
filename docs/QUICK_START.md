@@ -8,7 +8,7 @@ Get your development environment up and running in 5 minutes!
 
 ## Prerequisites
 
-- Node.js 16.x or higher
+- Node.js 20 or later
 - npm (comes with Node.js)
 - MongoDB account (free tier at [mongodb.com/cloud/atlas](https://mongodb.com/cloud/atlas))
 
@@ -19,7 +19,7 @@ Get your development environment up and running in 5 minutes!
 ```bash
 # Clone the repository
 git clone https://github.com/ces0491/sight-word-app.git
-cd sight-word-story-generator
+cd sight-word-app
 
 # Install dependencies
 npm install
@@ -64,6 +64,10 @@ EMAIL_SERVER_PORT=587
 EMAIL_SERVER_USER=your-email@gmail.com
 EMAIL_SERVER_PASSWORD=your-app-password
 EMAIL_FROM="Sight Word Stories <your-email@gmail.com>"
+
+# 4. AI mode (OPTIONAL - billed per story by Anthropic)
+# Without it, AI mode is unavailable and Classic mode still works
+ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
 
 ---
@@ -114,7 +118,7 @@ openssl rand -base64 32
 
 - Email configuration is optional
 - App will show "Email service not configured" message
-- See [.env.example](.env.example) for setup instructions
+- See [.env.example](../.env.example) for setup instructions
 
 ### Issue: Port 3000 already in use
 

@@ -6,12 +6,13 @@ Welcome to the Sight Word Story Generator documentation!
 
 ### Getting Started
 
-- **[Quick Start Guide](QUICK_START.md)** - Set up your development environment in 5 minutes
-- **[API Documentation](API.md)** - Complete API reference with examples
+- **[Quick Start Guide](QUICK_START.md)** - Set up your development environment
+- **[API Documentation](API.md)** - API reference with examples
+- **[Production Readiness](PRODUCTION_READY.md)** - What is in place and what remains before a public launch
 
 ### About the Project
 
-- **[Why It's Free](FREE_AND_OPEN.md)** - Learn how we keep this 100% free with no API costs
+- **[Why It's Free](FREE_AND_OPEN.md)** - How the app runs on free tiers, and what the optional AI mode costs
 - **[Changelog](CHANGELOG.md)** - Version history and recent updates
 - **[SVG Enhancement Summary](SVG_ENHANCEMENT_SUMMARY.md)** - Details on our dynamic illustration system
 
@@ -37,9 +38,9 @@ This folder contains all project documentation organized by topic:
 
 ### API.md
 
-Complete API reference including:
+API reference including:
 
-- All 10 API endpoints
+- Story, sharing, AI generation and analytics endpoints
 - Request/response examples
 - Authentication flow
 - Error codes and handling
@@ -48,10 +49,11 @@ Complete API reference including:
 
 ### FREE_AND_OPEN.md
 
-Explains our 100% free commitment:
+Explains the free-to-run design:
 
 - Why it's free (our mission)
-- How we keep it free (zero API costs)
+- How we keep it free (SVG illustrations, free hosting tiers)
+- What the optional AI mode costs
 - Cost comparison to paid alternatives
 - Privacy and data practices
 - Sustainability model
@@ -87,12 +89,11 @@ Version history including:
 
 ## Project Status
 
-- **Current Version**: 0.9.0 (Pre-Release)
-- **Production Ready**: 90%
-- **Status**: Ready for soft launch with beta testers
+See [PRODUCTION_READY.md](PRODUCTION_READY.md) for the current status and the gaps before a public launch, and [CHANGELOG.md](CHANGELOG.md) for versions.
+
 - **License**: MIT
-- **Cost**: 100% Free Forever
+- **Cost**: free to run without AI mode; AI mode is billed per story by Anthropic
 
 ---
 
-**Last Updated**: 2026-01-09
+**Last Updated**: 2026-11-05

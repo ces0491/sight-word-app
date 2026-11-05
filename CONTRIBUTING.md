@@ -27,8 +27,8 @@ This project adheres to a code of conduct that all contributors are expected to 
 
 ### Prerequisites
 
-- Node.js 16.x or higher
-- npm, yarn, or pnpm
+- Node.js 20 or later
+- npm
 - MongoDB (local or Atlas account)
 - Git
 
@@ -38,8 +38,8 @@ This project adheres to a code of conduct that all contributors are expected to 
 
    ```bash
    # Click the "Fork" button on GitHub, then clone your fork
-   git clone https://github.com/YOUR_USERNAME/sight-word-story-generator.git
-   cd sight-word-story-generator
+   git clone https://github.com/<your-username>/sight-word-app.git
+   cd sight-word-app
    ```
 
 2. **Install dependencies**
@@ -95,7 +95,7 @@ This project adheres to a code of conduct that all contributors are expected to 
 
    ```bash
    npm run lint        # Check code style
-   npm test            # Run tests (when available)
+   npm test            # Run the Jest suite
    npm run build       # Ensure build succeeds
    ```
 
@@ -159,7 +159,7 @@ export const generateStory = (words, grade, learningNeeds) => {
 ```text
 components/
   ├── ComponentName.js        # Component implementation
-  ├── ComponentName.test.js   # Component tests (future)
+  ├── __tests__/              # Component tests
   └── index.js                # Re-exports (if needed)
 
 pages/
@@ -192,17 +192,20 @@ models/
 
 ### Writing Tests
 
-(Tests framework TBD - will use Jest + React Testing Library)
+Tests use Jest and React Testing Library. Put them next to the code they cover:
+
+- `lib/__tests__/` for library functions
+- `components/__tests__/` for components
+- `test/api/` for API routes (not under `pages/`, where Next.js would treat them as routes)
+
+API route tests mock the database, session and external services; [`test/apiTestUtils.js`](test/apiTestUtils.js) has request and response stand-ins. Add `/** @jest-environment node */` at the top of server-side tests.
 
 ```javascript
-// Example test structure
-describe('StoryGenerator', () => {
-  it('should generate a story with provided words', () => {
-    const words = ['cat', 'dog', 'run'];
-    const story = generateStory(words, 1, {});
+import { findUsedWords } from '../sightWords';
 
-    expect(story.content).toBeDefined();
-    expect(story.usedWords).toEqual(words);
+describe('findUsedWords', () => {
+  it('returns the sight words that appear in the story', () => {
+    expect(findUsedWords(['The dog ran.'], ['dog', 'cat'])).toEqual(['dog']);
   });
 });
 ```
@@ -223,7 +226,7 @@ npm run test:coverage # Generate coverage report
    - Has a clear, descriptive title
    - References any related issues (e.g., "Fixes #123")
    - Includes a description of changes
-   - Has passing tests (when test suite exists)
+   - Has passing tests
    - Has been manually tested
    - Updates documentation if needed
 

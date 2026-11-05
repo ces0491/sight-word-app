@@ -10,9 +10,11 @@ This document describes all API endpoints available in the Sight Word Story Gene
 
 - [Authentication](#authentication)
 - [Stories](#stories)
+- [Shared Stories](#shared-stories)
+- [AI Story Generation](#ai-story-generation)
 - [Analytics](#analytics)
-- [Images](#images)
 - [Error Handling](#error-handling)
+- [Rate Limiting](#rate-limiting)
 
 ---
 
@@ -26,6 +28,8 @@ This document describes all API endpoints available in the Sight Word Story Gene
 ## Authentication
 
 All protected endpoints require authentication via NextAuth session cookies.
+
+Request bodies are validated with the Zod schemas in [`lib/validation.js`](../lib/validation.js). Fields a schema doesn't list are ignored, and size limits come from [`lib/limits.js`](../lib/limits.js).
 
 ### Register User
 
@@ -149,6 +153,8 @@ Create a new story.
 }
 ```
 
+`title`, `content`, `words` and `grade` (integer 0-5) are required. `format` defaults to `highlighted`, `includeImages` to `true` and `learningNeeds` to `{}`. The server sets `userId` and computes `usedWords` (the sight words that appear in `content`); values for those, or for `sharedWith`, in the body are ignored.
+
 **Response** (201 Created):
 
 ```json
@@ -158,6 +164,7 @@ Create a new story.
   "title": "My New Story",
   "content": ["Sentence one.", "Sentence two."],
   "words": ["word1", "word2"],
+  "usedWords": [],
   "format": "highlighted",
   "includeImages": true,
   "grade": 2,
@@ -231,7 +238,7 @@ Update an existing story.
 
 - `id` (path) - Story ID
 
-**Request Body**: (partial update supported)
+**Request Body**: any subset of the fields accepted by Create Story. `usedWords` is recomputed when `content` or `words` changes.
 
 ```json
 {
@@ -309,6 +316,8 @@ Share a story via email.
 }
 ```
 
+The first share creates a random token for the story; later shares reuse it, so every link sent for a story stays valid. The email links to `/shared-stories/:id?token=...` on `NEXTAUTH_URL`. User-supplied text in the email is HTML-escaped.
+
 **Response** (200 OK):
 
 ```json
@@ -319,15 +328,79 @@ Share a story via email.
 
 **Errors**:
 
-- `400` - Email is required
+- `400` - Invalid email address or message too long
 - `401` - Unauthorized
 - `404` - Story not found
-- `500` - Server error
+- `429` - Share email limit reached (see [Rate Limiting](#rate-limiting))
+- `500` - Server error, including SMTP failures
 - `503` - Email service not configured
 
 **Error Codes**:
 
-- `EMAIL_NOT_CONFIGURED` - SMTP settings not configured
+- `EMAIL_NOT_CONFIGURED` - SMTP settings or `NEXTAUTH_URL` not configured
+
+---
+
+## Shared Stories
+
+### Get Shared Story
+
+Read a story through a share link.
+
+**Endpoint**: `GET /shared-stories/:id?token=...`
+
+**Authentication**: None. The token is the credential.
+
+**Response** (200 OK): the story's `_id`, `title`, `content`, `words`, `usedWords`, `format`, `includeImages`, `grade`, `learningNeeds` and `createdAt`. The owner, recipients and token are not included.
+
+**Errors**:
+
+- `404` - Story not found, never shared, or wrong token. All three return the same response.
+- `500` - Server error
+
+---
+
+## AI Story Generation
+
+### Generate AI Story
+
+Write a story with Claude Haiku 4.5 (`claude-haiku-4-5-20251001`). Needs `ANTHROPIC_API_KEY`.
+
+**Endpoint**: `POST /stories/generate-ai`
+
+**Authentication**: Required
+
+**Request Body**:
+
+```json
+{
+  "words": ["the", "dog", "can", "run"],
+  "grade": 1,
+  "learningNeeds": { "adhd": true }
+}
+```
+
+Words are trimmed and lower-cased, and may contain only letters, with apostrophes or hyphens inside a word. At most `STORY_LIMITS.maxAiWords` words.
+
+**Response** (200 OK):
+
+```json
+{
+  "title": "The Fast Dog",
+  "content": ["The dog can run.", "See the dog go!"],
+  "usedWords": ["the", "dog", "can", "run"]
+}
+```
+
+`usedWords` is computed by the server from `content`, so a word the model left out is not listed. The story is not saved; save it with Create Story.
+
+**Errors**:
+
+- `400` - Invalid words, grade or learning needs
+- `401` - Unauthorized
+- `429` - AI generation limit reached (see [Rate Limiting](#rate-limiting))
+- `502` - The model's reply was cut off, refused or outside the size limits
+- `503` - No API key configured, or the AI service is busy or unreachable
 
 ---
 
@@ -361,7 +434,7 @@ Track sight words used in stories (called automatically by story generation).
 
 **Errors**:
 
-- `400` - Words array required
+- `400` - Missing or invalid `words`, or `grade` not an integer 0-5
 - `401` - Unauthorized
 - `500` - Server error
 
@@ -369,7 +442,7 @@ Track sight words used in stories (called automatically by story generation).
 
 ### Get Word Usage Statistics
 
-Get analytics on word usage across all user stories.
+Get analytics on word usage. `topWords`, `byGrade` and `totalUniqueWords` count words across all users; `totalStories` counts the signed-in user's stories.
 
 **Endpoint**: `GET /analytics/wordUsage`
 
@@ -450,7 +523,16 @@ All endpoints return errors in a consistent format:
 ```json
 {
   "message": "Human-readable error message",
-  "code": "ERROR_CODE" // (optional)
+  "code": "ERROR_CODE"
+}
+```
+
+`code` is only present on some errors. Validation errors (`400`) also list the failing fields:
+
+```json
+{
+  "message": "Invalid request",
+  "issues": [{ "path": "grade", "message": "Too big: expected number to be <=5" }]
 }
 ```
 
@@ -461,8 +543,10 @@ All endpoints return errors in a consistent format:
 - `400` - Bad Request (validation errors)
 - `401` - Unauthorized (not logged in)
 - `404` - Not Found
-- `405` - Method Not Allowed
+- `405` - Method Not Allowed (the `Allow` header lists the accepted methods)
+- `429` - Too Many Requests
 - `500` - Internal Server Error
+- `502` - Bad Gateway (AI reply unusable)
 - `503` - Service Unavailable
 
 ### Special Error Codes
@@ -473,9 +557,18 @@ All endpoints return errors in a consistent format:
 
 ## Rate Limiting
 
-**Current Status**: ❌ Not implemented
+AI story generation and share emails are limited per signed-in user, in fixed windows. The limits are `RATE_LIMITS` in [`lib/limits.js`](../lib/limits.js). Counters are stored in the `ratelimits` MongoDB collection and removed by a TTL index when their window ends.
 
-**Recommendation**: Implement rate limiting before production launch to prevent abuse.
+Limited responses include `X-RateLimit-Limit` and `X-RateLimit-Remaining`. When the limit is reached the response is `429` with a `Retry-After` header and body:
+
+```json
+{
+  "message": "Too many requests. Please try again later.",
+  "retryAfterSeconds": 1800
+}
+```
+
+Other endpoints are not rate limited.
 
 ---
 
@@ -500,6 +593,7 @@ All endpoints return errors in a consistent format:
   title: string,
   content: string[], // Array of sentences
   words: string[], // Array of sight words
+  usedWords: string[], // Sight words that appear in content (set by the server)
   format: 'highlighted' | 'bold' | 'underlined' | 'normal',
   includeImages: boolean,
   grade: number, // 0-5 (0 = Kindergarten)
@@ -511,6 +605,7 @@ All endpoints return errors in a consistent format:
     visualProcessing: boolean
   },
   sharedWith: string[], // Array of email addresses
+  shareToken: string, // Share link secret; not returned unless selected with '+shareToken'
   createdAt: Date
 }
 ```
@@ -604,21 +699,20 @@ console.log(`Total stories: ${analytics.totalStories}`);
 
 ## Security Considerations
 
-1. **Authentication**: All story and analytics endpoints require authentication
-2. **Authorization**: Users can only access their own stories
-3. **Input Validation**: All inputs are validated
-4. **Password Hashing**: Passwords are hashed with bcrypt (10 salt rounds)
-5. **SQL Injection**: N/A - uses MongoDB with Mongoose ORM
-6. **XSS**: React automatically escapes output
+1. **Authentication**: story, AI and analytics endpoints require a session. Shared stories need the share token instead.
+2. **Authorization**: users can only read, change or share their own stories.
+3. **Input validation**: Zod schemas on story, share, AI and analytics bodies; unknown fields are dropped.
+4. **Password hashing**: bcrypt with 10 salt rounds.
+5. **Story text**: rendered as React text in the UI, never as HTML.
 
 ---
 
 ## Known Limitations
 
 1. No pagination on story lists (returns all user stories)
-2. No rate limiting (vulnerable to abuse)
-3. Email sharing requires manual SMTP configuration
-4. AI image generation requires OpenAI API key (SVG fallback available)
+2. Registration, sign-in and the story CRUD endpoints are not rate limited
+3. Email sharing requires SMTP configuration
+4. Word analytics are shared across all users
 
 ---
 
@@ -627,8 +721,7 @@ console.log(`Total stories: ${analytics.totalStories}`);
 For questions or issues:
 
 - GitHub Issues: [https://github.com/ces0491/sight-word-app/issues](https://github.com/ces0491/sight-word-app/issues)
-- Email: [Contact information]
 
 ---
 
-Last Updated: 2026-01-09
+Last Updated: 2026-11-05

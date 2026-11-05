@@ -1,60 +1,38 @@
 # Sight Word Story Generator
 
-**Status**: ✅ **100% Production Ready** • **Version 1.0.0**
-
-A **100% FREE** educational web application that helps teachers create custom stories featuring sight words for early readers. Perfect for students with different learning needs.
-
-**✨ No subscriptions • No API costs • No hidden fees ✨**
+A free educational web application that helps teachers create custom stories featuring sight words for early readers, with adaptations for students with different learning needs.
 
 [Sight Word Story Generator](https://sight-word-app.vercel.app/)
 
----
-
-## 🎉 Production Ready Features
-
-✅ **Comprehensive Testing** - 24 unit tests, 100% passing
-✅ **CI/CD Pipeline** - Automated testing, linting, and deployments
-✅ **Error Monitoring** - Sentry integration for production
-✅ **Rate Limiting** - API protection against abuse
-✅ **Security Hardened** - Authentication, input validation, CSRF protection
-✅ **Performance Optimized** - <1ms SVG generation, efficient queries
-✅ **Full Documentation** - Setup guides, API docs, deployment instructions
-
-**[📄 View Production Readiness Report →](docs/PRODUCTION_READY.md)**
+**Status**: see the [Production Readiness](docs/PRODUCTION_READY.md) page for what is in place and what remains before a public launch.
 
 ---
-
-## Why It's Free
-
-This tool is designed for teachers and is **completely free** to use:
-
-- 💰 **No API Costs** - Uses SVG illustrations instead of paid AI image services
-- 🎨 **Child-Friendly Illustrations** - Simple, colorful SVG graphics perfect for early readers
-- 🚀 **Free Hosting** - Runs on Vercel's free tier
-- 🗄️ **Free Database** - Uses MongoDB Atlas free tier (512MB)
-- 📧 **Optional Email** - Email sharing works with free Gmail accounts
-- ♾️ **Unlimited Use** - Create as many stories as you need!
-
-**Our Mission**: Make quality educational tools accessible to all teachers, regardless of budget.
-
-👉 **[Read why & how we keep it free →](FREE_AND_OPEN.md)**
 
 ## Features
 
-- **Custom Story Generation**: Create personalized stories featuring specific sight words
+- **Two story engines**:
+  - **Classic** builds stories from pre-written scenes, in the browser. Free, and no account needed.
+  - **AI** writes a story with Claude Haiku 4.5. It needs a signed-in account and `ANTHROPIC_API_KEY`, and each story is billed by Anthropic. If AI generation fails, the app falls back to Classic.
 - **Multiple Input Methods**: Add words manually, upload word lists, or use image recognition (OCR)
 - **Learning Accommodations**: Tailor stories for students with ADHD, dyslexia, autism, ESL needs, and visual processing differences
 - **Visual Supports**: Automatically generates SVG illustrations for each story sentence
 - **Format Options**: Display sight words as highlighted, bold, or underlined text
-- **Save & Share**: Store your generated stories and share them with students or colleagues
+- **Save & Share**: Save stories to your account and email a share link to students or colleagues (needs SMTP settings)
 - **Printable Format**: Print stories for classroom use
+
+## Cost
+
+Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's free tier have no running cost. Email sharing works with a free Gmail account and an app password. AI mode is optional and billed per request at Anthropic's Claude Haiku 4.5 rates; leave `ANTHROPIC_API_KEY` unset to turn it off.
+
+👉 **[Read why & how we keep it free →](docs/FREE_AND_OPEN.md)**
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 16.x or higher
-- npm, yarn, or pnpm
+- Node.js 20 or later (CI uses Node 24)
+- npm
+- A MongoDB database (the MongoDB Atlas free tier works)
 
 ### Installation
 
@@ -62,69 +40,72 @@ This tool is designed for teachers and is **completely free** to use:
 
    ```bash
    git clone https://github.com/ces0491/sight-word-app.git
-   cd sight-word-story-generator
+   cd sight-word-app
    ```
 
 2. Install dependencies:
 
    ```bash
    npm install
-   # or
-   yarn install
-   # or
-   pnpm install
    ```
 
 3. Set up environment variables:
 
    ```bash
-   # Copy the example file
    cp .env.example .env.local
-
-   # Edit .env.local with your values:
-   MONGODB_URI=your_mongodb_connection_string
-   NEXTAUTH_URL=http://localhost:3000
-   NEXTAUTH_SECRET=your_nextauth_secret
    ```
 
-   **Note**: Uses FREE MongoDB Atlas tier and FREE Vercel hosting. No paid APIs needed!
+   Then fill in `.env.local`:
+
+   | Variable | Required | Purpose |
+   | --- | --- | --- |
+   | `MONGODB_URI` | Yes | MongoDB connection string |
+   | `NEXTAUTH_URL` | Yes | Base URL, e.g. `http://localhost:3000`. Also used in share links |
+   | `NEXTAUTH_SECRET` | Yes | Session signing secret. Generate with `openssl rand -base64 32` |
+   | `EMAIL_SERVER_HOST`, `EMAIL_SERVER_PORT`, `EMAIL_SERVER_USER`, `EMAIL_SERVER_PASSWORD`, `EMAIL_FROM` | For sharing | SMTP settings. Port 465 uses implicit TLS; other ports use STARTTLS |
+   | `ANTHROPIC_API_KEY` | For AI mode | Anthropic API key. Without it, AI mode is unavailable and Classic mode still works |
 
 4. Run the development server:
 
    ```bash
    npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   # or
-   bun dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the development server |
+| `npm run build` | Lint, type-check and build for production |
+| `npm start` | Serve the production build |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run the Jest test suite |
+| `npm run test:coverage` | Run the tests with a coverage report |
+
+### Limits
+
+Size limits on stories and AI requests, and the per-user rate limits on AI generation and share emails, are in [`lib/limits.js`](lib/limits.js). Rate limit counters are kept in MongoDB so they hold across serverless instances.
 
 ## Deploying to Vercel
-
-The easiest way to deploy this Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
 
 1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket)
 2. Import your project into Vercel:
    - Visit [Vercel New Project](https://vercel.com/new)
    - Connect to your Git repository
-   - Select the sight-word-story-generator repository
-   - Configure project settings:
-     - Add the required environment variables (MONGODB_URI, NEXTAUTH_SECRET)
-     - Optional: Add EMAIL_* variables if you want email sharing
-     - Customize the project name if desired
+   - Select the repository
+   - Add the environment variables from the table above (`MONGODB_URI`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET` at least; `EMAIL_*` for sharing; `ANTHROPIC_API_KEY` for AI mode)
    - Click "Deploy"
+3. Vercel will build the app and provide a URL
 
-3. Vercel will automatically deploy your app and provide a URL
+The [Production Readiness](docs/PRODUCTION_READY.md) page has a list of checks to run after deploying.
 
 ### Continuous Deployment
 
 Vercel automatically deploys changes when you push to your repository. To ensure smooth deployments:
 
-- Test changes locally before pushing
+- Run `npm run lint`, `npm test` and `npm run build` before pushing (CI runs the same checks)
 - Use the Vercel CLI for previewing production builds locally
 - Set up environment variables in the Vercel project settings
 
@@ -169,11 +150,12 @@ The application provides specialized accommodations for different learning needs
 
 ## Documentation
 
-Comprehensive documentation is available in the [docs](docs/) folder:
+Documentation is available in the [docs](docs/) folder:
 
-- **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running in 5 minutes
-- **[API Documentation](docs/API.md)** - Complete API reference
-- **[Why It's Free](docs/FREE_AND_OPEN.md)** - How we keep this 100% free
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running locally
+- **[API Documentation](docs/API.md)** - Endpoint reference
+- **[Production Readiness](docs/PRODUCTION_READY.md)** - What is in place and what remains
+- **[Why It's Free](docs/FREE_AND_OPEN.md)** - How the free tier setup works
 - **[SVG Enhancements](docs/SVG_ENHANCEMENT_SUMMARY.md)** - Dynamic illustration system
 - **[Changelog](docs/CHANGELOG.md)** - Version history and updates
 
@@ -194,3 +176,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app)
 - Icons provided by [Lucide React](https://lucide.dev/)
 - Built with [Tailwind CSS](https://tailwindcss.com/)
+- AI stories use the [Anthropic API](https://docs.anthropic.com/)

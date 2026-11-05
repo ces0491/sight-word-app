@@ -1,10 +1,10 @@
 // components/SightWordStoryGenerator.js - Complete rewrite
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   Book, ArrowLeft, Settings, List, BarChart, Camera, Trash2,
-  ArrowUp
+  ArrowUp, Sparkles
 } from 'lucide-react';
 
 // Import our components
@@ -20,7 +20,36 @@ import WordUsageDashboard from './analytics/WordUsageDashboard';
 // Import utilities
 import { generateStory } from '../lib/storyGeneration';
 import { trackWordUsage } from '../lib/WordAnalytics';
+import { normalizeWordInput } from '../lib/sightWords';
 import { useToast } from '../hooks/useToast';
+
+/** Fields the stories API accepts when saving. */
+const toSavePayload = (story) => ({
+  title: story.title,
+  content: story.content,
+  words: story.words,
+  format: story.format,
+  includeImages: story.includeImages,
+  grade: story.grade,
+  learningNeeds: story.learningNeeds,
+});
+
+/**
+ * Request an AI-written story from the server.
+ * @returns {Promise<{ title: string, content: string[], usedWords: string[] }>}
+ */
+const requestAiStory = async ({ words, grade, learningNeeds }) => {
+  const response = await fetch('/api/stories/generate-ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ words, grade, learningNeeds }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || 'AI generation failed.');
+  }
+  return data;
+};
 
 /**
  * Main Sight Word Story Generator Component
@@ -46,6 +75,7 @@ const SightWordStoryGenerator = () => {
   });
   
   // Story generation state
+  const [useAI, setUseAI] = useState(false);
   const [includeImages, setIncludeImages] = useState(true);
   const [storyFormat, setStoryFormat] = useState('highlighted');
   const [generatedStory, setGeneratedStory] = useState(null);
@@ -61,14 +91,23 @@ const SightWordStoryGenerator = () => {
   const [shareEmail, setShareEmail] = useState('');
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  
-  // Load saved stories on component mount if user is signed in
+  // Set when the user signs in from the Save button, so the save runs once the session arrives
+  const [saveAfterSignIn, setSaveAfterSignIn] = useState(false);
+
+  const isSignedIn = !!session?.user;
+
+  // Load saved stories when a user signs in
   useEffect(() => {
-    if (session?.user) {
+    if (isSignedIn) {
       fetchSavedStories();
     }
-  }, [session]);
-  
+  }, [isSignedIn]);
+
+  // AI mode needs an account; switch back to Classic if the user signs out
+  useEffect(() => {
+    if (!isSignedIn) setUseAI(false);
+  }, [isSignedIn]);
+
   // Apply dynamic class based on learning needs
   useEffect(() => {
     const body = document.body;
@@ -119,15 +158,11 @@ const SightWordStoryGenerator = () => {
    * Handle manual word input
    */
   const handleManualWordAdd = () => {
-    if (manualWordInput.trim()) {
-      const newWords = manualWordInput
-        .split(/[\s,]+/)
-        .filter(word => word.trim().length > 0)
-        .map(word => word.trim().toLowerCase());
-      
+    const newWords = normalizeWordInput(manualWordInput);
+    if (newWords.length > 0) {
       setWords([...new Set([...words, ...newWords])]);
-      setManualWordInput('');
     }
+    setManualWordInput('');
   };
   
   /**
@@ -139,13 +174,8 @@ const SightWordStoryGenerator = () => {
     
     const reader = new FileReader();
     reader.onload = (event) => {
-      const fileContent = event.target.result;
-      const newWords = fileContent
-        .split(/[\s,\n]+/)
-        .filter(word => word.trim().length > 0)
-        .map(word => word.trim().toLowerCase());
-      
-      setWords([...new Set([...words, ...newWords])]);
+      const newWords = normalizeWordInput(event.target.result);
+      setWords((current) => [...new Set([...current, ...newWords])]);
     };
     reader.readAsText(file);
   };
@@ -172,13 +202,22 @@ const SightWordStoryGenerator = () => {
     setIsGeneratingStory(true);
     
     try {
-      // Generate the story using our utility
-      console.log('Generating story with words:', words);
-      const storyData = generateStory(words, grade, learningNeeds);
-      
-      // Create a complete story object with all metadata
+      let storyData;
+
+      if (useAI && isSignedIn) {
+        try {
+          storyData = await requestAiStory({ words, grade, learningNeeds });
+        } catch (aiError) {
+          console.error('AI story generation failed:', aiError);
+          toast.warning(`${aiError.message} Using Classic mode instead.`);
+        }
+      }
+
+      // Classic mode, or the fallback when AI generation fails
+      storyData ??= generateStory(words, grade, learningNeeds);
+
+      // Unsaved story: no _id until the stories API returns one
       const story = {
-        id: Date.now(),
         title: storyData.title,
         content: storyData.content,
         words: [...words],
@@ -186,25 +225,15 @@ const SightWordStoryGenerator = () => {
         format: storyFormat,
         includeImages,
         grade,
-        learningNeeds: {...learningNeeds},
-        timestamp: new Date().toISOString()
+        learningNeeds: { ...learningNeeds },
+        timestamp: new Date().toISOString(),
       };
-      
-      console.log('Story generated:', story);
-      
-      // Set the story in state
+
       setGeneratedStory(story);
-      
-      // Switch to preview tab
       setCurrentTab('preview');
-      
-      // Track word usage for analytics
-      if (session?.user) {
-        try {
-          await trackWordUsage(words, grade);
-        } catch (err) {
-          console.error('Error tracking word usage:', err);
-        }
+
+      if (isSignedIn) {
+        await trackWordUsage(words, grade);
       }
     } catch (error) {
       console.error('Error generating story:', error);
@@ -218,52 +247,72 @@ const SightWordStoryGenerator = () => {
   /**
    * Save the current story
    */
-  const saveStory = async () => {
-    if (!generatedStory) return;
-    
-    // If user is not logged in, prompt for authentication
-    if (!session?.user) {
+  const saveStory = useCallback(async () => {
+    if (!generatedStory) return null;
+
+    // Already saved: nothing to do
+    if (generatedStory._id) return generatedStory;
+
+    // If user is not logged in, prompt for authentication and save afterwards
+    if (!isSignedIn) {
+      setSaveAfterSignIn(true);
       setShowAuthDialog(true);
-      return;
+      return null;
     }
-    
+
     try {
       setIsSavingStory(true);
-      
+
       const response = await fetch('/api/stories', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(generatedStory),
+        body: JSON.stringify(toSavePayload(generatedStory)),
       });
-      
+
       if (response.ok) {
         const savedStory = await response.json();
-        setSavedStories([savedStory, ...savedStories]);
+        setSavedStories((current) => [savedStory, ...current]);
+        setGeneratedStory(savedStory);
         toast.success("Story saved successfully!");
-      } else {
-        console.error('Failed to save story');
-        toast.error("Failed to save story. Please try again.");
+        return savedStory;
       }
+      console.error('Failed to save story');
+      toast.error("Failed to save story. Please try again.");
+      return null;
     } catch (error) {
       console.error('Error saving story:', error);
       toast.error("An error occurred while saving the story.");
+      return null;
     } finally {
       setIsSavingStory(false);
     }
-  };
-  
+  }, [generatedStory, isSignedIn, toast]);
+
+  // Finish a save that was interrupted by the sign-in dialog. The flag is
+  // cleared before saving, so re-running when saveStory changes is harmless.
+  useEffect(() => {
+    if (saveAfterSignIn && isSignedIn) {
+      setSaveAfterSignIn(false);
+      saveStory();
+    }
+  }, [saveAfterSignIn, isSignedIn, saveStory]);
+
   /**
-   * Share a story with someone
+   * Share a story with someone. Unsaved stories are saved first, since the
+   * share link points at the stored copy.
    */
   const shareStory = async () => {
     if (!shareEmail.trim() || !generatedStory) return;
-    
+
     try {
       setIsSharing(true);
-      
-      const response = await fetch(`/api/stories/${generatedStory.id}/share`, {
+
+      const storyToShare = await saveStory();
+      if (!storyToShare?._id) return;
+
+      const response = await fetch(`/api/stories/${storyToShare._id}/share`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -278,7 +327,7 @@ const SightWordStoryGenerator = () => {
         setShareEmail('');
         setShowShareDialog(false);
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         if (errorData.code === 'EMAIL_NOT_CONFIGURED') {
           toast.warning("Email sharing is not configured yet. Please contact support.");
         } else {
@@ -531,6 +580,49 @@ const SightWordStoryGenerator = () => {
                 </select>
               </div>
               
+              {/* Story Generation Mode */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Story Engine
+                </label>
+                <div className="flex rounded-md overflow-hidden border border-gray-300">
+                  <button
+                    type="button"
+                    onClick={() => setUseAI(false)}
+                    aria-pressed={!useAI}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
+                      !useAI
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Book size={16} />
+                    Classic
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUseAI(true)}
+                    disabled={!isSignedIn}
+                    aria-pressed={useAI}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                      useAI
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Sparkles size={16} />
+                    AI
+                  </button>
+                </div>
+                <p className="mt-1.5 text-xs text-gray-500">
+                  {!isSignedIn
+                    ? 'Sign in to use AI stories'
+                    : useAI
+                      ? 'Uses AI to generate unique, natural stories'
+                      : 'Builds stories from pre-written scene templates'}
+                </p>
+              </div>
+
               {/* Learning Needs */}
               <div className="mb-6">
                 <LearningConsiderationsPanel
@@ -681,7 +773,7 @@ const SightWordStoryGenerator = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {savedStories.map((story) => (
-                  <div key={story._id || story.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <div key={story._id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                     <h3 className="text-lg font-medium text-gray-800 mb-1">{story.title}</h3>
                     <p className="text-sm text-gray-500 mb-2">
                       {new Date(story.createdAt || story.timestamp).toLocaleDateString()} • 
@@ -738,13 +830,14 @@ const SightWordStoryGenerator = () => {
       
       {/* Authentication Dialog */}
       {showAuthDialog && (
-        <AuthDialog onClose={() => setShowAuthDialog(false)} onSuccess={() => {
-          setShowAuthDialog(false);
-          // If user was trying to save a story, save it after login
-          if (generatedStory && currentTab === 'preview') {
-            saveStory();
-          }
-        }} />
+        <AuthDialog
+          onClose={() => {
+            setShowAuthDialog(false);
+            setSaveAfterSignIn(false);
+          }}
+          // A save interrupted by sign-in resumes from the saveAfterSignIn effect
+          onSuccess={() => setShowAuthDialog(false)}
+        />
       )}
       
       {/* Learning Needs Info Modal */}

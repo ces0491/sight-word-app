@@ -147,40 +147,24 @@ We follow coordinated disclosure:
 
 ### Current Implementation
 
-1. **Password Storage**: Uses bcrypt with 10 salt rounds ✅
-2. **Session Management**: JWT-based with NextAuth ✅
-3. **Database**: MongoDB with connection pooling ✅
-4. **Input Validation**: Basic validation on API endpoints ⚠️
-5. **Rate Limiting**: Not implemented yet ❌
-6. **CSRF Protection**: NextAuth provides this ✅
-7. **XSS Prevention**: React escapes by default ✅
-8. **SQL Injection**: N/A (using MongoDB) ✅
+1. **Password storage**: bcrypt with 10 salt rounds.
+2. **Sessions**: JWT-based with NextAuth. API routes read the session with `getServerSession`.
+3. **Input validation**: Zod schemas on the story, share, AI and analytics routes ([`lib/validation.js`](lib/validation.js)). Unknown fields are dropped, so clients can't set `userId`, `shareToken` or `sharedWith`.
+4. **Story rendering**: story text is rendered as React text, never as HTML, wherever it came from (scene generator, AI, database).
+5. **Share links**: a random 256-bit token per story, compared in constant time. Wrong tokens and missing stories get the same 404.
+6. **Share email**: user text is HTML-escaped, and line breaks are removed from the subject.
+7. **Rate limiting**: AI generation and share emails, per user, counted in MongoDB ([`lib/limits.js`](lib/limits.js)).
+8. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
+9. **CSRF**: NextAuth protects its own auth routes.
 
 ### Areas for Improvement
 
-- [ ] Implement rate limiting on API endpoints
+- [ ] Rate limit registration and sign-in attempts
+- [ ] Password length rule and email normalisation at registration
 - [ ] Add Content Security Policy headers
-- [ ] Implement request size limits
-- [ ] Add API key rotation mechanism
 - [ ] Implement audit logging
-- [ ] Add IP-based brute force protection
 - [ ] Implement account lockout after failed attempts
-
-## Common Vulnerabilities
-
-### We Protect Against
-
-- ✅ SQL Injection (using Mongoose ORM)
-- ✅ Password Hash Cracking (bcrypt with salt)
-- ✅ Session Hijacking (secure JWT implementation)
-- ✅ XSS (React's automatic escaping)
-- ✅ CSRF (NextAuth protection)
-
-### Areas of Concern
-
-- ⚠️ **No Rate Limiting**: APIs vulnerable to abuse
-- ⚠️ **No Input Sanitization**: User-generated content not fully sanitized
-- ⚠️ **Email Injection**: Email sharing could be vulnerable if not properly validated
+- [ ] Wire up error monitoring (the Sentry config files are not loaded)
 
 ## Responsible Disclosure Hall of Fame
 

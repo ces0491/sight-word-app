@@ -1,6 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import WordAnalytics from '../../../models/WordAnalytics';
-import { getSession } from 'next-auth/react';
+import { requireSession, methodNotAllowed } from '../../../lib/apiHelpers';
+import { gradeSchema } from '../../../lib/validation';
 
 // Define common sight words by grade level
 const commonSightWords = {
@@ -13,21 +14,17 @@ const commonSightWords = {
 };
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-  
-  const session = await getSession({ req });
-  if (!session) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-  
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+
+  const session = await requireSession(req, res);
+  if (!session) return;
+
   const { grade } = req.query;
-  const gradeLevel = grade ? parseInt(grade) : 1;
-  
-  if (gradeLevel < 0 || gradeLevel > 5) {
+  const parsedGrade = gradeSchema.safeParse(grade === undefined ? 1 : Number(grade));
+  if (!parsedGrade.success) {
     return res.status(400).json({ message: 'Invalid grade level' });
   }
+  const gradeLevel = parsedGrade.data;
   
   await dbConnect();
   

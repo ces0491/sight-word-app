@@ -18,6 +18,10 @@ const StorySchema = new mongoose.Schema({
     type: String,
     required: true,
   }],
+  // Sight words that appear in `content`, computed on the server when the story is saved.
+  usedWords: [{
+    type: String,
+  }],
   format: {
     type: String,
     enum: ['highlighted', 'bold', 'underlined', 'normal'],
@@ -41,6 +45,11 @@ const StorySchema = new mongoose.Schema({
   sharedWith: [{
     type: String,
   }],
+  // Random secret in share links. Not returned by queries unless selected with '+shareToken'.
+  shareToken: {
+    type: String,
+    select: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

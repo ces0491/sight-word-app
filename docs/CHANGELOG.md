@@ -4,6 +4,46 @@ All notable changes to the Sight Word Story Generator project.
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **AI story mode**: `POST /api/stories/generate-ai` writes a story with Claude Haiku 4.5 using structured outputs. Signed-in users only; the app falls back to Classic mode if it fails. Needs `ANTHROPIC_API_KEY`.
+- **Rate limiting** on AI generation and share emails, per user, with counters in MongoDB (`lib/rateLimit.js`, limits in `lib/limits.js`). The 1.0.0 in-memory limiter was never applied to any route and has been replaced.
+- **Request validation** with Zod for the story, share, AI and analytics routes (`lib/validation.js`).
+- `usedWords` on saved stories, computed by the server from the story text.
+- Tests for sight word matching, story rendering, validation, share email, rate limiting, the AI and shared-story routes, and the main generator screen.
+- `.env.example` is now committed (it was caught by the `.env*` ignore rule).
+
+### Changed
+
+- Story text renders as React elements through `components/story/StoryText.js` instead of `dangerouslySetInnerHTML`.
+- Share links use a random token stored on the story. **Links sent before this release no longer open**, because their tokens were never stored.
+- The shared-story endpoint returns the same 404 for a missing story, an unshared story and a wrong token.
+- API routes read the session with `getServerSession`; NextAuth options moved to `lib/authOptions.js`.
+- Typed and uploaded words are cleaned of punctuation before use.
+- Dependencies: `next` 15.5.29, `nodemailer` 10.3.1, `@anthropic-ai/sdk` 1.5.0 (Apache 2.0 licence), plus `npm audit fix`. An npm `overrides` entry lets `next-auth` use the root `nodemailer`.
+- CI runs on Node 24.
+- README and docs updated to match; `docs/PRODUCTION_READY.md` now lists what is in place and the remaining gaps.
+
+### Fixed
+
+- **XSS**: HTML in story content, including stories opened through a share link, ran in the viewer's browser.
+- **Share token bypass**: any story could be read with `?token=<story id>`.
+- **Share email injection**: the message, story title and sender name were inserted into the email HTML unescaped.
+- Sharing from the main screen always failed, because it sent a client-side id instead of the saved story's `_id`.
+- `secure` was never set for SMTP port 465 (string compared to number).
+- Sign-in from the Save button reopened the sign-in dialog instead of saving.
+- Highlighting crashed on words containing regex characters, such as `a)` from an uploaded file.
+- `PUT /api/stories/[id]` let an owner reassign a story's `userId`.
+- `trackWords` put an unvalidated `grade` into a database field path.
+- NextAuth pointed at `/auth/signout` and `/auth/error`, which don't exist.
+- The shared-story page spun forever when the link had no token.
+- Lint errors that failed `next build`.
+- Image generation tests updated for the 1.1.0 rewrite of `lib/imageGeneration.js`.
+
+---
+
 ## [1.1.0] - 2026-01-13
 
 ### Scene-Based Story Composition System
