@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import StoryIllustration from './EnhancedIllustration';
 import StoryText from './story/StoryText';
+import { planIllustrations } from '../lib/imageGeneration';
 
 /**
  * StoryPreview Component
@@ -22,6 +23,9 @@ const StoryPreview = ({
   isAuthenticated = false,
   isSaving = false
 }) => {
+  // One cast and a consistent setting for every page of the story
+  const illustrationPlan = useMemo(() => (story ? planIllustrations(story) : []), [story]);
+
   // Ensure we have a story to display
   if (!story) {
     return (
@@ -126,8 +130,9 @@ const StoryPreview = ({
             
             {/* Illustration for this sentence */}
             {story.includeImages && (
-              <StoryIllustration 
-                sentence={sentence} 
+              <StoryIllustration
+                sentence={sentence}
+                options={illustrationPlan[index]}
                 width="100%" 
                 height={200} 
                 alt={`Illustration for: ${sentence}`}

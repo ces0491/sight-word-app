@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Printer, Share2, Download, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import StoryIllustration from '../EnhancedIllustration';
 import StoryText from './StoryText';
+import { planIllustrations } from '../../lib/imageGeneration';
 
 const StoryViewer = ({ story, onBack, showShareDialog }) => {
   const router = useRouter();
   const { data: session } = useSession();
+
+  // One cast and a consistent setting for every page of the story
+  const illustrationPlan = useMemo(() => (story ? planIllustrations(story) : []), [story]);
 
   if (!story) return <div>No story found</div>;
 
@@ -72,6 +76,7 @@ const StoryViewer = ({ story, onBack, showShareDialog }) => {
               {story.includeImages && (
                 <StoryIllustration
                   sentence={sentence}
+                  options={illustrationPlan[index]}
                   width={400}
                   height={200}
                   className="rounded-md"

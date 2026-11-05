@@ -8,6 +8,10 @@ All notable changes to the Sight Word Story Generator project.
 
 ### Added
 
+- **Scene-based illustrations**: Classic stories record the scene behind each sentence (`scenes` on the story), and each page is drawn from that scene's spec (`lib/sceneIllustrations.js`). Waking up happens in a bedroom, breakfast at the kitchen table, bedtime in bed at night.
+- **Indoor rooms**: bedroom, bathroom, kitchen and classroom, with poses for lying in bed and sitting at the table (`lib/illustrationRooms.js`).
+- **One cast per story**: each character keeps the same skin tone, hair and clothes on every page, fixed by a seed from the story's title and first sentence. Illustrations no longer use `Math.random`, so a story renders the same way every time.
+- Pages with no named place keep the previous page's setting, for AI stories too.
 - **AI story mode**: `POST /api/stories/generate-ai` writes a story with Claude Haiku 4.5 using structured outputs. Signed-in users only; the app falls back to Classic mode if it fails. Needs `ANTHROPIC_API_KEY`.
 - **Rate limiting** on AI generation and share emails, per user, with counters in MongoDB (`lib/rateLimit.js`, limits in `lib/limits.js`). The 1.0.0 in-memory limiter was never applied to any route and has been replaced.
 - **Request validation** with Zod for the story, share, AI and analytics routes (`lib/validation.js`).
@@ -268,7 +272,7 @@ Major enhancement to the SVG illustration generation system, making it significa
 - Happy character
 - Proper layering
 
-**Documentation**: See [SVG_ENHANCEMENT_SUMMARY.md](SVG_ENHANCEMENT_SUMMARY.md)
+**Documentation**: See [ILLUSTRATIONS.md](ILLUSTRATIONS.md) (renamed from SVG_ENHANCEMENT_SUMMARY.md)
 
 ---
 

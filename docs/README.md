@@ -14,7 +14,7 @@ Welcome to the Sight Word Story Generator documentation!
 
 - **[Why It's Free](FREE_AND_OPEN.md)** - How the app runs on free tiers, and what the optional AI mode costs
 - **[Changelog](CHANGELOG.md)** - Version history and recent updates
-- **[SVG Enhancement Summary](SVG_ENHANCEMENT_SUMMARY.md)** - Details on our dynamic illustration system
+- **[Illustrations](ILLUSTRATIONS.md)** - How story pictures are drawn
 
 ### Development
 
@@ -59,16 +59,14 @@ Explains the free-to-run design:
 - Sustainability model
 - Community contribution
 
-### SVG_ENHANCEMENT_SUMMARY.md
+### ILLUSTRATIONS.md
 
-Technical details on the enhanced SVG illustration system:
+How story pictures are drawn:
 
-- 12 animal types, 6 vehicles, 5 weather states
-- Emotional expressions
-- 21 object types
-- Implementation details
-- Example sentences
-- Benefits and code quality
+- Scene-based pictures for Classic stories, keyword-based for the rest
+- One cast of characters per story
+- What can be drawn
+- How to add a scene
 
 ### CHANGELOG.md
 

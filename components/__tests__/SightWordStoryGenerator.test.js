@@ -146,7 +146,7 @@ describe('SightWordStoryGenerator', () => {
     const [saveCall] = fetchCalls('POST', '/api/stories');
     const savedBody = JSON.parse(saveCall[1].body);
     expect(Object.keys(savedBody).sort()).toEqual(
-      ['content', 'format', 'grade', 'includeImages', 'learningNeeds', 'title', 'words'].sort()
+      ['content', 'format', 'grade', 'includeImages', 'learningNeeds', 'scenes', 'title', 'words'].sort()
     );
     const [shareCall] = fetchCalls('POST', `/api/stories/${savedStory._id}/share`);
     expect(JSON.parse(shareCall[1].body)).toEqual({ email: 'teacher@school.edu' });

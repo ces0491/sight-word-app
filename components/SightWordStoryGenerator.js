@@ -27,6 +27,7 @@ import { useToast } from '../hooks/useToast';
 const toSavePayload = (story) => ({
   title: story.title,
   content: story.content,
+  scenes: story.scenes,
   words: story.words,
   format: story.format,
   includeImages: story.includeImages,
@@ -220,6 +221,8 @@ const SightWordStoryGenerator = () => {
       const story = {
         title: storyData.title,
         content: storyData.content,
+        // Classic stories record the scene behind each sentence; AI stories have none
+        scenes: storyData.scenes ?? [],
         words: [...words],
         usedWords: storyData.usedWords || words,
         format: storyFormat,
@@ -372,7 +375,7 @@ const SightWordStoryGenerator = () => {
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold flex items-center">
             <Book className="mr-2" />
-            Mason&apos;s Sight Word Story Generator
+            Sight Word Story Generator
           </h1>
           <nav className="flex items-center space-x-2 md:space-x-4">
             <button 

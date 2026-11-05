@@ -35,6 +35,7 @@ async function handler(req, res) {
       _id: story._id,
       title: story.title,
       content: story.content,
+      scenes: story.scenes,
       words: story.words,
       usedWords: story.usedWords,
       format: story.format,
