@@ -375,7 +375,7 @@ const SightWordStoryGenerator = () => {
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold flex items-center">
             <Book className="mr-2" />
-            Mason&apos;s Sight Word Story Generator
+            Sight Word Story Generator
           </h1>
           <nav className="flex items-center space-x-2 md:space-x-4">
             <button 
