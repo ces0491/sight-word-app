@@ -31,6 +31,10 @@ Many educational apps lock essential features behind paywalls. We believe sight 
 - Consistent style across all stories
 - Works offline once loaded
 
+### Optional AI Stories
+
+The Classic story engine runs in the browser and costs nothing. AI mode is an optional extra: it writes stories with Claude Haiku 4.5, and each story is billed to whoever's `ANTHROPIC_API_KEY` the deployment uses. A deployment without that key has no AI mode and no API costs. Each signed-in user gets a capped number of AI stories per hour (see [`lib/limits.js`](../lib/limits.js)), which bounds what a deployment can spend.
+
 ### Free Infrastructure
 
 1. **MongoDB Atlas** - Free Tier
@@ -89,7 +93,7 @@ Many educational apps lock essential features behind paywalls. We believe sight 
 ## Cost Comparison
 
 | Feature | This App | Typical EdTech App |
-|---------|----------|-------------------|
+| --- | --- | --- |
 | **Monthly Fee** | $0 | $10-50 |
 | **Per-Student Fee** | $0 | $2-5 |
 | **Image Generation** | Free (SVG) | $0.02-0.04 each |
@@ -272,7 +276,7 @@ Not accepting donations currently. The best support is:
 ## Compare to Paid Alternatives
 
 | Service | Cost | Limits | Our Advantage |
-|---------|------|--------|---------------|
+| --- | --- | --- | --- |
 | ReadingEggs | $10/month | Limited activities | ✅ Free, unlimited stories |
 | Raz-Kids | $100/year | Per classroom | ✅ Free, unlimited teachers |
 | Lexia | $40/student/year | Scripted lessons | ✅ Free, customizable |
