@@ -552,6 +552,9 @@ All endpoints return errors in a consistent format:
 ### Special Error Codes
 
 - `EMAIL_NOT_CONFIGURED` - Email service is not set up
+- `SERVICE_NOT_CONFIGURED` - A server setting the request needs is missing, such as `MONGODB_URI` (status `503`). The server log names the missing setting.
+
+Uncaught server errors return `{ "message": "Internal server error" }` with status `500`; the detail goes to the server log only.
 
 ---
 

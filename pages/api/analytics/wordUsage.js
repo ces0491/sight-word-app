@@ -1,9 +1,9 @@
 import dbConnect from '../../../lib/dbConnect';
 import WordAnalytics from '../../../models/WordAnalytics';
 import Story from '../../../models/Story';
-import { requireSession, methodNotAllowed } from '../../../lib/apiHelpers';
+import { requireSession, methodNotAllowed, withApiErrors } from '../../../lib/apiHelpers';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
 
   const session = await requireSession(req, res);
@@ -56,3 +56,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Error fetching analytics' });
   }
 }
+
+export default withApiErrors(handler);

@@ -2,13 +2,13 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import dbConnect from '../../../../lib/dbConnect';
 import Story from '../../../../models/Story';
-import { requireSession, methodNotAllowed, sendValidationError } from '../../../../lib/apiHelpers';
+import { requireSession, methodNotAllowed, sendValidationError, withApiErrors } from '../../../../lib/apiHelpers';
 import { shareRequestSchema } from '../../../../lib/validation';
 import { enforceRateLimit } from '../../../../lib/rateLimit';
 import { RATE_LIMITS } from '../../../../lib/limits';
 import { buildShareEmail, getSmtpConfig, sendMail } from '../../../../lib/shareEmail';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
 
   const session = await requireSession(req, res);
@@ -63,3 +63,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Error sharing story' });
   }
 }
+
+export default withApiErrors(handler);

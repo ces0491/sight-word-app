@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 import dbConnect from '../../../lib/dbConnect';
 import Story from '../../../models/Story';
-import { requireSession, methodNotAllowed, sendValidationError } from '../../../lib/apiHelpers';
+import { requireSession, methodNotAllowed, sendValidationError, withApiErrors } from '../../../lib/apiHelpers';
 import { storyUpdateSchema } from '../../../lib/validation';
 import { findUsedWords } from '../../../lib/sightWords';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (!['GET', 'PUT', 'DELETE'].includes(req.method)) {
     return methodNotAllowed(res, ['GET', 'PUT', 'DELETE']);
   }
@@ -64,3 +64,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Error deleting story' });
   }
 }
+
+export default withApiErrors(handler);

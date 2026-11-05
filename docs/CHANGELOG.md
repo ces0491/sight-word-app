@@ -28,6 +28,8 @@ All notable changes to the Sight Word Story Generator project.
 
 ### Fixed
 
+- **Missing `MONGODB_URI` took down the whole API**: `lib/dbConnect.js` threw when any API route loaded, so every route returned an HTML 500 page. The check now runs when a route first needs the database, and API routes answer missing configuration with a JSON 503 (`SERVICE_NOT_CONFIGURED`) and other uncaught errors with a JSON 500 (`withApiErrors` in `lib/apiHelpers.js`).
+- A failed MongoDB connection was cached for the life of the server instance; the next request now retries.
 - **XSS**: HTML in story content, including stories opened through a share link, ran in the viewer's browser.
 - **Share token bypass**: any story could be read with `?token=<story id>`.
 - **Share email injection**: the message, story title and sender name were inserted into the email HTML unescaped.

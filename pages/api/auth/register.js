@@ -1,7 +1,8 @@
 import dbConnect from '../../../lib/dbConnect';
+import { withApiErrors } from '../../../lib/apiHelpers';
 import User from '../../../models/User';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -43,3 +44,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Error creating user' });
   }
 }
+
+export default withApiErrors(handler);

@@ -14,6 +14,7 @@
 - **Share email**: user-supplied text is HTML-escaped and kept off header lines. Recipient addresses are validated.
 - **AI generation**: signed-in users only. Words are limited to letters, apostrophes and hyphens before they reach the prompt. The response shape is enforced with structured outputs, and the server works out which sight words the story uses.
 - **Rate limits**: AI generation and share emails are limited per user, with counters in MongoDB so the limit holds across serverless instances. Values are in [`lib/limits.js`](../lib/limits.js).
+- **Missing configuration**: if a required setting such as `MONGODB_URI` is missing, API routes that need it return a JSON 503 (`SERVICE_NOT_CONFIGURED`) and log which setting is missing. Other routes keep working.
 - **Dependencies**: as of 2026-11-05, `npm audit --omit=dev` reports no critical advisories, one high (`postcss`, bundled inside `next` and fixed in Next 16) and six moderate.
 
 ## Gaps before a public launch
@@ -36,6 +37,8 @@
 | `NEXTAUTH_SECRET` | Yes | Signs session tokens. Generate with `openssl rand -base64 32` |
 | `EMAIL_SERVER_HOST`, `EMAIL_SERVER_PORT`, `EMAIL_SERVER_USER`, `EMAIL_SERVER_PASSWORD`, `EMAIL_FROM` | For sharing | SMTP settings. Port 465 uses implicit TLS; other ports use STARTTLS |
 | `ANTHROPIC_API_KEY` | For AI mode | Billed per request. Without it, AI mode returns 503 and the app uses Classic mode |
+
+Set the variables for both Production and Preview. Vercel applies variable changes only to new deployments, so redeploy after adding or changing them.
 
 ### Checks after deploying
 

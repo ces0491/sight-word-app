@@ -1,9 +1,9 @@
 import dbConnect from '../../../lib/dbConnect';
 import WordAnalytics from '../../../models/WordAnalytics';
-import { requireSession, methodNotAllowed, sendValidationError } from '../../../lib/apiHelpers';
+import { requireSession, methodNotAllowed, sendValidationError, withApiErrors } from '../../../lib/apiHelpers';
 import { trackWordsSchema } from '../../../lib/validation';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
 
   const session = await requireSession(req, res);
@@ -34,3 +34,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Error tracking words' });
   }
 }
+
+export default withApiErrors(handler);
