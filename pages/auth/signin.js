@@ -1,64 +1,49 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import AppHeader from '../../components/storybook/AppHeader';
 import LoginForm from '../../components/auth/LoginForm';
 import RegisterForm from '../../components/auth/RegisterForm';
-import { BookOpen } from 'lucide-react';
-import Link from 'next/link';
+
+/** Only send people back to a page on this site after signing in. */
+const safeCallback = (url) => (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : '/');
 
 export default function SignIn() {
-  const [mode, setMode] = useState('login'); // 'login' or 'register'
   const router = useRouter();
-  const { callbackUrl } = router.query;
+  const [mode, setMode] = useState(router.query.mode === 'register' ? 'register' : 'login');
+  const isLogin = mode === 'login';
 
   const handleSuccess = () => {
-    router.push(callbackUrl || '/');
+    router.push(safeCallback(router.query.callbackUrl));
   };
-
-  const toggleMode = () => {
-    setMode(mode === 'login' ? 'register' : 'login');
-  };
+  const toggleMode = () => setMode(isLogin ? 'register' : 'login');
 
   return (
-    <>
+    <div className="min-h-screen bg-sky">
       <Head>
-        <title>{mode === 'login' ? 'Sign In' : 'Create Account'} | Sight Word Story Generator</title>
-        <meta name="description" content="Sign in or create an account to manage your sight word stories" />
+        <title>{`${isLogin ? 'Sign in' : 'Create an account'} | Sight Word Stories`}</title>
+        <meta name="description" content="Sign in to save, share and print your sight word stories." />
       </Head>
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex justify-center">
-            <BookOpen size={64} className="text-blue-600" />
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {mode === 'login' 
-              ? 'Access your saved sight word stories' 
-              : 'Start creating and saving custom stories'}
+      <AppHeader>
+        <Link href="/" className="btn btn-paper whitespace-nowrap px-3 text-base sm:px-5 sm:text-lg">
+          <ArrowLeft size={20} strokeWidth={2.5} aria-hidden="true" /> Story time
+        </Link>
+      </AppHeader>
+      <main className="mx-auto max-w-md px-4 pb-16">
+        <div className="cutout p-6 sm:p-8">
+          <h1 className="font-display text-3xl font-bold text-ink">{isLogin ? 'Sign in' : 'Create an account'}</h1>
+          <p className="mb-6 mt-1 font-display text-base text-ink/70">
+            {isLogin ? 'Read your saved stories on any device.' : 'Save, share and print the stories you make.'}
           </p>
+          {isLogin ? (
+            <LoginForm onSuccess={handleSuccess} onToggleMode={toggleMode} />
+          ) : (
+            <RegisterForm onSuccess={handleSuccess} onToggleMode={toggleMode} />
+          )}
         </div>
-
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            {mode === 'login' ? (
-              <LoginForm onSuccess={handleSuccess} onToggleMode={toggleMode} />
-            ) : (
-              <RegisterForm onSuccess={handleSuccess} onToggleMode={toggleMode} />
-            )}
-          </div>
-          
-          <div className="mt-6 text-center">
-            <Link 
-              href="/"
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              Back to Home
-            </Link >
-          </div>
-        </div>
-      </div>
-    </>
+      </main>
+    </div>
   );
 }

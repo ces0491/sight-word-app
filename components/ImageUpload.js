@@ -115,13 +115,13 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm font-medium text-gray-700 mb-1">
+      <div className="text-sm font-medium text-ink mb-1">
         Take a picture or upload an image of sight words
       </div>
 
       {/* Image Preview Area */}
       {previewImage ? (
-        <div className="relative border-2 border-gray-300 rounded-md overflow-hidden">
+        <div className="relative border-2 border-ink/25 rounded-xl overflow-hidden">
           <div className="relative h-48 w-full">
             <Image
               src={previewImage}
@@ -131,7 +131,7 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
             />
             <button
               onClick={clearImage}
-              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+              className="absolute top-2 right-2 bg-berry text-white p-1 rounded-full"
               title="Remove image"
             >
               <X size={16} />
@@ -142,20 +142,20 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
           {isProcessing && (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
               <div className="text-center">
-                <div className="inline-block animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-                <p className="mt-2 text-sm text-gray-600 font-medium">Processing sight words...</p>
+                <div className="inline-block animate-spin h-8 w-8 border-4 border-ink border-t-transparent rounded-full"></div>
+                <p className="mt-2 text-sm text-ink/70 font-medium">Processing sight words...</p>
               </div>
             </div>
           )}
 
           {/* Error Message */}
           {errorMessage && (
-            <div className="p-3 text-sm text-red-600 bg-red-50">
+            <div className="p-3 text-sm text-berry bg-berry/10">
               <p className="font-medium">Error:</p> 
               <p>{errorMessage}</p>
               <button
                 onClick={clearImage}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                className="mt-2 text-xs text-ink hover:text-ink/70 font-medium"
               >
                 Try a different image
               </button>
@@ -164,15 +164,15 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
 
           {/* Detected Words */}
           {detectedWords.length > 0 && (
-            <div className="p-3 bg-green-50">
-              <p className="text-sm font-medium text-green-700">
+            <div className="p-3 bg-card-mint/40">
+              <p className="text-sm font-medium text-ink">
                 Detected {detectedWords.length} sight word{detectedWords.length !== 1 ? 's' : ''}:
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 {detectedWords.map((word, index) => (
                   <span
                     key={index}
-                    className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs"
+                    className="bg-card-mint text-ink px-2 py-1 rounded-full text-xs"
                   >
                     {word}
                   </span>
@@ -185,11 +185,11 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
         /* Image Upload Area */
         <div className="relative">
           <div
-            className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+            className="border-2 border-dashed border-ink/25 rounded-xl p-6 text-center hover:border-ink/50 transition-colors cursor-pointer"
             onClick={togglePhotoOptions}
           >
-            <Camera className="mx-auto h-12 w-12 text-gray-400" />
-            <span className="mt-2 block text-sm font-medium text-gray-700">
+            <Camera className="mx-auto h-12 w-12 text-ink/40" />
+            <span className="mt-2 block text-sm font-medium text-ink">
               Tap to take a picture or upload an image
             </span>
           </div>
@@ -215,25 +215,25 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
 
           {/* Image Source Options */}
           {showPhotoOptions && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-md z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-xl z-10">
               <div className="space-y-4 w-full px-4">
                 <button
                   onClick={openCamera}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-md"
+                  className="w-full flex items-center justify-center gap-2 bg-ink text-white py-3 px-4 rounded-xl"
                 >
                   <Camera size={20} />
                   <span>Take Photo</span>
                 </button>
                 <button
                   onClick={openGallery}
-                  className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 px-4 rounded-md"
+                  className="w-full flex items-center justify-center gap-2 bg-leaf text-white py-3 px-4 rounded-xl"
                 >
                   <ImageIcon size={20} />
                   <span>Choose from Library</span>
                 </button>
                 <button
                   onClick={togglePhotoOptions}
-                  className="w-full flex items-center justify-center gap-2 bg-gray-300 text-gray-700 py-2 px-4 rounded-md"
+                  className="w-full flex items-center justify-center gap-2 bg-ink/20 text-ink py-2 px-4 rounded-xl"
                 >
                   <X size={18} />
                   <span>Cancel</span>
@@ -245,7 +245,7 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
       )}
 
       {/* Tips for better scanning */}
-      <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-md">
+      <div className="text-xs text-ink/70 bg-mist p-3 rounded-xl">
         <p className="font-medium mb-1">Tips for better word detection:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Ensure good lighting and avoid shadows</li>

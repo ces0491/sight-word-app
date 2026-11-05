@@ -8,6 +8,15 @@ All notable changes to the Sight Word Story Generator project.
 
 ### Added
 
+- **A picture-book redesign for children and their parents**, named Sight Word Stories on screen:
+  - Story time: the words as big tappable cards and one button to make a story
+  - A reader that shows one page at a time, with Back and Next buttons and the arrow keys
+  - A grown-ups area behind a simple sum
+- **Read-aloud** with the browser's built-in speech: tap any word to hear it, or "Read to me" to hear the page with each word lit up (`hooks/useSpeech.js`).
+- **Word hunt** after each story: hear a word (or see it, where the device can't speak) and find its card.
+- **Dolch sight word lists** by level under Grown-ups (`lib/wordLists.js`), checked against two sources.
+- `/stories/[id]/edit`, so the story library's Edit button opens an editor; the library is linked from Grown-ups.
+- Andika (made for beginning readers) and Fredoka, self-hosted with `next/font`; the Comic Neue link to Google Fonts is gone.
 - **Scene-based illustrations**: Classic stories record the scene behind each sentence (`scenes` on the story), and each page is drawn from that scene's spec (`lib/sceneIllustrations.js`). Waking up happens in a bedroom, breakfast at the kitchen table, bedtime in bed at night.
 - **Indoor rooms**: bedroom, bathroom, kitchen and classroom, with poses for lying in bed and sitting at the table (`lib/illustrationRooms.js`).
 - **One cast per story**: each character keeps the same skin tone, hair and clothes on every page, fixed by a seed from the story's title and first sentence. Illustrations no longer use `Math.random`, so a story renders the same way every time.
@@ -21,6 +30,7 @@ All notable changes to the Sight Word Story Generator project.
 
 ### Changed
 
+- Grown-ups settings describe what each one changes, in place of the old "Learn more" learning-needs dialog. The old screen components (`StoryPreview`, `StoryViewer`, `StoryGenerator`, `LearningConsiderationsPanel`, `LearningNeedsInfo`) are removed.
 - Story text renders as React elements through `components/story/StoryText.js` instead of `dangerouslySetInnerHTML`.
 - Share links use a random token stored on the story. **Links sent before this release no longer open**, because their tokens were never stored.
 - The shared-story endpoint returns the same 404 for a missing story, an unshared story and a wrong token.
@@ -34,6 +44,10 @@ All notable changes to the Sight Word Story Generator project.
 
 - **Missing `MONGODB_URI` took down the whole API**: `lib/dbConnect.js` threw when any API route loaded, so every route returned an HTML 500 page. The check now runs when a route first needs the database, and API routes answer missing configuration with a JSON 503 (`SERVICE_NOT_CONFIGURED`) and other uncaught errors with a JSON 500 (`withApiErrors` in `lib/apiHelpers.js`).
 - A failed MongoDB connection was cached for the life of the server instance; the next request now retries.
+- **Learning-needs settings had no visible effect**: `pages/index.js` imported their stylesheet from a URL that doesn't exist (`/styles/learningAdaptations.css`). The styles now load from `_app`, and each setting changes the reader.
+- Pages under `/stories` called `useSession` without a `SessionProvider` around them; the provider is now in `_app`.
+- Sign-in redirected to any `callbackUrl`, including other sites; it now only returns to pages on this site.
+- The sign-in forms' labels weren't linked to their fields.
 - **XSS**: HTML in story content, including stories opened through a share link, ran in the viewer's browser.
 - **Share token bypass**: any story could be read with `?token=<story id>`.
 - **Share email injection**: the message, story title and sender name were inserted into the email HTML unescaped.

@@ -1,8 +1,8 @@
-# Sight Word Story Generator
+# Sight Word Stories
 
-A free educational web application that helps teachers create custom stories featuring sight words for early readers, with adaptations for students with different learning needs.
+Short illustrated stories built from the sight words a child is learning, to read together. A grown-up picks the words; the child taps them to hear them, reads the story a page at a time, and finishes with a word hunt.
 
-[Sight Word Story Generator](https://sight-word-app.vercel.app/)
+[Sight Word Stories](https://sight-word-app.vercel.app/)
 
 **Status**: see the [Production Readiness](docs/PRODUCTION_READY.md) page for what is in place and what remains before a public launch.
 
@@ -10,15 +10,23 @@ A free educational web application that helps teachers create custom stories fea
 
 ## Features
 
-- **Two story engines**:
-  - **Classic** builds stories from pre-written scenes, in the browser. Free, and no account needed.
+**Story time, for the child**
+
+- **Word cards**: the words to practise as big cards; tap one to hear it
+- **One page at a time**: a large picture, large text in [Andika](https://software.sil.org/andika/) (a typeface made for beginning readers), and Back and Next buttons (or the arrow keys)
+- **Read-aloud**: tap any word to hear it, or "Read to me" to hear the page with each word lit up as it's spoken. Uses the browser's built-in speech, so it's free and works without an account; the voice depends on the device
+- **Word hunt**: after the story, hear a word and find its card, earning a star for each
+- **Pictures that follow the story**: the same characters on every page, in a setting that matches the sentence (bedroom, kitchen, park, classroom and more)
+
+**Grown-ups, behind a simple sum**
+
+- **Words to practise**: type them, upload a list, scan a page (OCR), or pick from the Dolch sight word lists by level
+- **Two story makers**:
+  - **Classic** builds a day-in-the-life story from written scenes, in the browser. Free, and no account needed.
   - **AI** writes a story with Claude Haiku 4.5. It needs a signed-in account and `ANTHROPIC_API_KEY`, and each story is billed by Anthropic. If AI generation fails, the app falls back to Classic.
-- **Multiple Input Methods**: Add words manually, upload word lists, or use image recognition (OCR)
-- **Learning Accommodations**: Tailor stories for students with ADHD, dyslexia, autism, ESL needs, and visual processing differences
-- **Visual Supports**: An SVG illustration for each sentence, with the same characters on every page and settings that follow the story (bedroom, kitchen, park, classroom and more)
-- **Format Options**: Display sight words as highlighted, bold, or underlined text
-- **Save & Share**: Save stories to your account and email a share link to students or colleagues (needs SMTP settings)
-- **Printable Format**: Print stories for classroom use
+- **Reading level, sight word style** (highlighted, bold, underlined or plain) and pictures on or off
+- **Learning needs**: settings that change how a story reads (below)
+- **Save, share and print**: save stories to an account, email a link (needs SMTP settings), print every page, and manage saved stories in the story library
 
 ## Cost
 
@@ -111,44 +119,17 @@ Vercel automatically deploys changes when you push to your repository. To ensure
 - Use the Vercel CLI for previewing production builds locally
 - Set up environment variables in the Vercel project settings
 
-## Learning Considerations
+## Learning needs
 
-The application provides specialized accommodations for different learning needs:
+Each setting changes how the reader looks, and AI stories are also written for it.
 
-### ADHD Considerations
-
-- Shorter, more focused story segments
-- High-contrast visual formatting of target words
-- Reduced visual distractions in the UI
-- More frequent visual supports
-
-### Dyslexia Considerations
-
-- Increased spacing between words and lines
-- Optional dyslexia-friendly font (Comic Neue)
-- Multiple encoding options (visual + textual cues)
-- Color highlighting for better word recognition
-
-### Autism Spectrum Considerations
-
-- Predictable story structures
-- Clear visual supports
-- Concrete language
-- Consistent formatting
-
-### ESL Considerations
-
-- Simplified sentence structures
-- Visual supports paired with text
-- Key vocabulary emphasis
-- Optional translations for sight words
-
-### Visual Processing Considerations
-
-- High contrast text/background
-- Larger text size option
-- Clean, uncluttered layout
-- Strategic word highlighting
+| Setting | In the reader | In AI stories |
+| --- | --- | --- |
+| ADHD | More space between lines; no hints around the page | Short sentences |
+| Dyslexia | Wider spacing between letters, words and lines; a softer marker on sight words | Simple words, no tricky spellings |
+| Autism | Pages appear without sliding | Literal language, a predictable shape |
+| Learning English | Sight words in bold | Simple words, repeated |
+| Visual processing | Bigger text and a thicker page outline | One idea per sentence |
 
 ## Documentation
 

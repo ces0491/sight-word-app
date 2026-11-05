@@ -91,18 +91,18 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
         <div className="flex items-center">
           <button 
             onClick={onCancel}
-            className="mr-3 p-2 rounded-full hover:bg-gray-100"
+            className="mr-3 p-2 rounded-full hover:bg-ink/10"
           >
-            <ArrowLeft size={20} className="text-gray-600" />
+            <ArrowLeft size={20} className="text-ink/70" />
           </button>
-          <h2 className="text-2xl font-bold text-gray-800">
+          <h2 className="text-2xl font-bold text-ink">
             {story ? 'Edit Story' : 'Create New Story'}
           </h2>
         </div>
         <button
           onClick={handleSubmit}
           disabled={isSaving}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md disabled:bg-green-300"
+          className="flex items-center gap-2 px-4 py-2 bg-leaf text-white rounded-xl disabled:opacity-50"
         >
           {isSaving ? (
             <>
@@ -121,7 +121,7 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
       <div className="space-y-6">
         {/* Title */}
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="title" className="block text-sm font-medium text-ink mb-1">
             Story Title
           </label>
           <input
@@ -129,7 +129,7 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            className="w-full border border-ink/25 rounded-xl px-3 py-2"
             placeholder="Enter story title"
             required
           />
@@ -138,19 +138,19 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
         {/* Content */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-ink">
               Story Content
             </label>
             <button
               type="button"
               onClick={handleAddSentence}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-ink hover:text-ink/70"
             >
               + Add Sentence
             </button>
           </div>
           {content.length === 0 ? (
-            <p className="text-gray-500 italic mb-2">No content yet. Add your first sentence.</p>
+            <p className="text-ink/70 italic mb-2">No content yet. Add your first sentence.</p>
           ) : (
             <div className="space-y-3">
               {content.map((sentence, index) => (
@@ -158,13 +158,13 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                   <textarea
                     value={sentence}
                     onChange={(e) => handleUpdateSentence(index, e.target.value)}
-                    className="flex-grow border border-gray-300 rounded-md px-3 py-2 min-h-[80px]"
+                    className="flex-grow border border-ink/25 rounded-xl px-3 py-2 min-h-[80px]"
                     placeholder={`Sentence ${index + 1}`}
                   />
                   <button
                     type="button"
                     onClick={() => handleRemoveSentence(index)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-md"
+                    className="p-2 text-berry hover:bg-berry/10 rounded-xl"
                     title="Remove sentence"
                   >
                     <X size={18} />
@@ -178,32 +178,32 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
         {/* Words */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-ink">
               Sight Words
             </label>
-            <span className="text-sm text-gray-500">{words.length} words</span>
+            <span className="text-sm text-ink/70">{words.length} words</span>
           </div>
           <div className="flex flex-wrap gap-2 mb-3">
             {words.map((word, index) => (
-              <div key={index} className="bg-blue-100 px-3 py-1 rounded-full flex items-center">
-                <span className="mr-2 text-blue-800">{word}</span>
+              <div key={index} className="bg-mist px-3 py-1 rounded-full flex items-center">
+                <span className="mr-2 text-ink">{word}</span>
                 <button 
                   onClick={() => handleRemoveWord(index)}
-                  className="text-blue-700 hover:text-blue-900"
+                  className="text-ink hover:text-ink/70"
                 >
                   &times;
                 </button>
               </div>
             ))}
             {words.length === 0 && (
-              <p className="text-gray-500 italic">No words added yet.</p>
+              <p className="text-ink/70 italic">No words added yet.</p>
             )}
           </div>
           <div className="flex gap-2">
             <input
               type="text"
               placeholder="Add a new word"
-              className="flex-grow border border-gray-300 rounded-md px-3 py-2"
+              className="flex-grow border border-ink/25 rounded-xl px-3 py-2"
               onKeyDown={handleWordInputKeyDown}
             />
             <button
@@ -213,7 +213,7 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                 handleAddWord(input.value);
                 input.value = '';
               }}
-              className="px-3 py-2 bg-blue-600 text-white rounded-md"
+              className="px-3 py-2 bg-ink text-white rounded-xl"
             >
               Add
             </button>
@@ -225,7 +225,7 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
           <div>
             {/* Format */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink mb-2">
                 Word Format
               </label>
               <div className="space-y-2">
@@ -235,9 +235,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                     value="highlighted"
                     checked={format === 'highlighted'}
                     onChange={() => setFormat('highlighted')}
-                    className="h-4 w-4 text-blue-600"
+                    className="h-4 w-4 text-ink"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Highlighted Words</span>
+                  <span className="ml-2 text-sm text-ink">Highlighted Words</span>
                 </label>
                 <label className="inline-flex items-center">
                   <input
@@ -245,9 +245,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                     value="bold"
                     checked={format === 'bold'}
                     onChange={() => setFormat('bold')}
-                    className="h-4 w-4 text-blue-600"
+                    className="h-4 w-4 text-ink"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Bold Words</span>
+                  <span className="ml-2 text-sm text-ink">Bold Words</span>
                 </label>
                 <label className="inline-flex items-center">
                   <input
@@ -255,9 +255,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                     value="underlined"
                     checked={format === 'underlined'}
                     onChange={() => setFormat('underlined')}
-                    className="h-4 w-4 text-blue-600"
+                    className="h-4 w-4 text-ink"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Underlined Words</span>
+                  <span className="ml-2 text-sm text-ink">Underlined Words</span>
                 </label>
                 <label className="inline-flex items-center">
                   <input
@@ -265,9 +265,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                     value="normal"
                     checked={format === 'normal'}
                     onChange={() => setFormat('normal')}
-                    className="h-4 w-4 text-blue-600"
+                    className="h-4 w-4 text-ink"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Normal Text (No Formatting)</span>
+                  <span className="ml-2 text-sm text-ink">Normal Text (No Formatting)</span>
                 </label>
               </div>
             </div>
@@ -280,9 +280,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                   id="includeImages"
                   checked={includeImages}
                   onChange={(e) => setIncludeImages(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
                 />
-                <label htmlFor="includeImages" className="ml-2 text-sm text-gray-700">
+                <label htmlFor="includeImages" className="ml-2 text-sm text-ink">
                   Include Illustrations
                 </label>
               </div>
@@ -292,13 +292,13 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
           <div>
             {/* Grade Level */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink mb-2">
                 Grade Level
               </label>
               <select
                 value={grade}
                 onChange={(e) => setGrade(parseInt(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800"
+                className="w-full border border-ink/25 rounded-xl px-3 py-2 text-ink"
               >
                 <option value={0}>Kindergarten</option>
                 <option value={1}>Grade 1</option>
@@ -311,7 +311,7 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
 
             {/* Learning Needs */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink mb-2">
                 Learning Considerations
               </label>
               <div className="space-y-2">
@@ -321,9 +321,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                     id="adhd"
                     checked={learningNeeds.adhd}
                     onChange={(e) => setLearningNeeds({...learningNeeds, adhd: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
                   />
-                  <label htmlFor="adhd" className="ml-2 text-sm text-gray-700">ADHD</label>
+                  <label htmlFor="adhd" className="ml-2 text-sm text-ink">ADHD</label>
                 </div>
                 <div className="flex items-center">
                   <input
@@ -331,9 +331,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                     id="dyslexia"
                     checked={learningNeeds.dyslexia}
                     onChange={(e) => setLearningNeeds({...learningNeeds, dyslexia: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
                   />
-                  <label htmlFor="dyslexia" className="ml-2 text-sm text-gray-700">Dyslexia</label>
+                  <label htmlFor="dyslexia" className="ml-2 text-sm text-ink">Dyslexia</label>
                 </div>
                 <div className="flex items-center">
                   <input
@@ -341,9 +341,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                     id="autism"
                     checked={learningNeeds.autism}
                     onChange={(e) => setLearningNeeds({...learningNeeds, autism: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
                   />
-                  <label htmlFor="autism" className="ml-2 text-sm text-gray-700">Autism Spectrum</label>
+                  <label htmlFor="autism" className="ml-2 text-sm text-ink">Autism Spectrum</label>
                 </div>
                 <div className="flex items-center">
                   <input
@@ -351,9 +351,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                     id="esl"
                     checked={learningNeeds.esl}
                     onChange={(e) => setLearningNeeds({...learningNeeds, esl: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
                   />
-                  <label htmlFor="esl" className="ml-2 text-sm text-gray-700">English as Second Language</label>
+                  <label htmlFor="esl" className="ml-2 text-sm text-ink">English as Second Language</label>
                 </div>
                 <div className="flex items-center">
                   <input
@@ -361,9 +361,9 @@ const StoryEditor = ({ story, onSave, onCancel }) => {
                     id="visualProcessing"
                     checked={learningNeeds.visualProcessing}
                     onChange={(e) => setLearningNeeds({...learningNeeds, visualProcessing: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
                   />
-                  <label htmlFor="visualProcessing" className="ml-2 text-sm text-gray-700">Visual Processing</label>
+                  <label htmlFor="visualProcessing" className="ml-2 text-sm text-ink">Visual Processing</label>
                 </div>
               </div>
             </div>

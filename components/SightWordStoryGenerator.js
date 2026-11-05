@@ -1,27 +1,22 @@
-// components/SightWordStoryGenerator.js - Complete rewrite
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { Settings, Sparkles, Send } from 'lucide-react';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
-import {
-  Book, ArrowLeft, Settings, List, BarChart, Camera, Trash2,
-  ArrowUp, Sparkles
-} from 'lucide-react';
-
-// Import our components
-import ImprovedImageUpload from './ImageUpload';
-import LearningConsiderationsPanel from './LearningConsiderationsPanel';
-import LearningNeedsInfo from './LearningNeedsInfo';
-import StoryGenerator from './StoryGenerator';
-import StoryPreview from './StoryPreview';
+import AppHeader from './storybook/AppHeader';
+import WordCard from './storybook/WordCard';
+import StoryReader from './storybook/StoryReader';
+import StoryShelf from './storybook/StoryShelf';
+import GrownUps from './storybook/GrownUps';
+import ParentGate, { grownUpChecked } from './storybook/ParentGate';
+import Modal from './storybook/Modal';
 import AuthDialog from './auth/AuthDialog';
 import { ToastContainer } from './Toast';
-import WordUsageDashboard from './analytics/WordUsageDashboard';
 
-// Import utilities
 import { generateStory } from '../lib/storyGeneration';
 import { trackWordUsage } from '../lib/WordAnalytics';
-import { normalizeWordInput } from '../lib/sightWords';
+import { STARTER_WORDS } from '../lib/wordLists';
 import { useToast } from '../hooks/useToast';
+import { useSpeech } from '../hooks/useSpeech';
 
 /** Fields the stories API accepts when saving. */
 const toSavePayload = (story) => ({
@@ -52,20 +47,29 @@ const requestAiStory = async ({ words, grade, learningNeeds }) => {
   return data;
 };
 
+/** Classes on <body> that styles/learningAdaptations.css reads. */
+const NEED_CLASSES = {
+  adhd: 'adhd-enabled',
+  dyslexia: 'dyslexia-enabled',
+  autism: 'autism-enabled',
+  esl: 'esl-enabled',
+  visualProcessing: 'visual-processing-enabled',
+};
+
+/** Many words on the home screen get smaller cards. */
+const LARGE_CARD_LIMIT = 12;
+
 /**
- * Main Sight Word Story Generator Component
+ * The app: story time for the child, the reader, and the grown-ups area.
  */
 const SightWordStoryGenerator = () => {
-  // Auth state
-  const { data: session, status } = useSession();
-  const [showAuthDialog, setShowAuthDialog] = useState(false);
-
-  // Toast notifications
+  const { data: session } = useSession();
+  const isSignedIn = !!session?.user;
   const toast = useToast();
+  const speech = useSpeech();
 
-  // Main state management
+  // What the story is made from
   const [words, setWords] = useState([]);
-  const [inputMethod, setInputMethod] = useState('manual');
   const [grade, setGrade] = useState(1);
   const [learningNeeds, setLearningNeeds] = useState({
     adhd: false,
@@ -74,77 +78,34 @@ const SightWordStoryGenerator = () => {
     esl: false,
     visualProcessing: false,
   });
-  
-  // Story generation state
   const [useAI, setUseAI] = useState(false);
   const [includeImages, setIncludeImages] = useState(true);
   const [storyFormat, setStoryFormat] = useState('highlighted');
+
+  // Stories
   const [generatedStory, setGeneratedStory] = useState(null);
+  const [readingStory, setReadingStory] = useState(null);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [savedStories, setSavedStories] = useState([]);
-  
-  // UI state
-  const [currentTab, setCurrentTab] = useState('input');
-  const [showLearningInfo, setShowLearningInfo] = useState(false);
-  const [manualWordInput, setManualWordInput] = useState('');
   const [isLoadingStories, setIsLoadingStories] = useState(false);
   const [isSavingStory, setIsSavingStory] = useState(false);
-  const [shareEmail, setShareEmail] = useState('');
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [isSharing, setIsSharing] = useState(false);
-  // Set when the user signs in from the Save button, so the save runs once the session arrives
+
+  // Screens and dialogs
+  const [view, setView] = useState('home'); // home | reader | grownups
+  const [showGate, setShowGate] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  // Set when sign-in starts from Save, so the save runs once the session arrives
   const [saveAfterSignIn, setSaveAfterSignIn] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [isSharing, setIsSharing] = useState(false);
 
-  const isSignedIn = !!session?.user;
-
-  // Load saved stories when a user signs in
-  useEffect(() => {
-    if (isSignedIn) {
-      fetchSavedStories();
-    }
-  }, [isSignedIn]);
-
-  // AI mode needs an account; switch back to Classic if the user signs out
-  useEffect(() => {
-    if (!isSignedIn) setUseAI(false);
-  }, [isSignedIn]);
-
-  // Apply dynamic class based on learning needs
-  useEffect(() => {
-    const body = document.body;
-    
-    // Clear existing classes
-    body.classList.remove(
-      'dyslexia-enabled', 
-      'adhd-enabled', 
-      'visual-processing-enabled', 
-      'autism-enabled', 
-      'esl-enabled'
-    );
-    
-    // Add classes based on active learning needs
-    if (learningNeeds.dyslexia) body.classList.add('dyslexia-enabled');
-    if (learningNeeds.adhd) body.classList.add('adhd-enabled');
-    if (learningNeeds.visualProcessing) body.classList.add('visual-processing-enabled');
-    if (learningNeeds.autism) body.classList.add('autism-enabled');
-    if (learningNeeds.esl) body.classList.add('esl-enabled');
-    
-    // Add grade level class
-    body.classList.remove('grade-k', 'grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-5');
-    body.classList.add(`grade-${grade === 0 ? 'k' : grade}`);
-    
-  }, [learningNeeds, grade]);
-  
-  /**
-   * Fetch saved stories from the database
-   */
   const fetchSavedStories = async () => {
     try {
       setIsLoadingStories(true);
       const response = await fetch('/api/stories');
       if (response.ok) {
-        const data = await response.json();
-        setSavedStories(data);
+        setSavedStories(await response.json());
       } else {
         console.error('Failed to fetch stories');
       }
@@ -154,57 +115,57 @@ const SightWordStoryGenerator = () => {
       setIsLoadingStories(false);
     }
   };
-  
-  /**
-   * Handle manual word input
-   */
-  const handleManualWordAdd = () => {
-    const newWords = normalizeWordInput(manualWordInput);
-    if (newWords.length > 0) {
-      setWords([...new Set([...words, ...newWords])]);
+
+  // Load saved stories when a user signs in
+  useEffect(() => {
+    if (isSignedIn) {
+      fetchSavedStories();
+    } else {
+      setSavedStories([]);
     }
-    setManualWordInput('');
+  }, [isSignedIn]);
+
+  // AI mode needs an account; switch back to Classic if the user signs out
+  useEffect(() => {
+    if (!isSignedIn) setUseAI(false);
+  }, [isSignedIn]);
+
+  // Learning needs change how the reader looks (styles/learningAdaptations.css)
+  useEffect(() => {
+    const { classList } = document.body;
+    Object.entries(NEED_CLASSES).forEach(([need, className]) => {
+      classList.toggle(className, !!learningNeeds[need]);
+    });
+    return () => Object.values(NEED_CLASSES).forEach((className) => classList.remove(className));
+  }, [learningNeeds]);
+
+  const addWords = (newWords) => {
+    setWords((current) => [...new Set([...current, ...newWords.map((w) => w.toLowerCase())])]);
   };
-  
-  /**
-   * Handle file upload for word lists
-   */
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const newWords = normalizeWordInput(event.target.result);
-      setWords((current) => [...new Set([...current, ...newWords])]);
-    };
-    reader.readAsText(file);
-  };
-  
-  /**
-   * Handle words detected from OCR
-   */
-  const handleWordsDetected = (detectedWords) => {
-    if (detectedWords && detectedWords.length > 0) {
-      setWords([...new Set([...words, ...detectedWords])]);
+  const removeWord = (word) => setWords((current) => current.filter((w) => w !== word.toLowerCase()));
+
+  const openGrownUps = () => {
+    if (grownUpChecked()) {
+      setView('grownups');
+    } else {
+      setShowGate(true);
     }
   };
-  
-  /**
-   * Handle story generation - FIXED VERSION
-   */
+
+  const openStory = (story) => {
+    speech.stop();
+    setReadingStory(story);
+    setView('reader');
+  };
+
+  /** Make a story from the words, with AI when chosen, else (or on failure) Classic. */
   const handleGenerateStory = async () => {
-    // Validation checks
-    if (words.length === 0 || isGeneratingStory) {
-      return;
-    }
-    
-    // Set the loading state
+    if (words.length === 0 || isGeneratingStory) return;
     setIsGeneratingStory(true);
-    
+    speech.stop();
+
     try {
       let storyData;
-
       if (useAI && isSignedIn) {
         try {
           storyData = await requestAiStory({ words, grade, learningNeeds });
@@ -213,8 +174,6 @@ const SightWordStoryGenerator = () => {
           toast.warning(`${aiError.message} Using Classic mode instead.`);
         }
       }
-
-      // Classic mode, or the fallback when AI generation fails
       storyData ??= generateStory(words, grade, learningNeeds);
 
       // Unsaved story: no _id until the stories API returns one
@@ -233,30 +192,24 @@ const SightWordStoryGenerator = () => {
       };
 
       setGeneratedStory(story);
-      setCurrentTab('preview');
+      openStory(story);
 
       if (isSignedIn) {
         await trackWordUsage(words, grade);
       }
     } catch (error) {
       console.error('Error generating story:', error);
-      toast.error('There was an error generating your story. Please try again.');
+      toast.error('The story could not be made. Please try again.');
     } finally {
-      // Always reset loading state
       setIsGeneratingStory(false);
     }
   };
-  
-  /**
-   * Save the current story
-   */
+
+  /** Save the story being read. Returns the saved story, or null. */
   const saveStory = useCallback(async () => {
-    if (!generatedStory) return null;
+    if (!readingStory) return null;
+    if (readingStory._id) return readingStory;
 
-    // Already saved: nothing to do
-    if (generatedStory._id) return generatedStory;
-
-    // If user is not logged in, prompt for authentication and save afterwards
     if (!isSignedIn) {
       setSaveAfterSignIn(true);
       setShowAuthDialog(true);
@@ -265,33 +218,31 @@ const SightWordStoryGenerator = () => {
 
     try {
       setIsSavingStory(true);
-
       const response = await fetch('/api/stories', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(toSavePayload(generatedStory)),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toSavePayload(readingStory)),
       });
 
       if (response.ok) {
         const savedStory = await response.json();
         setSavedStories((current) => [savedStory, ...current]);
-        setGeneratedStory(savedStory);
-        toast.success("Story saved successfully!");
+        setReadingStory(savedStory);
+        setGeneratedStory((current) => (current === readingStory ? savedStory : current));
+        toast.success('Story saved.');
         return savedStory;
       }
       console.error('Failed to save story');
-      toast.error("Failed to save story. Please try again.");
+      toast.error('The story could not be saved. Please try again.');
       return null;
     } catch (error) {
       console.error('Error saving story:', error);
-      toast.error("An error occurred while saving the story.");
+      toast.error('The story could not be saved. Please try again.');
       return null;
     } finally {
       setIsSavingStory(false);
     }
-  }, [generatedStory, isSignedIn, toast]);
+  }, [readingStory, isSignedIn, toast]);
 
   // Finish a save that was interrupted by the sign-in dialog. The flag is
   // cleared before saving, so re-running when saveStory changes is harmless.
@@ -302,536 +253,59 @@ const SightWordStoryGenerator = () => {
     }
   }, [saveAfterSignIn, isSignedIn, saveStory]);
 
-  /**
-   * Share a story with someone. Unsaved stories are saved first, since the
-   * share link points at the stored copy.
-   */
-  const shareStory = async () => {
-    if (!shareEmail.trim() || !generatedStory) return;
+  /** Share by email. Unsaved stories are saved first: the link points at the stored copy. */
+  const shareStory = async (event) => {
+    event.preventDefault();
+    if (!shareEmail.trim() || !readingStory) return;
 
     try {
       setIsSharing(true);
-
       const storyToShare = await saveStory();
       if (!storyToShare?._id) return;
 
       const response = await fetch(`/api/stories/${storyToShare._id}/share`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: shareEmail.trim(),
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: shareEmail.trim() }),
       });
-      
+
       if (response.ok) {
-        toast.success(`Story shared with ${shareEmail} successfully!`);
+        toast.success(`Story shared with ${shareEmail.trim()}.`);
         setShareEmail('');
         setShowShareDialog(false);
       } else {
         const errorData = await response.json().catch(() => ({}));
         if (errorData.code === 'EMAIL_NOT_CONFIGURED') {
-          toast.warning("Email sharing is not configured yet. Please contact support.");
+          toast.warning('Email sharing is not set up on this site yet.');
         } else {
-          toast.error(errorData.message || "Failed to share story. Please try again.");
+          toast.error(errorData.message || 'The story could not be shared. Please try again.');
         }
       }
     } catch (error) {
       console.error('Error sharing story:', error);
-      toast.error("An error occurred while sharing the story.");
+      toast.error('The story could not be shared. Please try again.');
     } finally {
       setIsSharing(false);
     }
   };
-  
-  /**
-   * Delete a word from the list
-   */
-  const deleteWord = (indexToDelete) => {
-    setWords(words.filter((_, index) => index !== indexToDelete));
-  };
-  
-  /**
-   * Reset the form
-   */
-  const resetForm = () => {
-    setWords([]);
-    setInputMethod('manual');
-    setManualWordInput('');
-  };
-  
-  /**
-   * Print the current story
-   */
-  const printStory = () => {
-    window.print();
-  };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-blue-700 text-white p-4 shadow-md">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold flex items-center">
-            <Book className="mr-2" />
-            Sight Word Story Generator
-          </h1>
-          <nav className="flex items-center space-x-2 md:space-x-4">
-            <button 
-              className={`px-3 py-2 rounded-md ${currentTab === 'input' ? 'bg-white text-blue-700 font-medium' : 'bg-blue-800 hover:bg-blue-900'}`}
-              onClick={() => setCurrentTab('input')}
-            >
-              Create Story
-            </button>
-            <button 
-              className={`px-3 py-2 rounded-md ${currentTab === 'preview' ? 'bg-white text-blue-700 font-medium' : 'bg-blue-800 hover:bg-blue-900'}`}
-              onClick={() => setCurrentTab('preview')}
-              disabled={!generatedStory}
-              aria-disabled={!generatedStory}
-            >
-              Preview
-            </button>
-            <button 
-              className={`px-3 py-2 rounded-md ${currentTab === 'saved' ? 'bg-white text-blue-700 font-medium' : 'bg-blue-800 hover:bg-blue-900'}`}
-              onClick={() => {
-                setCurrentTab('saved');
-                if (session?.user && !isLoadingStories) {
-                  fetchSavedStories();
-                }
-              }}
-            >
-              Saved Stories
-            </button>
-            {session?.user && (
-              <button 
-                className={`hidden md:flex items-center px-3 py-2 rounded-md ${currentTab === 'analytics' ? 'bg-white text-blue-700 font-medium' : 'bg-blue-800 hover:bg-blue-900'}`}
-                onClick={() => setCurrentTab('analytics')}
-              >
-                <BarChart size={18} className="mr-1" />
-                Analytics
-              </button>
-            )}
-          </nav>
-        </div>
-      </header>
-      
-      {/* Main Content */}
-      <main id="main-content" className="flex-grow container mx-auto p-4 md:p-6">
-        {/* Input Panel */}
-        {currentTab === 'input' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Words Input Panel */}
-            <div className="md:col-span-2 bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">Enter Sight Words</h2>
-              
-              {/* Input Type Selection */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                <button 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md ${inputMethod === 'manual' ? 'bg-blue-100 text-blue-700 font-medium' : 'bg-gray-100 text-gray-700'}`}
-                  onClick={() => setInputMethod('manual')}
-                >
-                  <List size={18} /> Manual Entry
-                </button>
-                <button 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md ${inputMethod === 'file' ? 'bg-blue-100 text-blue-700 font-medium' : 'bg-gray-100 text-gray-700'}`}
-                  onClick={() => setInputMethod('file')}
-                >
-                  <ArrowUp size={18} /> Upload File
-                </button>
-                <button 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md ${inputMethod === 'image' ? 'bg-blue-100 text-blue-700 font-medium' : 'bg-gray-100 text-gray-700'}`}
-                  onClick={() => setInputMethod('image')}
-                >
-                  <Camera size={18} /> Take Picture
-                </button>
-              </div>
-              
-              {/* Manual Input Form */}
-              {inputMethod === 'manual' && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Enter words (separated by spaces or commas)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={manualWordInput}
-                      onChange={(e) => setManualWordInput(e.target.value)}
-                      className="flex-grow border border-gray-300 rounded-md px-3 py-2 text-gray-800"
-                      placeholder="e.g., cat dog house"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleManualWordAdd();
-                        }
-                      }}
-                    />
-                    <button 
-                      onClick={handleManualWordAdd}
-                      className="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              {/* File Upload */}
-              {inputMethod === 'file' && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload a file with words (.txt, .csv)
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
-                    <input
-                      type="file"
-                      onChange={handleFileUpload}
-                      accept=".txt,.csv"
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <div className="mx-auto h-12 w-12 text-gray-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                      </div>
-                      <span className="mt-2 block text-sm font-medium text-gray-700">
-                        Click to upload a file
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              )}
-              
-              {/* Image Upload / OCR */}
-              {inputMethod === 'image' && (
-                <div className="mb-6">
-                  <ImprovedImageUpload 
-                    onWordsDetected={handleWordsDetected}
-                    grade={grade}
-                  />
-                </div>
-              )}
-              
-              {/* Word Chips */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-medium text-gray-800">Current Words ({words.length})</h3>
-                  {words.length > 0 && (
-                    <button 
-                      onClick={resetForm}
-                      className="text-sm text-red-600 hover:text-red-800 flex items-center"
-                    >
-                      <Trash2 size={16} className="mr-1" /> Clear All
-                    </button>
-                  )}
-                </div>
-                
-                {words.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {words.map((word, index) => (
-                      <div key={index} className="bg-blue-100 px-3 py-1 rounded-full flex items-center">
-                        <span className="mr-2 text-blue-800">{word}</span>
-                        <button 
-                          onClick={() => deleteWord(index)}
-                          className="text-blue-700 hover:text-blue-900"
-                          aria-label={`Remove word ${word}`}
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 italic">No words added yet.</p>
-                )}
-              </div>
-              
-              {/* Story Generator Component - Revised to directly call our handler */}
-              <StoryGenerator
-                words={words}
-                grade={grade}
-                learningNeeds={learningNeeds}
-                includeImages={includeImages}
-                storyFormat={storyFormat}
-                onGenerateStory={handleGenerateStory}
-                isGeneratingStory={isGeneratingStory}
-              />
-            </div>
-            
-            {/* Settings Panel */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">Story Settings</h2>
-              
-              {/* Grade Level */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Grade Level
-                </label>
-                <select
-                  value={grade}
-                  onChange={(e) => setGrade(parseInt(e.target.value))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800"
-                >
-                  <option value={0}>Kindergarten</option>
-                  <option value={1}>Grade 1</option>
-                  <option value={2}>Grade 2</option>
-                  <option value={3}>Grade 3</option>
-                  <option value={4}>Grade 4</option>
-                  <option value={5}>Grade 5</option>
-                </select>
-              </div>
-              
-              {/* Story Generation Mode */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Story Engine
-                </label>
-                <div className="flex rounded-md overflow-hidden border border-gray-300">
-                  <button
-                    type="button"
-                    onClick={() => setUseAI(false)}
-                    aria-pressed={!useAI}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
-                      !useAI
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Book size={16} />
-                    Classic
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUseAI(true)}
-                    disabled={!isSignedIn}
-                    aria-pressed={useAI}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                      useAI
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Sparkles size={16} />
-                    AI
-                  </button>
-                </div>
-                <p className="mt-1.5 text-xs text-gray-500">
-                  {!isSignedIn
-                    ? 'Sign in to use AI stories'
-                    : useAI
-                      ? 'Uses AI to generate unique, natural stories'
-                      : 'Builds stories from pre-written scene templates'}
-                </p>
-              </div>
+  // Stories to read again: the newest one made here, then saved ones
+  const shelf = useMemo(() => {
+    const list = generatedStory && !generatedStory._id ? [generatedStory] : [];
+    return [...list, ...savedStories];
+  }, [generatedStory, savedStories]);
 
-              {/* Learning Needs */}
-              <div className="mb-6">
-                <LearningConsiderationsPanel
-                  learningNeeds={learningNeeds}
-                  setLearningNeeds={setLearningNeeds}
-                  onInfoClick={() => setShowLearningInfo(true)}
-                />
-              </div>
-              
-              {/* Story Format Options */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Word Format
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center p-2 border border-gray-200 rounded-md hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      value="highlighted"
-                      checked={storyFormat === 'highlighted'}
-                      onChange={() => setStoryFormat('highlighted')}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="ml-2">
-                      <span className="text-sm text-gray-700">Highlighted Words</span>
-                      <div className="text-xs text-gray-500 mt-1">Words appear with colored background</div>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center p-2 border border-gray-200 rounded-md hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      value="bold"
-                      checked={storyFormat === 'bold'}
-                      onChange={() => setStoryFormat('bold')}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="ml-2">
-                      <span className="text-sm text-gray-700">Bold Words</span>
-                      <div className="text-xs text-gray-500 mt-1">Words appear in <b>bold text</b></div>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center p-2 border border-gray-200 rounded-md hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      value="underlined"
-                      checked={storyFormat === 'underlined'}
-                      onChange={() => setStoryFormat('underlined')}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="ml-2">
-                      <span className="text-sm text-gray-700">Underlined Words</span>
-                      <div className="text-xs text-gray-500 mt-1">Words appear with <u>underline</u></div>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center p-2 border border-gray-200 rounded-md hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      value="normal"
-                      checked={storyFormat === 'normal'}
-                      onChange={() => setStoryFormat('normal')}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="ml-2">
-                      <span className="text-sm text-gray-700">Normal Text (No Formatting)</span>
-                      <div className="text-xs text-gray-500 mt-1">Words appear as regular text</div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-              
-              {/* Include Images */}
-              <div className="mb-6">
-                <label className="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    id="includeImages"
-                    checked={includeImages}
-                    onChange={(e) => setIncludeImages(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <div className="ml-2">
-                    <span className="text-sm text-gray-700">Include Illustrations</span>
-                    <div className="text-xs text-gray-500 mt-1">Generate images for each sentence</div>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Story Preview Panel */}
-        {currentTab === 'preview' && generatedStory && (
-          <StoryPreview
-            story={generatedStory}
-            onSave={saveStory}
-            onShare={() => setShowShareDialog(true)}
-            onPrint={printStory}
-            isAuthenticated={!!session?.user}
-            isSaving={isSavingStory}
-          />
-        )}
-        
-        {/* Saved Stories Panel */}
-        {currentTab === 'saved' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Your Saved Stories</h2>
-            
-            {!session?.user ? (
-              <div className="p-8 text-center">
-                <div className="mx-auto h-16 w-16 text-gray-300 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">Sign in to view your saved stories</h3>
-                <p className="text-gray-500 mb-4">You need to be logged in to save and access your stories.</p>
-                <button
-                  onClick={() => setShowAuthDialog(true)}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Sign In
-                </button>
-              </div>
-            ) : isLoadingStories ? (
-              <div className="p-8 text-center">
-                <div className="inline-block animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
-                <p className="text-gray-500">Loading your stories...</p>
-              </div>
-            ) : savedStories.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="mx-auto h-16 w-16 text-gray-300 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">No stories yet</h3>
-                <p className="text-gray-500 mb-4">You haven&apos;t saved any stories. Generate and save a story to see it here.</p>
-                <button
-                  onClick={() => setCurrentTab('input')}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Create a Story
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {savedStories.map((story) => (
-                  <div key={story._id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <h3 className="text-lg font-medium text-gray-800 mb-1">{story.title}</h3>
-                    <p className="text-sm text-gray-500 mb-2">
-                      {new Date(story.createdAt || story.timestamp).toLocaleDateString()} • 
-                      {story.words.length} words • Grade {story.grade}
-                    </p>
-                    <p className="text-gray-700 line-clamp-2 mb-2">
-                      {story.content[0]}
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <div className="flex flex-wrap gap-1">
-                        {story.words.slice(0, 3).map((word, idx) => (
-                          <span key={idx} className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded">
-                            {word}
-                          </span>
-                        ))}
-                        {story.words.length > 3 && (
-                          <span className="bg-gray-50 text-gray-500 text-xs px-2 py-1 rounded">
-                            +{story.words.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => {
-                          setGeneratedStory(story);
-                          setCurrentTab('preview');
-                        }}
-                        className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-md text-sm"
-                      >
-                        View
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* Analytics Panel */}
-        {currentTab === 'analytics' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Word Usage Analytics</h2>
-            <WordUsageDashboard />
-          </div>
-        )}
-      </main>
-      
-      {/* Footer */}
-      <footer className="bg-gray-100 border-t py-4">
-        <div className="container mx-auto px-4 text-center text-gray-600">
-          <p>© 2025 Sight Word Story Generator • An educational reading tool</p>
-        </div>
-      </footer>
-      
-      {/* Authentication Dialog */}
+  const dialogs = (
+    <>
+      {showGate && (
+        <ParentGate
+          onClose={() => setShowGate(false)}
+          onPass={() => {
+            setShowGate(false);
+            setView('grownups');
+          }}
+        />
+      )}
       {showAuthDialog && (
         <AuthDialog
           onClose={() => {
@@ -842,53 +316,145 @@ const SightWordStoryGenerator = () => {
           onSuccess={() => setShowAuthDialog(false)}
         />
       )}
-      
-      {/* Learning Needs Info Modal */}
-      <LearningNeedsInfo 
-        isOpen={showLearningInfo} 
-        onClose={() => setShowLearningInfo(false)} 
-      />
-      
-      {/* Share Dialog Placeholder */}
       {showShareDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4 text-gray-800">Share Story</h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={shareEmail}
-                onChange={(e) => setShareEmail(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                placeholder="example@school.edu"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowShareDialog(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={shareStory}
-                disabled={!shareEmail.trim() || isSharing}
-                className={`px-4 py-2 rounded-md ${
-                  !shareEmail.trim() || isSharing ? 'bg-blue-300 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {isSharing ? 'Sharing...' : 'Share'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <Modal title="Share this story" onClose={() => setShowShareDialog(false)} labelledBy="share-title">
+          <form onSubmit={shareStory} className="space-y-4">
+            <label htmlFor="share-email" className="block font-display text-base text-ink">
+              Email address
+            </label>
+            <input
+              id="share-email"
+              type="email"
+              value={shareEmail}
+              onChange={(e) => setShareEmail(e.target.value)}
+              className="field"
+              placeholder="someone@example.com"
+              autoComplete="email"
+            />
+            <p className="font-display text-sm text-ink/70">They get a link to read the story. It&apos;s saved to your account first.</p>
+            <button type="submit" disabled={!shareEmail.trim() || isSharing} className="btn btn-sun w-full">
+              <Send size={20} strokeWidth={2.5} aria-hidden="true" /> {isSharing ? 'Sharing…' : 'Share'}
+            </button>
+          </form>
+        </Modal>
+      )}
+      <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
+    </>
+  );
+
+  if (view === 'reader' && readingStory) {
+    return (
+      <>
+        <StoryReader
+          story={readingStory}
+          onClose={() => setView('home')}
+          actions={{
+            onSave: saveStory,
+            onPrint: () => window.print(),
+            onShare: () => setShowShareDialog(true),
+            isSaving: isSavingStory,
+            isSaved: !!readingStory._id,
+          }}
+        />
+        {dialogs}
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-sky">
+      <AppHeader>
+        {view === 'home' && (
+          <button type="button" onClick={openGrownUps} className="btn btn-paper whitespace-nowrap px-3 text-base sm:px-5 sm:text-lg">
+            <Settings size={20} strokeWidth={2.5} aria-hidden="true" /> Grown-ups
+          </button>
+        )}
+      </AppHeader>
+
+      {view === 'grownups' ? (
+        <main>
+          <GrownUps
+            words={words}
+            onAddWords={addWords}
+            onRemoveWord={removeWord}
+            onClearWords={() => setWords([])}
+            grade={grade}
+            onGradeChange={setGrade}
+            useAI={useAI}
+            onUseAIChange={setUseAI}
+            includeImages={includeImages}
+            onIncludeImagesChange={setIncludeImages}
+            storyFormat={storyFormat}
+            onStoryFormatChange={setStoryFormat}
+            learningNeeds={learningNeeds}
+            onLearningNeedsChange={setLearningNeeds}
+            isSignedIn={isSignedIn}
+            userName={session?.user?.name}
+            savedStories={savedStories}
+            isLoadingStories={isLoadingStories}
+            onOpenStory={openStory}
+            onSignIn={() => setShowAuthDialog(true)}
+            onSignOut={() => signOut({ redirect: false })}
+            onBack={() => setView('home')}
+          />
+        </main>
+      ) : (
+        <main className="mx-auto max-w-5xl space-y-10 px-4 pb-16 sm:px-6">
+          <section aria-labelledby="story-time-title" className="cutout px-6 py-8 sm:px-10 sm:py-10">
+            <h1 id="story-time-title" className="font-display text-5xl font-bold text-ink sm:text-6xl">
+              Story time!
+            </h1>
+
+            {words.length > 0 ? (
+              <>
+                <p className="mt-2 font-display text-xl text-ink/80">
+                  {speech.supported ? 'Tap a word to hear it.' : 'These are your words.'}
+                </p>
+                <ul className="mt-6 flex flex-wrap gap-4" aria-label="Your words">
+                  {words.map((word, index) => (
+                    <li key={word}>
+                      <WordCard
+                        word={word}
+                        index={index}
+                        tilt
+                        size={words.length > LARGE_CARD_LIMIT ? 'md' : 'lg'}
+                        onSay={speech.supported ? (w) => speech.speak(w) : undefined}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={handleGenerateStory}
+                  disabled={isGeneratingStory}
+                  className="btn btn-sun btn-big mt-8"
+                >
+                  <Sparkles size={28} strokeWidth={2.5} aria-hidden="true" />
+                  {isGeneratingStory ? 'Making your story…' : 'Make my story'}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 max-w-xl font-display text-xl text-ink/80">
+                  Ask a grown-up to choose the words to practise, or try some to start.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <button type="button" onClick={() => addWords(STARTER_WORDS)} className="btn btn-sun btn-big">
+                    <Sparkles size={28} strokeWidth={2.5} aria-hidden="true" /> Try some words
+                  </button>
+                  <button type="button" onClick={openGrownUps} className="btn btn-paper btn-big">
+                    <Settings size={26} strokeWidth={2.5} aria-hidden="true" /> Choose words
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
+
+          <StoryShelf stories={shelf} onOpen={openStory} />
+        </main>
       )}
 
-      {/* Toast Notifications */}
-      <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
+      {dialogs}
     </div>
   );
 };

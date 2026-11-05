@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { User, Mail, Lock, LogIn } from 'lucide-react';
+import Modal from '../storybook/Modal';
 
 const AuthDialog = ({ onClose, onSuccess }) => {
   const [mode, setMode] = useState('login'); // 'login' or 'register'
@@ -88,125 +89,86 @@ const AuthDialog = ({ onClose, onSuccess }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {mode === 'login' ? 'Sign In' : 'Create Account'}
-          </h2>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            &times;
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={mode === 'login' ? handleLogin : handleRegister}>
-          {mode === 'register' && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={18} className="text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="John Smith"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail size={18} className="text-gray-400" />
-              </div>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="you@example.com"
-              />
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock size={18} className="text-gray-400" />
-              </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center"
-          >
-            {isSubmitting ? (
-              <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-            ) : (
-              <>
-                <LogIn size={18} className="mr-2" />
-                {mode === 'login' ? 'Sign In' : 'Create Account'}
-              </>
-            )}
-          </button>
-        </form>
-
-        <div className="mt-4 text-center">
-          {mode === 'login' ? (
-            <p className="text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
-              <button
-                onClick={() => setMode('register')}
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Sign up
-              </button>
-            </p>
-          ) : (
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <button
-                onClick={() => setMode('login')}
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Sign in
-              </button>
-            </p>
-          )}
-        </div>
+  const isLogin = mode === 'login';
+  const fieldWithIcon = (id, label, Icon, input) => (
+    <div>
+      <label htmlFor={id} className="mb-1 block font-display text-base font-medium text-ink">
+        {label}
+      </label>
+      <div className="relative">
+        <Icon size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" aria-hidden="true" />
+        {input}
       </div>
     </div>
+  );
+
+  return (
+    <Modal title={isLogin ? 'Sign in' : 'Create an account'} onClose={onClose} labelledBy="auth-title">
+      {error && (
+        <p className="mb-4 rounded-xl bg-berry/10 p-3 font-display text-base text-ink" role="alert">
+          {error}
+        </p>
+      )}
+
+      <form onSubmit={isLogin ? handleLogin : handleRegister} className="space-y-4">
+        {!isLogin &&
+          fieldWithIcon(
+            'auth-name',
+            'Name',
+            User,
+            <input
+              id="auth-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="field pl-10"
+              autoComplete="name"
+            />
+          )}
+        {fieldWithIcon(
+          'auth-email',
+          'Email address',
+          Mail,
+          <input
+            id="auth-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="field pl-10"
+            autoComplete="email"
+          />
+        )}
+        {fieldWithIcon(
+          'auth-password',
+          'Password',
+          Lock,
+          <input
+            id="auth-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="field pl-10"
+            autoComplete={isLogin ? 'current-password' : 'new-password'}
+          />
+        )}
+
+        <button type="submit" disabled={isSubmitting} className="btn btn-sun w-full">
+          <LogIn size={20} strokeWidth={2.5} aria-hidden="true" />
+          {isSubmitting ? 'Please wait…' : isLogin ? 'Sign in' : 'Create account'}
+        </button>
+      </form>
+
+      <p className="mt-4 text-center font-display text-base text-ink/80">
+        {isLogin ? 'No account yet? ' : 'Already have an account? '}
+        <button
+          type="button"
+          onClick={() => setMode(isLogin ? 'register' : 'login')}
+          className="font-semibold text-ink underline underline-offset-4"
+        >
+          {isLogin ? 'Create one' : 'Sign in'}
+        </button>
+      </p>
+    </Modal>
   );
 };
 

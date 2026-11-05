@@ -37,8 +37,8 @@ const WordUsageDashboard = () => {
     return (
       <div className="flex items-center justify-center p-12">
         <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading analytics...</p>
+          <div className="animate-spin h-12 w-12 border-4 border-ink border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-ink/70">Loading analytics...</p>
         </div>
       </div>
     );
@@ -46,11 +46,11 @@ const WordUsageDashboard = () => {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-        <p className="text-red-800">Error loading analytics: {error}</p>
+      <div className="bg-berry/10 border border-berry/30 rounded-lg p-6 text-center">
+        <p className="text-ink">Error loading analytics: {error}</p>
         <button
           onClick={fetchAnalytics}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          className="mt-4 px-4 py-2 bg-berry text-white rounded-xl hover:bg-berry/90"
         >
           Try Again
         </button>
@@ -82,16 +82,16 @@ const WordUsageDashboard = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Stories</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
+              <p className="text-sm font-medium text-ink/70">Total Stories</p>
+              <p className="text-3xl font-bold text-ink mt-2">
                 {analytics.totalStories}
               </p>
             </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <BookOpen className="w-8 h-8 text-blue-600" />
+            <div className="bg-mist p-3 rounded-full">
+              <BookOpen className="w-8 h-8 text-ink" />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-ink/70 mt-4">
             Stories created with this account
           </p>
         </div>
@@ -100,16 +100,16 @@ const WordUsageDashboard = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Unique Words</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
+              <p className="text-sm font-medium text-ink/70">Unique Words</p>
+              <p className="text-3xl font-bold text-ink mt-2">
                 {analytics.totalUniqueWords}
               </p>
             </div>
-            <div className="bg-green-100 p-3 rounded-full">
-              <Target className="w-8 h-8 text-green-600" />
+            <div className="bg-card-mint p-3 rounded-full">
+              <Target className="w-8 h-8 text-leaf" />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-ink/70 mt-4">
             Different sight words used
           </p>
         </div>
@@ -118,8 +118,8 @@ const WordUsageDashboard = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Most Used Grade</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
+              <p className="text-sm font-medium text-ink/70">Most Used Grade</p>
+              <p className="text-3xl font-bold text-ink mt-2">
                 {(() => {
                   const maxGrade = Object.entries(analytics.byGrade || {})
                     .reduce((max, [grade, count]) =>
@@ -128,11 +128,11 @@ const WordUsageDashboard = () => {
                 })()}
               </p>
             </div>
-            <div className="bg-purple-100 p-3 rounded-full">
-              <TrendingUp className="w-8 h-8 text-purple-600" />
+            <div className="bg-card-lilac p-3 rounded-full">
+              <TrendingUp className="w-8 h-8 text-ink" />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-ink/70 mt-4">
             Your most common grade level
           </p>
         </div>
@@ -141,8 +141,8 @@ const WordUsageDashboard = () => {
       {/* Top Words Used */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center gap-2 mb-4">
-          <BarChart className="w-5 h-5 text-gray-700" />
-          <h3 className="text-lg font-semibold text-gray-800">Most Used Sight Words</h3>
+          <BarChart className="w-5 h-5 text-ink" />
+          <h3 className="text-lg font-semibold text-ink">Most Used Sight Words</h3>
         </div>
 
         {analytics.topWords && analytics.topWords.length > 0 ? (
@@ -150,24 +150,24 @@ const WordUsageDashboard = () => {
             {analytics.topWords.map((wordData, index) => (
               <div
                 key={wordData._id || index}
-                className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200"
+                className="bg-gradient-to-br from-mist to-sky rounded-lg p-4 border border-ink/20"
               >
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-blue-800">
+                  <span className="text-2xl font-bold text-ink">
                     {wordData.word}
                   </span>
-                  <span className="text-sm font-medium text-blue-600">
+                  <span className="text-sm font-medium text-ink">
                     {wordData.count}×
                   </span>
                 </div>
-                <div className="mt-2 text-xs text-blue-700">
+                <div className="mt-2 text-xs text-ink">
                   Rank #{index + 1}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 italic text-center py-8">
+          <p className="text-ink/70 italic text-center py-8">
             No word usage data yet. Create some stories to see your most used words!
           </p>
         )}
@@ -175,7 +175,7 @@ const WordUsageDashboard = () => {
 
       {/* Words by Grade Level */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <h3 className="text-lg font-semibold text-ink mb-4">
           Word Usage by Grade Level
         </h3>
 
@@ -186,16 +186,16 @@ const WordUsageDashboard = () => {
             return (
               <div key={grade} className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-ink">
                     {gradeLabels[grade]}
                   </span>
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-sm font-semibold text-ink">
                     {count} words
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-ink/10 rounded-full h-3">
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-ink to-ink h-3 rounded-full transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -205,28 +205,28 @@ const WordUsageDashboard = () => {
         </div>
 
         {Object.keys(analytics.byGrade || {}).length === 0 && (
-          <p className="text-gray-500 italic text-center py-8">
+          <p className="text-ink/70 italic text-center py-8">
             No grade-level data yet. Start creating stories to see distribution!
           </p>
         )}
       </div>
 
       {/* Tips Section */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">
+      <div className="bg-gradient-to-r from-mist to-mist border border-ink/20 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-ink mb-3">
           📊 Understanding Your Analytics
         </h3>
-        <ul className="space-y-2 text-sm text-gray-700">
+        <ul className="space-y-2 text-sm text-ink">
           <li className="flex items-start gap-2">
-            <span className="text-blue-600 font-bold">•</span>
+            <span className="text-ink font-bold">•</span>
             <span><strong>Top Words:</strong> These are your most frequently used sight words. Consider introducing variety for comprehensive learning.</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-blue-600 font-bold">•</span>
+            <span className="text-ink font-bold">•</span>
             <span><strong>Grade Distribution:</strong> Shows which grade levels you focus on most. Try to maintain consistency within each student&apos;s level.</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-blue-600 font-bold">•</span>
+            <span className="text-ink font-bold">•</span>
             <span><strong>Unique Words:</strong> Higher numbers indicate more diverse vocabulary practice across your stories.</span>
           </li>
         </ul>

@@ -1,143 +1,98 @@
 import React, { useState } from 'react';
-import { Mail, Send, X } from 'lucide-react';
+import { Send } from 'lucide-react';
+import Modal from '../storybook/Modal';
 
+/** Email a link to a saved story, with an optional note. */
 const StorySharing = ({ storyId, onClose }) => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [sentTo, setSentTo] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (!email.trim()) {
-      setError('Email is required');
+      setError('Enter an email address.');
       return;
     }
-    
+
     setError('');
     setIsSharing(true);
-    
     try {
       const response = await fetch(`/api/stories/${storyId}/share`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          message: message.trim(),
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), message: message.trim() || undefined }),
       });
-      
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to share story');
+        const data = await response.json().catch(() => ({}));
+        throw new Error(
+          data.code === 'EMAIL_NOT_CONFIGURED'
+            ? 'Email sharing is not set up on this site yet.'
+            : data.message || 'The story could not be shared. Please try again.'
+        );
       }
-      
-      setSuccess(true);
+      setSentTo(email.trim());
       setEmail('');
       setMessage('');
-      
-      // Close dialog after delay on success
-      setTimeout(() => {
-        onClose();
-      }, 2000);
-    } catch (error) {
-      console.error('Error sharing story:', error);
-      setError(error.message || 'An error occurred while sharing the story');
+    } catch (shareError) {
+      setError(shareError.message);
     } finally {
       setIsSharing(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-bold text-gray-800">Share Story</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            <X size={20} />
+    <Modal title="Share this story" onClose={onClose} labelledBy="story-sharing-title">
+      {sentTo ? (
+        <div className="space-y-4">
+          <p className="font-display text-lg text-ink" role="status">
+            Sent to {sentTo}.
+          </p>
+          <button type="button" onClick={onClose} className="btn btn-sun w-full">
+            Done
           </button>
         </div>
-        
-        {success ? (
-          <div className="bg-green-100 text-green-700 p-4 rounded-md mb-4">
-            Story shared successfully! An email has been sent to {email}.
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <p className="rounded-xl bg-berry/10 p-3 font-display text-base text-ink" role="alert">
+              {error}
+            </p>
+          )}
+          <div>
+            <label htmlFor="share-to" className="mb-1 block font-display text-base font-medium text-ink">
+              Email address
+            </label>
+            <input
+              id="share-to"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="field"
+              autoComplete="email"
+            />
           </div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4 text-sm">
-                {error}
-              </div>
-            )}
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Recipient Email
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={18} className="text-gray-400" />
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 w-full border border-gray-300 rounded-md px-3 py-2"
-                  placeholder="recipient@example.com"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Personal Message (Optional)
-              </label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 min-h-[100px]"
-                placeholder="Add a personal message..."
-              />
-            </div>
-            
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSharing || !email.trim()}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-blue-300"
-              >
-                {isSharing ? (
-                  <>
-                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
-                    Sharing...
-                  </>
-                ) : (
-                  <>
-                    <Send size={18} className="mr-2" />
-                    Share Story
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+          <div>
+            <label htmlFor="share-note" className="mb-1 block font-display text-base font-medium text-ink">
+              Note (optional)
+            </label>
+            <textarea
+              id="share-note"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={3}
+              maxLength={500}
+              className="field"
+            />
+          </div>
+          <button type="submit" disabled={isSharing} className="btn btn-sun w-full">
+            <Send size={20} strokeWidth={2.5} aria-hidden="true" /> {isSharing ? 'Sharing…' : 'Share'}
+          </button>
+        </form>
+      )}
+    </Modal>
   );
 };
 

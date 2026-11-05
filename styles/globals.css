@@ -1,121 +1,156 @@
-/* styles/globals.css */
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* Picture-book palette, defined once in tailwind.config.js. One light theme: the app is a book. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --font-size-base: 1rem;
-  --line-spacing: 1.5;
-  --word-spacing: normal;
-  --highlight-color: #FFEB3B;
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
+  color-scheme: light;
+  --ink: theme('colors.ink');
+  --paper: theme('colors.paper');
+  --sky: theme('colors.sky');
+  --sun: theme('colors.sun');
+  --card-lilac: theme('colors.card.lilac');
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Reader settings; learning needs adjust these (styles/learningAdaptations.css) */
+  --reader-size: clamp(1.75rem, 1.1rem + 2.6vw, 2.75rem);
+  --reader-line: 1.6;
+  --reader-word-gap: 0.08em;
+  --reader-letter-gap: 0.01em;
+  --mark-color: var(--sun);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--sky);
+  color: var(--ink);
+  font-family: var(--font-display), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.saved-story-title {
-  color: #2c3e50 !important;
+/* Visible focus everywhere: a thick sun ring with an ink edge */
+:focus-visible {
+  outline: 4px solid var(--sun);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--ink);
 }
 
-.saved-story-metadata {
-  color: #4b5563 !important;
-}
-
-.story-page p {
-  font-size: var(--font-size-base, 1rem);
-  line-height: var(--line-spacing, 1.5);
-  word-spacing: var(--word-spacing, normal);
-}
-
-.highlighted-text .highlight {
-  background-color: var(--highlight-color);
-  padding: 0 2px;
-  border-radius: 3px;
-}
-
-@font-face {
-  font-family: 'Comic Neue';
-  font-style: normal;
-  font-weight: 400;
-  src: url('/fonts/comic-neue-v8-latin-regular.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Comic Neue';
-  font-style: normal;
-  font-weight: 700;
-  src: url('/fonts/comic-neue-v8-latin-700.woff2') format('woff2');
-}
-
-.font-comic {
-  font-family: 'Comic Neue', cursive;
-}
-
-@media print {
-  header, footer, button {
-    display: none !important;
+@layer components {
+  /* A cut-out card: ink outline and a solid offset shadow */
+  .cutout {
+    @apply rounded-2xl border-3 border-ink bg-paper shadow-cutout;
   }
-  
-  .story-book {
-    background: white !important;
-    padding: 0 !important;
+
+  /* Buttons press into their shadow */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border-3 border-ink px-5 py-3
+      font-display text-lg font-semibold text-ink shadow-cutout transition-transform duration-100
+      disabled:cursor-not-allowed disabled:opacity-50;
+    min-height: 3.25rem;
   }
-  
-  .story-page {
-    break-inside: avoid;
-    margin-bottom: 20px;
-    box-shadow: none !important;
+  .btn:not(:disabled):active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+  }
+  .btn-sun { @apply bg-sun; }
+  .btn-leaf { @apply bg-leaf text-white; }
+  .btn-paper { @apply bg-paper; }
+  .btn-berry { @apply bg-berry text-white; }
+  .btn-big { @apply px-4 py-3 text-xl sm:px-8 sm:py-4 sm:text-2xl; min-height: 3.75rem; }
+
+  /* A quieter button for grown-up screens */
+  .btn-quiet {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border-2 border-ink/20 bg-paper px-4 py-2
+      font-display text-base font-medium text-ink hover:border-ink/50;
+    min-height: 2.75rem;
+  }
+
+  .field {
+    @apply w-full rounded-xl border-2 border-ink/25 bg-paper px-4 py-3 font-read text-lg text-ink
+      placeholder:text-ink/40 focus:border-ink;
+  }
+
+  /* Sight words inside story text */
+  .highlighted-text .highlight,
+  .reader-word.is-sight.mark-highlighted {
+    background: var(--mark-color);
+    border-radius: 0.3em;
+    box-shadow: 0 0.12em 0 var(--ink);
+    padding: 0 0.12em;
   }
 }
 
-/* In your global.css or a specific stylesheet */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* The page of the book being read */
+.reader-text {
+  font-family: var(--font-read), system-ui, sans-serif;
+  font-size: var(--reader-size);
+  line-height: var(--reader-line);
+  word-spacing: var(--reader-word-gap);
+  letter-spacing: var(--reader-letter-gap);
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.5s ease-out;
+.reader-word {
+  border-radius: 0.3em;
+  padding: 0 0.06em;
+  transition: background-color 120ms, color 120ms;
+}
+.reader-word.is-sight.mark-bold { font-weight: 700; }
+.reader-word.is-sight.mark-underlined {
+  text-decoration: underline;
+  text-decoration-thickness: 0.12em;
+  text-underline-offset: 0.18em;
+}
+.reader-word.is-spoken {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: none;
 }
 
-/* For loading spinner animation */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* Feedback that answers a tap */
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+  100% { transform: scale(1); }
 }
-
-.animate-spin {
-  animation: spin 1s linear infinite;
+@keyframes wobble {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
 }
+@keyframes page-in {
+  from { opacity: 0; transform: translateX(var(--page-from, 24px)); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-pop { animation: pop 300ms ease-out; }
+.animate-wobble { animation: wobble 300ms ease-in-out; }
+.animate-page-in { animation: page-in 260ms ease-out; }
+.animate-rise { animation: rise 420ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
 
-/* Toast notification animations */
+/* Toasts slide in from the side */
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in { animation: slideIn 0.3s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
-.animate-slide-in {
-  animation: slideIn 0.3s ease-out;
+/* Printing a story prints every page, without the app around it */
+.print-only { display: none; }
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  .print-page { break-inside: avoid; margin-bottom: 24px; }
 }
