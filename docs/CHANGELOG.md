@@ -478,7 +478,7 @@ MongoDB credentials were exposed during development session.
 
 **File**: `.env.local` (never commit this file)
 
-**Affected**: `mongodb+srv://cesairetobias:jsPZykpVx45HI38K@...`
+**Affected**: the MongoDB Atlas database user's password
 
 ---
 
