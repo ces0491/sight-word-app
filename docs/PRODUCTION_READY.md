@@ -10,6 +10,7 @@
 - **Authentication**: NextAuth credentials provider with JWT sessions. API routes read the session with `getServerSession`, and answer a missing `NEXTAUTH_SECRET` with the 503 below.
 - **Registration**: names of up to 60 letters, spaces, apostrophes, hyphens and full stops, passwords of 8 to 72 bytes, and emails stored lower-cased and matched case-insensitively at sign-up and sign-in. The body is validated before any query, so it can't carry query operators.
 - **Account deletion**: under Grown-ups → Account, with the password. The account's saved stories are deleted with it.
+- **Privacy page**: [`/privacy`](../pages/privacy.js) says what the app keeps, where it goes and how to remove it, with a contact address for requests. The sign-up form and the Grown-ups area link to it. A test fails if the Content-Security-Policy allows an outside host the page doesn't name.
 - **Sign-in redirects**: the page to return to after sign-in is followed only if it is on this site ([`lib/safeRedirect.js`](../lib/safeRedirect.js)).
 - **Input validation**: Zod schemas in [`lib/validation.js`](../lib/validation.js) for registration, account deletion, the story, share and analytics routes, and AI story input. Fields the client must not set (`userId`, `shareToken`, `sharedWith`) are dropped.
 - **Story rendering**: story text is rendered as React text, so HTML in a story displays as text rather than running ([`components/story/StoryText.js`](../components/story/StoryText.js)).
@@ -26,11 +27,11 @@
 
 These are the items in [SCOPE.md](../SCOPE.md) that aren't in place yet.
 
-- **Privacy page**: none. Saved stories hold the child's learning needs, and their words can include the child's name.
+- **POPIA check**: the privacy page hasn't yet been checked against POPIA's rules on children's and health information.
 - **Password reset**: none, so a grown-up who forgets their password loses the account and its stories.
 - **Email verification**: none, so an account can be registered with someone else's address.
 - **Email in production**: no SMTP settings yet, so sharing by email returns `EMAIL_NOT_CONFIGURED`. Password reset and email verification need them too.
-- **Error monitoring**: none. Errors reach only the server logs. Adding a service such as Sentry also means adding its host to the Content-Security-Policy's `connect-src`.
+- **Error monitoring**: none. Errors reach only the server logs. Adding a service such as Sentry also means adding its host to the Content-Security-Policy's `connect-src` and naming it on the privacy page.
 - **Backups**: not confirmed for the production database.
 
 ## Known limitations

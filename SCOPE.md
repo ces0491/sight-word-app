@@ -11,11 +11,11 @@ The app is ready for a public launch when each of these holds on [sightwords.she
 - [ ] Story writes are limited: `POST` and `PUT /api/stories` are rate-limited per account, and an account can hold only a set number of stories. Both values are in [`lib/limits.js`](lib/limits.js) and covered by tests.
 - [ ] A privacy page says what the app stores (name, email, hashed password, saved stories with their learning needs), where it's kept, how to delete it and who to contact. The sign-up page links to it.
 - [ ] Ces has checked the privacy page against POPIA's rules on children's and health information, and the app does what the page says.
-- [ ] SMTP is set up in production, and sharing a story by email works on the live site.
+- [ ] SMTP is set up in production, sharing a story by email works on the live site, and the privacy page names the email provider.
 - [ ] Password reset by email, with a single-use link that expires and a rate limit on requests.
 - [ ] Email verification: signing in needs a verified address. Ces's existing account is marked verified.
-- [ ] Server and browser errors reach an error-monitoring service that alerts Ces. Events carry no story text, email addresses or Anthropic API keys, and the Content-Security-Policy allows the service.
-- [ ] Backups are on for the production database, and a restore into a scratch database has worked once.
+- [ ] Server and browser errors reach an error-monitoring service that alerts Ces. Events carry no story text, email addresses or Anthropic API keys, the Content-Security-Policy allows the service, and the privacy page names it.
+- [ ] Backups are on for the production database, a restore into a scratch database has worked once, and the privacy page says how long backups keep deleted data.
 - [ ] The checks under "Checks after deploying" in [`docs/PRODUCTION_READY.md`](docs/PRODUCTION_READY.md) pass on the live site, including an AI story made with Ces's own key.
 - [ ] CI passes on `main`: lint, tests, build and the production `npm audit`.
 - [ ] [`README.md`](README.md), [`SECURITY.md`](SECURITY.md), [`docs/API.md`](docs/API.md) and [`docs/PRODUCTION_READY.md`](docs/PRODUCTION_READY.md) describe the app as shipped, and the readiness status reads ready.
@@ -41,3 +41,4 @@ Ces decides when each item holds. Once they all do, the status in [`docs/PRODUCT
 ## Revision history
 
 - 2026-11-06: initial scope, from that day's production-readiness review
+- 2026-11-06: the email, error-monitoring and backup items also bring the privacy page up to date

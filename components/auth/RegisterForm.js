@@ -1,4 +1,5 @@
 import React, { useId, useState } from 'react';
+import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { User, Mail, Lock, UserPlus } from 'lucide-react';
 
@@ -137,6 +138,15 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
           At least 8 characters.
         </p>
       </div>
+
+      {/* A new tab, so a story waiting to be saved stays open in this one */}
+      <p className="text-sm text-ink/70">
+        The{' '}
+        <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-ink underline underline-offset-2">
+          privacy page
+        </Link>{' '}
+        says what the app keeps about you and how to delete it.
+      </p>
 
       <button
         type="submit"

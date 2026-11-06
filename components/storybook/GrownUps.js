@@ -564,7 +564,10 @@ const GrownUps = ({
           <a href="https://sheetsolved.com" className="underline underline-offset-2 hover:text-ink">
             Sheet Solved
           </a>
-          .
+          .{' '}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-ink">
+            Privacy
+          </Link>
         </p>
       </div>
     </div>

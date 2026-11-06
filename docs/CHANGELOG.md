@@ -26,6 +26,7 @@ Changes to Sight Word Stories, newest first.
 - **Rate limiting** with counters in MongoDB (`lib/rateLimit.js`, limits in `lib/limits.js`): registration per IP address, sign-in per IP address and per email address, and story saves and edits, account deletion, share emails and word-usage updates per user. Past a sign-in limit the form says to wait instead of "Invalid email or password". The 1.0.0 in-memory limiter was never applied to any route and has been replaced.
 - **A cap on saved stories**: an account can keep up to 200 (`lib/limits.js`), so one account can't fill the database. Past that, saving says to delete a story first.
 - `SCOPE.md`, which sets what a public launch needs.
+- **A privacy page** at `/privacy`: what the app keeps, where it goes, how long it's kept and how to remove it, with a contact address for requests. The sign-up form and the Grown-ups area link to it.
 - **Account deletion** under Grown-ups → Account (`DELETE /api/account`), with the password. The account's saved stories are deleted with it, and the app signs out.
 - **Stop sharing** a story from the story library (`DELETE /api/stories/[id]/share`): the share token is removed and every link sent for the story stops working.
 - **Work kept across a reload**: the words, settings and newest unsaved story stay for the browser tab. The story editor asks before leaving with unsaved changes, and stays open with a notice if the session ends in another tab.
