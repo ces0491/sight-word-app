@@ -49,12 +49,13 @@ describe('GET /api/shared-stories/[id]', () => {
     expect(res.body.title).toBe('A Day Out');
   });
 
-  it('does not return the token, owner or recipients', async () => {
+  it("does not return the token, owner, recipients or the child's learning needs", async () => {
     const res = await call({ id: STORY_ID, token: SHARE_TOKEN });
 
     expect(res.body).not.toHaveProperty('shareToken');
     expect(res.body).not.toHaveProperty('userId');
     expect(res.body).not.toHaveProperty('sharedWith');
+    expect(res.body).not.toHaveProperty('learningNeeds');
   });
 
   it.each([

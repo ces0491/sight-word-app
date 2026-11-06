@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -6,17 +6,20 @@ import { ArrowLeft } from 'lucide-react';
 import AppHeader from '../../components/storybook/AppHeader';
 import LoginForm from '../../components/auth/LoginForm';
 import RegisterForm from '../../components/auth/RegisterForm';
-
-/** Only send people back to a page on this site after signing in. */
-const safeCallback = (url) => (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : '/');
+import { safeCallbackPath } from '../../lib/safeRedirect';
 
 export default function SignIn() {
   const router = useRouter();
-  const [mode, setMode] = useState(router.query.mode === 'register' ? 'register' : 'login');
+  const [mode, setMode] = useState('login');
   const isLogin = mode === 'login';
 
+  // The query is empty on the first render of a statically optimised page
+  useEffect(() => {
+    if (router.isReady && router.query.mode === 'register') setMode('register');
+  }, [router.isReady, router.query.mode]);
+
   const handleSuccess = () => {
-    router.push(safeCallback(router.query.callbackUrl));
+    router.push(safeCallbackPath(router.query.callbackUrl, window.location.origin));
   };
   const toggleMode = () => setMode(isLogin ? 'register' : 'login');
 

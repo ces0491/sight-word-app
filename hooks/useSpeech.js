@@ -44,8 +44,12 @@ export function useSpeech() {
     };
   }, []);
 
+  // The utterance being spoken; events from one that was cancelled are ignored
+  const currentRef = useRef(null);
+
   const stop = useCallback(() => {
     if (!isSpeechAvailable()) return;
+    currentRef.current = null;
     window.speechSynthesis.cancel();
     setSpeaking(false);
     setCharIndex(null);
@@ -57,6 +61,8 @@ export function useSpeech() {
     synth.cancel();
 
     const utterance = new window.SpeechSynthesisUtterance(text);
+    currentRef.current = utterance;
+    const isCurrent = () => currentRef.current === utterance;
     utterance.rate = CHILD_RATE;
     if (voiceRef.current) {
       utterance.voice = voiceRef.current;
@@ -66,11 +72,16 @@ export function useSpeech() {
     }
     if (trackWords) {
       utterance.onboundary = (event) => {
-        if (!event.name || event.name === 'word') setCharIndex(event.charIndex);
+        if (isCurrent() && (!event.name || event.name === 'word')) setCharIndex(event.charIndex);
       };
     }
-    utterance.onstart = () => setSpeaking(true);
+    utterance.onstart = () => {
+      if (isCurrent()) setSpeaking(true);
+    };
+    // Cancelling one utterance to start the next can deliver its end event late
     utterance.onend = () => {
+      if (!isCurrent()) return;
+      currentRef.current = null;
       setSpeaking(false);
       setCharIndex(null);
     };

@@ -60,4 +60,7 @@ const StorySchema = new mongoose.Schema({
   },
 });
 
+// The library lists a user's stories newest first; word usage counts them
+StorySchema.index({ userId: 1, createdAt: -1 });
+
 export default mongoose.models.Story || mongoose.model('Story', StorySchema);

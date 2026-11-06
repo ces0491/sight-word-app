@@ -22,6 +22,8 @@ import {
   cleanAnthropicKey,
   anthropicKeyHint,
 } from '../lib/anthropicKey';
+import { addWordsWithinLimit, responseProblem } from '../lib/storyChecks';
+import { STORY_LIMITS } from '../lib/limits';
 import { useToast } from '../hooks/useToast';
 import { useSpeech } from '../hooks/useSpeech';
 
@@ -46,17 +48,24 @@ const requestAiStory = async (params) => {
   return writeAiStory(params);
 };
 
-/** Classes on <body> that styles/learningAdaptations.css reads. */
-const NEED_CLASSES = {
-  adhd: 'adhd-enabled',
-  dyslexia: 'dyslexia-enabled',
-  autism: 'autism-enabled',
-  esl: 'esl-enabled',
-  visualProcessing: 'visual-processing-enabled',
-};
-
 /** Many words on the home screen get smaller cards. */
 const LARGE_CARD_LIMIT = 12;
+
+/** This tab's words, settings and newest unsaved story, kept across a reload or a trip to the library. */
+const HOME_STATE_KEY = 'sightwords:home';
+
+const isStory = (value) =>
+  !!value && typeof value.title === 'string' && Array.isArray(value.content) && value.content.every((s) => typeof s === 'string');
+
+/** What was kept for this tab, or null. */
+const loadHomeState = () => {
+  try {
+    const state = JSON.parse(window.sessionStorage.getItem(HOME_STATE_KEY) ?? 'null');
+    return state && typeof state === 'object' ? state : null;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * The app: story time for the child, the reader, and the grown-ups area.
@@ -90,14 +99,18 @@ const SightWordStoryGenerator = () => {
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [savedStories, setSavedStories] = useState([]);
   const [isLoadingStories, setIsLoadingStories] = useState(false);
+  const [storiesError, setStoriesError] = useState(false);
   const [isSavingStory, setIsSavingStory] = useState(false);
+  // False until this tab's kept state has been read, so defaults don't overwrite it
+  const [restored, setRestored] = useState(false);
 
   // Screens and dialogs
   const [view, setView] = useState('home'); // home | reader | grownups
   const [showGate, setShowGate] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
-  // Set when sign-in starts from Save, so the save runs once the session arrives
+  // Set when sign-in starts from Save or Share, so that carries on once the session arrives
   const [saveAfterSignIn, setSaveAfterSignIn] = useState(false);
+  const [shareAfterSignIn, setShareAfterSignIn] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [isSharing, setIsSharing] = useState(false);
@@ -105,14 +118,18 @@ const SightWordStoryGenerator = () => {
   const fetchSavedStories = async () => {
     try {
       setIsLoadingStories(true);
+      setStoriesError(false);
       const response = await fetch('/api/stories');
-      if (response.ok) {
-        setSavedStories(await response.json());
-      } else {
-        console.error('Failed to fetch stories');
-      }
+      if (!response.ok) throw new Error(`Stories request failed: ${response.status}`);
+      const fetched = await response.json();
+      // Keep stories saved here while the list was loading, which it may not include
+      setSavedStories((current) => {
+        const fetchedIds = new Set(fetched.map((story) => story._id));
+        return [...current.filter((story) => story._id && !fetchedIds.has(story._id)), ...fetched];
+      });
     } catch (error) {
       console.error('Error fetching stories:', error);
+      setStoriesError(true);
     } finally {
       setIsLoadingStories(false);
     }
@@ -124,8 +141,49 @@ const SightWordStoryGenerator = () => {
       fetchSavedStories();
     } else {
       setSavedStories([]);
+      setStoriesError(false);
     }
   }, [isSignedIn]);
+
+  // Bring back this tab's words, settings and unsaved story after a reload or a trip to the library
+  useEffect(() => {
+    const kept = loadHomeState();
+    if (kept) {
+      if (Array.isArray(kept.words)) {
+        setWords(addWordsWithinLimit([], kept.words.filter((w) => typeof w === 'string')).words);
+      }
+      if (Number.isInteger(kept.grade) && kept.grade >= 0 && kept.grade <= 3) setGrade(kept.grade);
+      if (kept.learningNeeds && typeof kept.learningNeeds === 'object') {
+        setLearningNeeds((current) =>
+          Object.fromEntries(Object.keys(current).map((need) => [need, !!kept.learningNeeds[need]]))
+        );
+      }
+      if (typeof kept.includeImages === 'boolean') setIncludeImages(kept.includeImages);
+      if (['highlighted', 'bold', 'underlined', 'normal'].includes(kept.storyFormat)) setStoryFormat(kept.storyFormat);
+      if (isStory(kept.generatedStory)) setGeneratedStory(kept.generatedStory);
+    }
+    setRestored(true);
+  }, []);
+
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      window.sessionStorage.setItem(
+        HOME_STATE_KEY,
+        JSON.stringify({
+          words,
+          grade,
+          learningNeeds,
+          includeImages,
+          storyFormat,
+          // Saved stories are in the account already
+          generatedStory: generatedStory && !generatedStory._id ? generatedStory : null,
+        })
+      );
+    } catch {
+      // Storage full or blocked: the state just isn't kept
+    }
+  }, [restored, words, grade, learningNeeds, includeImages, storyFormat, generatedStory]);
 
   // Each account keeps its own key in this browser
   useEffect(() => {
@@ -137,17 +195,12 @@ const SightWordStoryGenerator = () => {
     if (!isSignedIn || !anthropicKey) setUseAI(false);
   }, [isSignedIn, anthropicKey]);
 
-  // Learning needs change how the reader looks (styles/learningAdaptations.css)
-  useEffect(() => {
-    const { classList } = document.body;
-    Object.entries(NEED_CLASSES).forEach(([need, className]) => {
-      classList.toggle(className, !!learningNeeds[need]);
-    });
-    return () => Object.values(NEED_CLASSES).forEach((className) => classList.remove(className));
-  }, [learningNeeds]);
-
   const addWords = (newWords) => {
-    setWords((current) => [...new Set([...current, ...newWords.map((w) => w.toLowerCase())])]);
+    const { words: next, skipped } = addWordsWithinLimit(words, newWords);
+    setWords(next);
+    if (skipped > 0) {
+      toast.warning(`Stories can use up to ${STORY_LIMITS.maxWords} words, so ${skipped} weren't added.`);
+    }
   };
   const removeWord = (word) => setWords((current) => current.filter((w) => w !== word.toLowerCase()));
 
@@ -269,8 +322,7 @@ const SightWordStoryGenerator = () => {
         toast.success('Story saved.');
         return savedStory;
       }
-      console.error('Failed to save story');
-      toast.error('The story could not be saved. Please try again.');
+      toast.error(await responseProblem(response, 'The story could not be saved. Please try again.'));
       return null;
     } catch (error) {
       console.error('Error saving story:', error);
@@ -289,6 +341,23 @@ const SightWordStoryGenerator = () => {
       saveStory();
     }
   }, [saveAfterSignIn, isSignedIn, saveStory]);
+
+  /** Share asks for an account first, then opens the share form once signed in. */
+  const openShare = () => {
+    if (isSignedIn) {
+      setShowShareDialog(true);
+    } else {
+      setShareAfterSignIn(true);
+      setShowAuthDialog(true);
+    }
+  };
+
+  useEffect(() => {
+    if (shareAfterSignIn && isSignedIn) {
+      setShareAfterSignIn(false);
+      setShowShareDialog(true);
+    }
+  }, [shareAfterSignIn, isSignedIn]);
 
   /** Share by email. Unsaved stories are saved first: the link points at the stored copy. */
   const shareStory = async (event) => {
@@ -315,7 +384,11 @@ const SightWordStoryGenerator = () => {
         if (errorData.code === 'EMAIL_NOT_CONFIGURED') {
           toast.warning('Email sharing is not set up on this site yet.');
         } else {
-          toast.error(errorData.message || 'The story could not be shared. Please try again.');
+          toast.error(
+            response.status === 401
+              ? "You've been signed out. Sign in again, then share."
+              : errorData.message || 'The story could not be shared. Please try again.'
+          );
         }
       }
     } catch (error) {
@@ -348,8 +421,9 @@ const SightWordStoryGenerator = () => {
           onClose={() => {
             setShowAuthDialog(false);
             setSaveAfterSignIn(false);
+            setShareAfterSignIn(false);
           }}
-          // A save interrupted by sign-in resumes from the saveAfterSignIn effect
+          // A save or share interrupted by sign-in resumes from the effects above
           onSuccess={() => setShowAuthDialog(false)}
         />
       )}
@@ -388,7 +462,7 @@ const SightWordStoryGenerator = () => {
           actions={{
             onSave: saveStory,
             onPrint: () => window.print(),
-            onShare: () => setShowShareDialog(true),
+            onShare: openShare,
             isSaving: isSavingStory,
             isSaved: !!readingStory._id,
           }}
@@ -432,6 +506,8 @@ const SightWordStoryGenerator = () => {
             onRemoveAnthropicKey={removeAnthropicKey}
             savedStories={savedStories}
             isLoadingStories={isLoadingStories}
+            storiesError={storiesError}
+            onRetryStories={fetchSavedStories}
             onOpenStory={openStory}
             onSignIn={() => setShowAuthDialog(true)}
             onSignOut={handleSignOut}

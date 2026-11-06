@@ -17,6 +17,7 @@ const WordUsageDashboard = () => {
   const fetchAnalytics = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const response = await fetch('/api/analytics/wordUsage');
 
       if (!response.ok) {
@@ -108,7 +109,7 @@ const WordUsageDashboard = () => {
             </div>
           </div>
           <p className="text-xs text-ink/70 mt-4">
-            Different sight words used
+            Different Dolch words used, across everyone
           </p>
         </div>
 
@@ -116,7 +117,7 @@ const WordUsageDashboard = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-ink/70">Most Used Grade</p>
+              <p className="text-sm font-medium text-ink/70">Most used reading level</p>
               <p className="text-3xl font-bold text-ink mt-2">
                 {(() => {
                   const maxGrade = Object.entries(analytics.byGrade || {})
@@ -131,7 +132,7 @@ const WordUsageDashboard = () => {
             </div>
           </div>
           <p className="text-xs text-ink/70 mt-4">
-            Your most common grade level
+            Across everyone who uses the app
           </p>
         </div>
       </div>
@@ -166,7 +167,7 @@ const WordUsageDashboard = () => {
           </div>
         ) : (
           <p className="text-ink/70 italic text-center py-8">
-            No word usage data yet. Create some stories to see your most used words!
+            No word usage yet. Dolch words are counted as stories are made.
           </p>
         )}
       </div>
@@ -174,7 +175,7 @@ const WordUsageDashboard = () => {
       {/* Words by Grade Level */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-semibold text-ink mb-4">
-          Word Usage by Grade Level
+          Word usage by reading level
         </h3>
 
         <div className="space-y-4">
@@ -204,7 +205,7 @@ const WordUsageDashboard = () => {
 
         {Object.keys(analytics.byGrade || {}).length === 0 && (
           <p className="text-ink/70 italic text-center py-8">
-            No grade-level data yet. Start creating stories to see distribution!
+            No reading-level data yet.
           </p>
         )}
       </div>
@@ -212,20 +213,20 @@ const WordUsageDashboard = () => {
       {/* Tips Section */}
       <div className="bg-gradient-to-r from-mist to-mist border border-ink/20 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-ink mb-3">
-          📊 Understanding Your Analytics
+          Reading these figures
         </h3>
         <ul className="space-y-2 text-sm text-ink">
           <li className="flex items-start gap-2">
             <span className="text-ink font-bold">•</span>
-            <span><strong>Top Words:</strong> These are your most frequently used sight words. Consider introducing variety for comprehensive learning.</span>
+            <span><strong>Top words:</strong> the Dolch words used most often in stories, by everyone who uses the app. Other words, such as names, aren&apos;t counted.</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-ink font-bold">•</span>
-            <span><strong>Grade Distribution:</strong> Shows which grade levels you focus on most. Try to maintain consistency within each student&apos;s level.</span>
+            <span><strong>Reading levels:</strong> how many words were counted at each reading level, across everyone.</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-ink font-bold">•</span>
-            <span><strong>Unique Words:</strong> Higher numbers indicate more diverse vocabulary practice across your stories.</span>
+            <span><strong>Unique words:</strong> how many different Dolch words have been used, across everyone.</span>
           </li>
         </ul>
       </div>

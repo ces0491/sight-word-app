@@ -15,6 +15,14 @@ describe('tokenizeSentence', () => {
   it('keeps apostrophes inside words', () => {
     expect(tokenizeSentence("I can't stop.").filter((t) => t.isWord).map((t) => t.core)).toEqual(['I', "can't", 'stop']);
   });
+
+  it('leaves quotes outside the words and keeps every character', () => {
+    const sentence = `'Come here,' said Mum.`;
+    const tokens = tokenizeSentence(sentence);
+
+    expect(tokens.filter((t) => t.isWord).map((t) => t.core)).toEqual(['Come', 'here', 'said', 'Mum']);
+    expect(tokens.map((t) => t.text).join('')).toBe(sentence);
+  });
 });
 
 describe('ReaderText', () => {
@@ -25,13 +33,33 @@ describe('ReaderText', () => {
     expect(marked).toEqual(['The', 'can']);
   });
 
-  it('says the tapped word without its punctuation', async () => {
+  it('makes each word a button, leaving punctuation outside it', async () => {
     const onWordTap = jest.fn();
-    render(<ReaderText sentence="Run, Max!" words={[]} onWordTap={onWordTap} />);
+    const { container } = render(<ReaderText sentence="Run, Max!" words={[]} onWordTap={onWordTap} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Max!' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Max' }));
 
     expect(onWordTap).toHaveBeenCalledWith('Max');
+    expect(container.textContent).toBe('Run, Max!');
+  });
+
+  it('marks the same words that are counted as used', () => {
+    const sentence = `"Come here," said Mum. I can't stop. It's well-known.`;
+    const { container } = render(<ReaderText sentence={sentence} words={['come', 'here', 'can', 'it', 'well']} />);
+    const marked = [...container.querySelectorAll('.is-sight')].map((el) => el.textContent);
+
+    // "can" inside "can't", "it" inside "it's" and "well" inside "well-known" are different words
+    expect(marked).toEqual(['Come', 'here']);
+  });
+
+  it('marks a sight word written with a curly apostrophe', () => {
+    const { container } = render(<ReaderText sentence="Don’t go." words={["don't"]} />);
+    expect(container.querySelector('.is-sight').textContent).toBe('Don’t');
+  });
+
+  it('lights the next word when speech reports a position on punctuation', () => {
+    const { container } = render(<ReaderText sentence={'"Look," said Max.'} words={[]} spokenIndex={0} />);
+    expect(container.querySelector('.is-spoken').textContent).toBe('Look');
   });
 
   it('lights up the word being read aloud', () => {

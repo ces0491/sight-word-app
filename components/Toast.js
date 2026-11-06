@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 
 /**
@@ -6,15 +6,17 @@ import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
  * Provides non-intrusive notifications to replace browser alerts
  */
 const Toast = ({ message, type = 'info', onClose, duration = 4000 }) => {
+  // The container passes a new onClose on every render; the timer must not restart each time
+  const onCloseRef = useRef(onClose);
   useEffect(() => {
-    if (duration > 0) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, duration);
+    onCloseRef.current = onClose;
+  });
 
-      return () => clearTimeout(timer);
-    }
-  }, [duration, onClose]);
+  useEffect(() => {
+    if (duration <= 0) return undefined;
+    const timer = setTimeout(() => onCloseRef.current(), duration);
+    return () => clearTimeout(timer);
+  }, [duration]);
 
   const icons = {
     success: <CheckCircle className="w-5 h-5" />,

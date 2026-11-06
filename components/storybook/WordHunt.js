@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Star, Volume2, Eye, RotateCcw } from 'lucide-react';
 import WordCard from './WordCard';
 import { DOLCH_LISTS } from '../../lib/wordLists';
@@ -49,6 +49,16 @@ const WordHunt = ({ words, speech, onDone }) => {
 
   const round = rounds[roundIndex];
   const finished = roundIndex >= rounds.length;
+  const headingRef = useRef(null);
+  const nextRoundTimer = useRef(null);
+
+  // Each round's cards are new, so put focus on the heading rather than losing it
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, [roundIndex, finished]);
+
+  // Don't move on to a round after the hunt has closed
+  useEffect(() => () => clearTimeout(nextRoundTimer.current), []);
   const { speak, supported } = speech;
   // Without speech the game is matching, so the word is always shown
   const showWord = !supported || hintShown;
@@ -67,7 +77,7 @@ const WordHunt = ({ words, speech, onDone }) => {
     if (word === round.target) {
       setFound(true);
       speak(word);
-      setTimeout(() => {
+      nextRoundTimer.current = setTimeout(() => {
         setFound(false);
         setMissed([]);
         setHintShown(false);
@@ -91,7 +101,7 @@ const WordHunt = ({ words, speech, onDone }) => {
   if (rounds.length === 0) return null;
 
   const stars = (
-    <div className="flex justify-center gap-2" aria-label={`${Math.min(roundIndex, rounds.length)} of ${rounds.length} stars`}>
+    <div className="flex justify-center gap-2" role="img" aria-label={`${Math.min(roundIndex, rounds.length)} of ${rounds.length} stars`}>
       {rounds.map((r, i) => (
         <Star
           key={r.target}
@@ -108,7 +118,7 @@ const WordHunt = ({ words, speech, onDone }) => {
     return (
       <section className="mx-auto max-w-xl space-y-6 text-center" aria-labelledby="hunt-title">
         {stars}
-        <h2 id="hunt-title" className="animate-rise font-display text-4xl font-bold text-ink sm:text-5xl">
+        <h2 id="hunt-title" ref={headingRef} tabIndex={-1} className="animate-rise font-display text-4xl font-bold text-ink focus:outline-none sm:text-5xl">
           You found them all!
         </h2>
         <div className="flex flex-wrap justify-center gap-3">
@@ -127,7 +137,7 @@ const WordHunt = ({ words, speech, onDone }) => {
     <section className="mx-auto max-w-2xl space-y-8 text-center" aria-labelledby="hunt-title">
       {stars}
       <div className="space-y-4">
-        <h2 id="hunt-title" className="font-display text-3xl font-bold text-ink sm:text-4xl">
+        <h2 id="hunt-title" ref={headingRef} tabIndex={-1} className="font-display text-3xl font-bold text-ink focus:outline-none sm:text-4xl">
           {supported ? 'Find the word you hear' : 'Find this word'}
         </h2>
         <div className="flex flex-wrap items-center justify-center gap-3">

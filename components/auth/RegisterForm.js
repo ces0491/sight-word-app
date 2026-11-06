@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { User, Mail, Lock, UserPlus } from 'lucide-react';
 
@@ -8,6 +8,7 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const id = useId();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,13 +64,13 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 bg-berry/15 text-ink rounded-xl text-sm">
+        <div className="p-3 bg-berry/15 text-ink rounded-xl text-sm" role="alert">
           {error}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${id}-name`} className="block text-sm font-medium text-ink mb-1">
           Name
         </label>
         <div className="relative">
@@ -77,6 +78,9 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
             <User size={18} className="text-ink/40" />
           </div>
           <input
+            id={`${id}-name`}
+            autoComplete="name"
+            maxLength={60}
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -88,7 +92,7 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${id}-email`} className="block text-sm font-medium text-ink mb-1">
           Email address
         </label>
         <div className="relative">
@@ -96,6 +100,8 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
             <Mail size={18} className="text-ink/40" />
           </div>
           <input
+            id={`${id}-email`}
+            autoComplete="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -107,7 +113,7 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${id}-password`} className="block text-sm font-medium text-ink mb-1">
           Password
         </label>
         <div className="relative">
@@ -115,6 +121,9 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
             <Lock size={18} className="text-ink/40" />
           </div>
           <input
+            id={`${id}-password`}
+            autoComplete="new-password"
+            aria-describedby={`${id}-password-hint`}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -124,6 +133,9 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
             minLength={8}
           />
         </div>
+        <p id={`${id}-password-hint`} className="mt-1 text-sm text-ink/70">
+          At least 8 characters.
+        </p>
       </div>
 
       <button

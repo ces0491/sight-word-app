@@ -6,8 +6,8 @@ We take security seriously. The following versions of Sight Word Story Generator
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
-| < 0.1   | :x:                |
+| `main` and 1.1.x | :white_check_mark: |
+| < 1.1   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -15,15 +15,7 @@ We take security seriously. The following versions of Sight Word Story Generator
 
 ### How to Report
 
-If you discover a security vulnerability, please email us at:
-
-**security@[your-domain].com** (Update with actual contact)
-
-Or use GitHub's private vulnerability reporting:
-
-1. Go to the "Security" tab
-2. Click "Report a vulnerability"
-3. Fill out the form
+Use GitHub's private vulnerability reporting: [report a vulnerability](https://github.com/ces0491/sight-word-app/security/advisories/new), or go to the repository's **Security** tab and click **Report a vulnerability**. Only the maintainer sees the report.
 
 ### What to Include
 
@@ -121,8 +113,7 @@ We follow coordinated disclosure:
 
 1. **Code Security**
    - Never commit `.env.local` or secrets
-   - Validate all user inputs
-   - Use parameterized queries (Mongoose does this)
+   - Validate request bodies with the Zod schemas in [`lib/validation.js`](lib/validation.js) before they reach a query. Mongoose passes query operators such as `$regex` through, so an unvalidated `{ "email": { "$regex": "^a" } }` becomes part of the query
    - Sanitize HTML output
    - Implement rate limiting on APIs
    - Use HTTPS in production
@@ -149,23 +140,25 @@ We follow coordinated disclosure:
 
 1. **Password storage**: bcrypt with 10 salt rounds.
 2. **Sessions**: JWT-based with NextAuth. API routes read the session with `getServerSession`.
-3. **Input validation**: Zod schemas on the story, share and analytics routes and on AI story input ([`lib/validation.js`](lib/validation.js)). Unknown fields are dropped, so clients can't set `userId`, `shareToken` or `sharedWith`.
+3. **Input validation**: Zod schemas on registration, the story, share and analytics routes, and AI story input ([`lib/validation.js`](lib/validation.js)), checked before any query. Unknown fields are dropped, so clients can't set `userId`, `shareToken` or `sharedWith`.
+   - Registration: names of up to 60 letters, spaces, apostrophes, hyphens and full stops (they appear in share emails), passwords of 8 to 72 bytes, and emails stored lower-cased and looked up case-insensitively.
 4. **Story rendering**: story text is rendered as React text, never as HTML, wherever it came from (scene generator, AI, database).
-5. **Share links**: a random 256-bit token per story, compared in constant time. Wrong tokens and missing stories get the same 404.
+5. **Share links**: a random 256-bit token per story, compared in constant time, created once even when two shares start together. Wrong tokens and missing stories get the same 404. The owner can stop sharing from the story library, which removes the token. The shared story leaves out the learning needs, which describe the child.
 6. **Share email**: user text is HTML-escaped, and line breaks are removed from the subject.
-7. **Rate limiting**: share emails, per user, counted in MongoDB ([`lib/limits.js`](lib/limits.js)).
-8. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
-9. **Anthropic API keys**: AI stories use each grown-up's own key. It is kept in their browser's localStorage under their account id, removed on sign-out, and sent from the browser straight to Anthropic; the app's server never receives it ([`lib/anthropicKey.js`](lib/anthropicKey.js), [`lib/aiStory.js`](lib/aiStory.js)).
-10. **CSRF**: NextAuth protects its own auth routes.
-11. **Security headers**: a Content-Security-Policy on every page, set in [`next.config.js`](next.config.js). Scripts run only from this site and the exact jsDelivr paths of the OCR engine, and the page can only send requests to this site, the Anthropic API and the OCR language data, so injected script could neither run nor send a saved API key elsewhere. Also `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: DENY`. `style-src` allows inline styles, because server-rendered markup carries style attributes.
+7. **Rate limiting**: share emails and word-usage updates, per user, counted in MongoDB ([`lib/limits.js`](lib/limits.js)). Word usage is shared by every signed-in teacher, so it counts Dolch words only: other words, such as a child's name, never reach it.
+8. **Sign-in redirects**: after sign-in, the `callbackUrl` is followed only if it resolves to a page on this site ([`lib/safeRedirect.js`](lib/safeRedirect.js)); a prefix check alone let `/<tab>/evil.example` through.
+9. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
+10. **Anthropic API keys**: AI stories use each grown-up's own key. It is kept in their browser's localStorage under their account id, removed on sign-out, and sent from the browser straight to Anthropic; the app's server never receives it ([`lib/anthropicKey.js`](lib/anthropicKey.js), [`lib/aiStory.js`](lib/aiStory.js)).
+11. **CSRF**: NextAuth protects its own auth routes.
+12. **Security headers**: a Content-Security-Policy on every page, set in [`next.config.js`](next.config.js). Scripts run only from this site and the exact jsDelivr paths of the OCR engine, and the page can only send requests to this site, the Anthropic API and the OCR language data, so injected script could neither run nor send a saved API key elsewhere. Also `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: DENY`. `style-src` allows inline styles, because server-rendered markup carries style attributes.
 
 ### Areas for Improvement
 
 - [ ] Rate limit registration and sign-in attempts
-- [ ] Password length rule and email normalisation at registration
 - [ ] Implement audit logging
 - [ ] Implement account lockout after failed attempts
-- [ ] Wire up error monitoring (the Sentry config files are not loaded)
+- [ ] Add error monitoring; errors reach only the server logs today
+- [ ] Let people delete their account
 
 ## Responsible Disclosure Hall of Fame
 
@@ -191,10 +184,8 @@ The headers are set in `headers()` in [`next.config.js`](next.config.js), and [`
 
 ## Contact
 
-For security concerns: **security@[your-domain].com**
-
-For general questions: See [CONTRIBUTING.md](CONTRIBUTING.md)
+For security concerns, use [private vulnerability reporting](https://github.com/ces0491/sight-word-app/security/advisories/new). For anything else, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-Last Updated: 2026-01-09
+Last updated: 2026-11-06

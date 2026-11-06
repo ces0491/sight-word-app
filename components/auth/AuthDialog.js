@@ -123,6 +123,7 @@ const AuthDialog = ({ onClose, onSuccess }) => {
               onChange={(e) => setName(e.target.value)}
               className="field pl-10"
               autoComplete="name"
+              maxLength={60}
             />
           )}
         {fieldWithIcon(
@@ -149,7 +150,13 @@ const AuthDialog = ({ onClose, onSuccess }) => {
             onChange={(e) => setPassword(e.target.value)}
             className="field pl-10"
             autoComplete={isLogin ? 'current-password' : 'new-password'}
+            aria-describedby={isLogin ? undefined : 'auth-password-hint'}
           />
+        )}
+        {!isLogin && (
+          <p id="auth-password-hint" className="-mt-2 font-display text-sm text-ink/70">
+            At least 8 characters.
+          </p>
         )}
 
         <button type="submit" disabled={isSubmitting} className="btn btn-sun w-full">

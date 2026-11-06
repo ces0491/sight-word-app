@@ -1,8 +1,9 @@
 /**
  * Learning needs, chosen under Grown-ups, adjust how a story reads.
  *
- * The app puts a class on <body> for each need that is switched on, and
- * these rules change the reader's variables (see styles/globals.css).
+ * While a story is open, the reader (components/storybook/StoryReader.js)
+ * puts a class on <body> for each need saved with that story, and these
+ * rules change the reader's variables (see styles/globals.css).
  */
 
 /* Dyslexia: more space between letters, words and lines; a calmer marker */
@@ -39,4 +40,15 @@
 /* English learners: sight words stand out more */
 .esl-enabled .reader-word.is-sight {
   font-weight: 700;
+}
+
+/*
+ * More than one need: the rules above would let ADHD or visual processing
+ * (written later) shrink dyslexia's line spacing, so the most generous
+ * spacing wins. With dyslexia and visual processing both on, the stronger
+ * marker from visual processing stays: the words must be visible first.
+ */
+.dyslexia-enabled.adhd-enabled,
+.dyslexia-enabled.visual-processing-enabled {
+  --reader-line: 2;
 }

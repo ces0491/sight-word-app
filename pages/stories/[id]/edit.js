@@ -4,12 +4,13 @@ import GrownUpPage from '../../../components/storybook/GrownUpPage';
 import StatusScreen from '../../../components/storybook/StatusScreen';
 import StoryEditor from '../../../components/story/StoryEditor';
 import { useSignedIn } from '../../../hooks/useSignedIn';
+import { responseProblem } from '../../../lib/storyChecks';
 
 /** Edit a saved story's title, sentences, words and settings. */
 export default function EditStoryPage() {
   const router = useRouter();
   const { id } = router.query;
-  const { status } = useSignedIn();
+  const { status, sessionEnded } = useSignedIn({ keepPageOnSignOut: true });
   const [story, setStory] = useState(null);
   const [error, setError] = useState(null);
 
@@ -49,7 +50,7 @@ export default function EditStoryPage() {
       }),
     });
     if (!response.ok) {
-      throw new Error('Failed to save story');
+      throw new Error(await responseProblem(response, 'The story could not be saved. Please try again.'));
     }
     router.push(`/stories/${id}`);
   };
@@ -63,7 +64,12 @@ export default function EditStoryPage() {
 
   return (
     <GrownUpPage title="Edit story" back={{ href: '/stories', label: 'Library' }}>
-      <StoryEditor story={story} onSave={handleSave} onCancel={() => router.push('/stories')} />
+      <StoryEditor
+        story={story}
+        onSave={handleSave}
+        onCancel={() => router.push('/stories')}
+        notice={sessionEnded ? "You've been signed out. Your changes are still here: sign in again in another tab, then save." : undefined}
+      />
     </GrownUpPage>
   );
 }

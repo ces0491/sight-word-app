@@ -78,4 +78,36 @@ describe('PUT /api/stories/[id]', () => {
 
     expect(doc.usedWords).toEqual(['the']);
   });
+
+  it('refuses a learningNeeds update that leaves flags out, so it cannot reset them', async () => {
+    Story.findOne.mockResolvedValue(makeStoryDoc());
+    const res = await put({ learningNeeds: { adhd: true } });
+
+    expect(res.statusCode).toBe(400);
+    expect(Story.findOne).not.toHaveBeenCalled();
+  });
+
+  it('accepts a learningNeeds update with all five flags', async () => {
+    const doc = makeStoryDoc();
+    Story.findOne.mockResolvedValue(doc);
+    const learningNeeds = { adhd: true, dyslexia: false, autism: false, esl: false, visualProcessing: true };
+
+    const res = await put({ learningNeeds });
+
+    expect(res.statusCode).toBe(200);
+    expect(doc.learningNeeds).toEqual(learningNeeds);
+  });
+});
+
+describe.each(['GET', 'PUT', 'DELETE'])('%s /api/stories/[id]', (method) => {
+  it("only touches the signed-in user's own story", async () => {
+    Story.findOne.mockResolvedValue(null);
+    Story.findOneAndDelete.mockResolvedValue(null);
+    const res = createResponse();
+    await handler(createRequest({ method, query: { id: STORY_ID }, body: { title: 'T' } }), res);
+
+    const lookup = method === 'DELETE' ? Story.findOneAndDelete : Story.findOne;
+    expect(lookup).toHaveBeenCalledWith({ _id: STORY_ID, userId: 'owner-1' });
+    expect(res.statusCode).toBe(404);
+  });
 });

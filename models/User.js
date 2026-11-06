@@ -6,10 +6,13 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a name'],
   },
+  // Stored lower-cased; look emails up with EMAIL_COLLATION, which also matches older mixed-case entries.
   email: {
     type: String,
     required: [true, 'Please provide an email'],
     unique: true,
+    lowercase: true,
+    trim: true,
   },
   password: {
     type: String,
@@ -34,5 +37,8 @@ UserSchema.pre('save', async function(next) {
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
+
+/** Case-insensitive comparison for email lookups. */
+export const EMAIL_COLLATION = { locale: 'en', strength: 2 };
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);

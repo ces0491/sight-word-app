@@ -27,7 +27,7 @@ This project adheres to a code of conduct that all contributors are expected to 
 
 ### Prerequisites
 
-- Node.js 20 or later
+- Node.js 24 (the version in `engines` in `package.json`)
 - npm
 - MongoDB (local or Atlas account)
 - Git
@@ -71,18 +71,19 @@ This project adheres to a code of conduct that all contributors are expected to 
 
 ### Branching Strategy
 
-- `main` - Production-ready code
-- `develop` - Integration branch for features
-- `feature/*` - New features (e.g., `feature/pdf-download`)
+- `main` - Production-ready code; Vercel deploys it
+- `feat/*` - New features (e.g., `feat/own-api-keys`)
 - `fix/*` - Bug fixes (e.g., `fix/story-generation-bug`)
 - `docs/*` - Documentation updates
+
+Branches start from `main`, and pull requests go back into it.
 
 ### Making Changes
 
 1. **Create a feature branch**
 
    ```bash
-   git checkout -b feature/your-feature-name
+   git checkout -b feat/your-feature-name
    ```
 
 2. **Make your changes**
@@ -118,15 +119,15 @@ This project adheres to a code of conduct that all contributors are expected to 
 5. **Push to your fork**
 
    ```bash
-   git push origin feature/your-feature-name
+   git push origin feat/your-feature-name
    ```
 
 6. **Create a Pull Request**
    - Go to the original repository on GitHub
    - Click "New Pull Request"
    - Select your fork and branch
-   - Fill out the PR template
-   - Request review from maintainers
+   - Say what changed and why, and how you tested it
+   - Request review from the maintainer
 
 ## Coding Standards
 
@@ -328,8 +329,7 @@ How will this help teachers and students?
 
 ## Questions?
 
-- Open a GitHub Discussion
-- Email: [contact information]
+- Open a [GitHub issue](https://github.com/ces0491/sight-word-app/issues)
 - Check existing issues and pull requests
 
 ## Recognition

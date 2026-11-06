@@ -181,6 +181,8 @@ const GrownUps = ({
   onRemoveAnthropicKey,
   savedStories,
   isLoadingStories,
+  storiesError,
+  onRetryStories,
   onOpenStory,
   onSignIn,
   onSignOut,
@@ -350,7 +352,7 @@ const GrownUps = ({
               {FORMATS.map((f) => (
                 <label
                   key={f.value}
-                  className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 text-center ${
+                  className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 text-center focus-within:ring-4 focus-within:ring-sun ${
                     storyFormat === f.value ? 'border-ink bg-mist' : 'border-ink/20 bg-paper'
                   }`}
                 >
@@ -380,7 +382,11 @@ const GrownUps = ({
           </label>
         </Section>
 
-        <Section id="needs-title" title="Learning needs" description="These change how a story looks while it's read.">
+        <Section
+          id="needs-title"
+          title="Learning needs"
+          description="These change how a story looks while it's read. Each story keeps the needs it was made with; change a saved story's in the story library."
+        >
           <div className="space-y-2">
             {LEARNING_NEEDS.map((need) => (
               <label key={need.key} className="flex cursor-pointer items-start gap-3 rounded-xl border-2 border-ink/10 p-3 hover:border-ink/30">
@@ -404,6 +410,15 @@ const GrownUps = ({
             <p className="font-display text-base text-ink/70">Sign in to save stories and read them again on any device.</p>
           ) : isLoadingStories ? (
             <p className="font-display text-base text-ink/70">Loading your stories…</p>
+          ) : storiesError ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p role="alert" className="font-display text-base text-ink">
+                Your saved stories couldn&apos;t be loaded.
+              </p>
+              <button type="button" onClick={onRetryStories} className="btn-quiet">
+                Try again
+              </button>
+            </div>
           ) : savedStories.length === 0 ? (
             <p className="font-display text-base text-ink/70">No saved stories yet. Save one from the last page of a story.</p>
           ) : (
@@ -434,7 +449,7 @@ const GrownUps = ({
           <Section
             id="usage-title"
             title="Word usage"
-            description="Counted across everyone who uses this app, not only your account."
+            description="Dolch words, counted across everyone who uses this app. Other words, such as names, aren't counted."
           >
             <details className="group">
               <summary className="inline-flex cursor-pointer items-center gap-2 font-display text-base text-ink">

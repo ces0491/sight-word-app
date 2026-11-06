@@ -153,4 +153,12 @@ body {
   .no-print { display: none !important; }
   .print-only { display: block !important; }
   .print-page { break-inside: avoid; margin-bottom: 24px; }
+  /* Browsers leave out background colours when printing by default, so keep the
+     highlight where they allow it and underline it so it shows either way */
+  .highlighted-text .highlight {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+  }
 }

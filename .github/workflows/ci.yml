@@ -1,24 +1,25 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
+# The Node version comes from "engines" in package.json, which Vercel also uses
 jobs:
   test:
-    name: Test
+    name: Lint and test
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version-file: package.json
           cache: 'npm'
 
       - name: Install dependencies
@@ -27,17 +28,8 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-      - name: Run tests
-        run: npm test
-
-      - name: Generate coverage report
+      - name: Run tests with coverage
         run: npm run test:coverage
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
 
   build:
     name: Build
@@ -46,12 +38,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version-file: package.json
           cache: 'npm'
 
       - name: Install dependencies
@@ -59,33 +51,22 @@ jobs:
 
       - name: Build application
         run: npm run build
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          NEXTAUTH_URL: http://localhost:3000
-          NEXTAUTH_SECRET: test-secret-for-build-only
 
   security:
-    name: Security Audit
+    name: Security audit
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version-file: package.json
           cache: 'npm'
 
+      # Fails on critical advisories in production dependencies. The known high
+      # and moderate ones are inside Next.js 15 and need Next.js 16 to clear.
       - name: Run npm audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
-
-      - name: Run dependency check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: 'sight-word-story-generator'
-          path: '.'
-          format: 'HTML'
-        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=critical

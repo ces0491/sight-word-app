@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { BookOpen, Plus, Search, Trash2, Pencil } from 'lucide-react';
+import { BookOpen, Plus, Search, Trash2, Pencil, Link2Off } from 'lucide-react';
 import GrownUpPage from '../../components/storybook/GrownUpPage';
 import StatusScreen from '../../components/storybook/StatusScreen';
 import Modal from '../../components/storybook/Modal';
@@ -20,29 +20,45 @@ export default function StoriesPage() {
   const { status } = useSignedIn();
   const [stories, setStories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [toDelete, setToDelete] = useState(null);
   const [deleteError, setDeleteError] = useState('');
+  const [toUnshare, setToUnshare] = useState(null);
+  const [unshareError, setUnshareError] = useState('');
+
+  const fetchStories = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(false);
+    try {
+      const response = await fetch('/api/stories');
+      if (!response.ok) throw new Error(`Stories request failed: ${response.status}`);
+      setStories(await response.json());
+    } catch (error) {
+      console.error('Error fetching stories:', error);
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (status !== 'authenticated') return;
-    const fetchStories = async () => {
-      try {
-        const response = await fetch('/api/stories');
-        if (response.ok) {
-          setStories(await response.json());
-        } else {
-          console.error('Failed to fetch stories');
-        }
-      } catch (error) {
-        console.error('Error fetching stories:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchStories();
-  }, [status]);
+    if (status === 'authenticated') fetchStories();
+  }, [status, fetchStories]);
+
+  /** Stop sharing: every link sent for the story stops working. */
+  const confirmUnshare = async () => {
+    try {
+      const response = await fetch(`/api/stories/${toUnshare._id}/share`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to stop sharing');
+      setStories((current) => current.map((story) => (story._id === toUnshare._id ? { ...story, sharedWith: [] } : story)));
+      setToUnshare(null);
+    } catch (error) {
+      console.error('Error stopping sharing:', error);
+      setUnshareError('Sharing could not be stopped. Please try again.');
+    }
+  };
 
   const confirmDelete = async () => {
     try {
@@ -58,6 +74,21 @@ export default function StoriesPage() {
 
   if (status !== 'authenticated' || isLoading) {
     return <StatusScreen title="Opening your library…" />;
+  }
+  if (loadError) {
+    return (
+      <GrownUpPage title="Story library">
+        <div className="rounded-2xl border-2 border-ink/15 bg-paper p-10 text-center">
+          <h2 className="font-display text-2xl font-semibold text-ink" role="alert">
+            Your stories couldn&apos;t be loaded
+          </h2>
+          <p className="mt-2 font-display text-base text-ink/70">Check the connection and try again.</p>
+          <button type="button" onClick={fetchStories} className="btn btn-sun mt-6">
+            Try again
+          </button>
+        </div>
+      </GrownUpPage>
+    );
   }
 
   const term = searchTerm.trim().toLowerCase();
@@ -143,9 +174,23 @@ export default function StoriesPage() {
               <p className="mt-3 line-clamp-2 font-read text-lg text-ink">{story.content[0]}</p>
               <div className="mt-4 flex items-center justify-between gap-3">
                 <p className="truncate font-read text-base text-ink/70">{story.words.slice(0, 6).join(', ')}</p>
-                <Link href={`/stories/${story._id}`} className="btn-quiet shrink-0">
-                  <BookOpen size={18} aria-hidden="true" /> Read
-                </Link>
+                <div className="flex shrink-0 gap-1">
+                  {story.sharedWith?.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUnshareError('');
+                        setToUnshare(story);
+                      }}
+                      className="btn-quiet"
+                    >
+                      <Link2Off size={18} aria-hidden="true" /> Stop sharing
+                    </button>
+                  )}
+                  <Link href={`/stories/${story._id}`} className="btn-quiet">
+                    <BookOpen size={18} aria-hidden="true" /> Read
+                  </Link>
+                </div>
               </div>
             </li>
           ))}
@@ -166,6 +211,28 @@ export default function StoriesPage() {
             </button>
             <button type="button" onClick={confirmDelete} className="btn btn-berry">
               <Trash2 size={18} aria-hidden="true" /> Delete
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {toUnshare && (
+        <Modal title="Stop sharing this story?" onClose={() => setToUnshare(null)} labelledBy="unshare-title">
+          <p className="font-display text-base text-ink">
+            The links sent for &ldquo;{toUnshare.title}&rdquo; to {toUnshare.sharedWith.join(', ')} will stop working. Sharing it again
+            sends a new link.
+          </p>
+          {unshareError && (
+            <p className="mt-3 rounded-xl bg-berry/10 p-3 font-display text-base text-ink" role="alert">
+              {unshareError}
+            </p>
+          )}
+          <div className="mt-6 flex justify-end gap-2">
+            <button type="button" onClick={() => setToUnshare(null)} className="btn-quiet">
+              Keep sharing
+            </button>
+            <button type="button" onClick={confirmUnshare} className="btn btn-berry">
+              <Link2Off size={18} aria-hidden="true" /> Stop sharing
             </button>
           </div>
         </Modal>

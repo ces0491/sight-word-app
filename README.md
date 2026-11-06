@@ -2,7 +2,7 @@
 
 Short illustrated stories built from the sight words a child is learning, to read together. A grown-up picks the words; the child taps them to hear them, reads the story a page at a time, and finishes with a word hunt.
 
-[Sight Word Stories](https://sight-word-app.vercel.app/)
+[Sight Word Stories](https://sightwords.sheetsolved.com/)
 
 **Status**: see the [Production Readiness](docs/PRODUCTION_READY.md) page for what is in place and what remains before a public launch.
 
@@ -20,14 +20,16 @@ Short illustrated stories built from the sight words a child is learning, to rea
 
 **Grown-ups, behind a simple sum**
 
-- **Words to practise**: type them, upload a list, scan a page (OCR picks out the words that are on the Dolch lists), or pick from the Dolch sight word lists by level
+- **Words to practise**: type them, upload a list, scan a page, or pick from the Dolch sight word lists by level. A story takes up to 100 words. Scanning picks out the words on the Dolch lists that it reads exactly; others can be typed
+- **Stories that use the words**: a Classic story uses each Dolch word on its own, and as many of a longer list as its scenes and up to ten extra sentences allow. The word hunt and highlights use only the words that are on the page
 - **Two story makers**:
   - **Classic** builds a day-in-the-life story from written scenes, in the browser. Free, and no account needed.
   - **AI** writes a story with Claude Haiku 4.5, using the grown-up's own Anthropic API key. They sign in and add the key under Account, and Anthropic bills their account for each story. The key is kept in that browser, removed on sign-out, and sent from the browser straight to Anthropic, so this app's server never receives it. If AI generation fails, the app falls back to Classic.
 - **Reading level** from Kindergarten to Grade 3, the span of the Dolch lists. AI stories are written for it; Classic stories are the same at every level and save it as a label for sorting the library.
 - **Sight word style** (highlighted, bold, underlined or plain) and pictures on or off
 - **Learning needs**: settings that change how a story reads (below)
-- **Save, share and print**: save stories to an account, email a link (needs SMTP settings), print every page, and manage saved stories in the story library
+- **Save, share and print**: save stories to an account, email a link (needs SMTP settings), print every page, and manage saved stories in the story library, where sharing can also be stopped
+- **Nothing lost on a reload**: the words, settings and newest unsaved story stay for the browser tab; the story editor asks before leaving with unsaved changes
 
 ## Cost
 
@@ -39,7 +41,7 @@ Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's fr
 
 ### Prerequisites
 
-- Node.js 20 or later (CI uses Node 24)
+- Node.js 24 (set in `engines` in `package.json`; CI and Vercel use it too)
 - npm
 - A MongoDB database (the MongoDB Atlas free tier works)
 
@@ -87,15 +89,15 @@ Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's fr
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the development server |
-| `npm run build` | Lint, type-check and build for production |
+| `npm run build` | Build for production |
 | `npm start` | Serve the production build |
-| `npm run lint` | Run ESLint |
+| `npm run lint` | Run ESLint over the whole project |
 | `npm test` | Run the Jest test suite |
 | `npm run test:coverage` | Run the tests with a coverage report |
 
 ### Limits
 
-Size limits on stories and AI requests, and the per-user rate limit on share emails, are in [`lib/limits.js`](lib/limits.js). Rate limit counters are kept in MongoDB so they hold across serverless instances.
+Size limits on stories and AI requests, and the per-user rate limits on share emails and word-usage updates, are in [`lib/limits.js`](lib/limits.js). Rate limit counters are kept in MongoDB so they hold across serverless instances.
 
 ## Deploying to Vercel
 
@@ -122,7 +124,7 @@ Vercel automatically deploys changes when you push to your repository. To ensure
 
 ## Learning needs
 
-Each setting changes how the reader looks, and AI stories are also written for it.
+Each setting changes how the reader looks, and AI stories are also written for it. A story keeps the needs it was made with; a saved story's can be changed in the story library.
 
 | Setting | In the reader | In AI stories |
 | --- | --- | --- |

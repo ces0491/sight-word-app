@@ -315,3 +315,74 @@ describe('AI stories', () => {
     expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled();
   });
 });
+
+describe('review fixes', () => {
+  it('asks a signed-out grown-up to sign in before sharing, then opens the share form', async () => {
+    useSession.mockReturnValue(signedOut);
+    mockFetch({});
+    const user = userEvent.setup();
+    const { rerender } = render(<SightWordStoryGenerator />);
+
+    await user.click(screen.getByRole('button', { name: 'Try some words' }));
+    await user.click(screen.getByRole('button', { name: 'Make my story' }));
+    await readToTheEnd(user);
+    await user.click(screen.getByRole('button', { name: 'Share' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Share this story' })).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    useSession.mockReturnValue(signedIn);
+    rerender(<SightWordStoryGenerator />);
+
+    expect(await screen.findByRole('dialog', { name: 'Share this story' })).toBeInTheDocument();
+  });
+
+  it('stops adding words at the story limit and says how many were left out', async () => {
+    useSession.mockReturnValue(signedOut);
+    mockFetch({});
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+    await openGrownUps(user);
+
+    await user.click(screen.getByRole('button', { name: 'Add all pre-primer words' }));
+    await user.click(screen.getByRole('tab', { name: 'Primer' }));
+    await user.click(screen.getByRole('button', { name: 'Add all primer words' }));
+    await user.click(screen.getByRole('tab', { name: 'First grade' }));
+    await user.click(screen.getByRole('button', { name: 'Add all first grade words' }));
+
+    expect(screen.getAllByRole('button', { name: /^Remove / })).toHaveLength(100);
+    expect(screen.getByText("Stories can use up to 100 words, so 33 weren't added.")).toBeInTheDocument();
+  });
+
+  it('keeps the words and the unsaved story for this tab across a reload', async () => {
+    useSession.mockReturnValue(signedOut);
+    mockFetch({});
+    const user = userEvent.setup();
+    const { unmount } = render(<SightWordStoryGenerator />);
+    await user.click(screen.getByRole('button', { name: 'Try some words' }));
+    await user.click(screen.getByRole('button', { name: 'Make my story' }));
+    await user.click(await screen.findByRole('button', { name: 'Done' }));
+    unmount();
+
+    render(<SightWordStoryGenerator />);
+
+    const cards = within(await screen.findByRole('list', { name: 'Your words' })).getAllByRole('listitem');
+    expect(cards.map((card) => card.textContent)).toEqual(STARTER_WORDS);
+    expect(screen.getByRole('heading', { name: 'Read again' })).toBeInTheDocument();
+  });
+
+  it('says when saved stories could not be loaded, and tries again', async () => {
+    useSession.mockReturnValue(signedIn);
+    mockFetch({ 'GET /api/stories': [500, { message: 'Internal server error' }] });
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+    await openGrownUps(user);
+
+    expect(await screen.findByText("Your saved stories couldn't be loaded.")).toBeInTheDocument();
+
+    mockFetch({ 'GET /api/stories': [200, []] });
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByText('No saved stories yet. Save one from the last page of a story.')).toBeInTheDocument();
+  });
+});

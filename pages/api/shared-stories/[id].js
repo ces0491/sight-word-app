@@ -41,7 +41,7 @@ async function handler(req, res) {
       format: story.format,
       includeImages: story.includeImages,
       grade: story.grade,
-      learningNeeds: story.learningNeeds,
+      // learningNeeds stays private: it describes the child, and anyone holding the link can read this
       createdAt: story.createdAt,
     });
   } catch (error) {

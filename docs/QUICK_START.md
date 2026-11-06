@@ -1,66 +1,54 @@
 # Quick Start Guide
 
-## Sight Word Story Generator
-
-Get your development environment up and running in 5 minutes!
+How to run Sight Word Stories on your own machine.
 
 ---
 
 ## Prerequisites
 
-- Node.js 20 or later
+- Node.js 24 (the version in `engines` in `package.json`, which CI and Vercel also use)
 - npm (comes with Node.js)
-- MongoDB account (free tier at [mongodb.com/cloud/atlas](https://mongodb.com/cloud/atlas))
+- A MongoDB database, for example the free tier of [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 
 ---
 
-## Step 1: Clone & Install (2 minutes)
+## Step 1: Clone and install
 
 ```bash
-# Clone the repository
 git clone https://github.com/ces0491/sight-word-app.git
 cd sight-word-app
-
-# Install dependencies
 npm install
 ```
 
 ---
 
-## Step 2: Environment Setup (3 minutes)
+## Step 2: Environment
 
 ```bash
-# Copy the example environment file
 cp .env.example .env.local
 ```
 
-**Edit `.env.local`** with your actual values:
+Then edit `.env.local`. It is listed in `.gitignore`; never commit it.
 
-> **⚠️ Security Note**: Never commit the `.env.local` file to Git. It contains sensitive credentials and is already included in `.gitignore`.
-
-### Required Variables
+### Required variables
 
 ```bash
-# 1. MongoDB (REQUIRED)
-# Get your connection string from: https://cloud.mongodb.com/
-# Replace <username>, <password>, and <cluster> with your actual values
+# MongoDB connection string, from the Atlas dashboard
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/
 # The database inside the cluster that the app uses
 MONGODB_DB=sight-word-stories
 
-# 2. NextAuth (REQUIRED)
-# Use your local or production URL
+# The app's base URL
 NEXTAUTH_URL=http://localhost:3000
 
-# Generate a random secret with: openssl rand -base64 32
-# Replace the example below with your generated secret
-NEXTAUTH_SECRET=<generate-random-32-character-secret>
+# A random secret: generate one with  openssl rand -base64 32
+NEXTAUTH_SECRET=<generated-secret>
 ```
 
-### Optional Variables
+### Optional variables
 
 ```bash
-# 3. Email (OPTIONAL - only needed for story sharing)
+# Email, only needed for sharing stories by email
 EMAIL_SERVER_HOST=smtp.gmail.com
 EMAIL_SERVER_PORT=587
 EMAIL_SERVER_USER=your-email@gmail.com
@@ -72,219 +60,82 @@ AI stories need no variable. A signed-in grown-up adds their own Anthropic API k
 
 ---
 
-## Step 3: Run the App (30 seconds)
+## Step 3: Run the app
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser!
+Open [http://localhost:3000](http://localhost:3000). From there:
+
+1. **Make a story**: tap **Try some words**, then **Make my story**.
+2. **Choose words**: tap **Grown-ups**, answer the sum, and type words or pick them from the Dolch lists.
+3. **Create an account**: under Grown-ups → Account, tap **Sign in**, then **Create one**.
+4. **Save a story**: tap **Save** on the last page of a story. Saved stories are in the story library.
 
 ---
 
-## 🎉 You're Done
+## Common Issues
 
-The app should now be running. You can:
+### MongoDB connection failed
 
-1. **Register a new account** - Click "Sign Up"
-2. **Create a story** - Enter sight words and click "Generate Story"
-3. **View analytics** - See word usage statistics (requires login)
-4. **Save stories** - Save your favorite stories (requires login)
+Check `MONGODB_URI` in `.env.local`: the username and password, and that Atlas allows connections from your IP address.
 
----
+### Sign-in errors
 
-## Common Issues & Solutions
+Make sure `NEXTAUTH_SECRET` is set. Generate one with `openssl rand -base64 32`.
 
-### Issue: "MongoDB connection failed"
+### Email sharing not working
 
-**Solution**: Check your `MONGODB_URI` in `.env.local`
+Expected until SMTP is configured. Without the `EMAIL_*` variables the app says email sharing isn't set up; see [.env.example](../.env.example).
 
-- Make sure your IP is whitelisted in MongoDB Atlas
-- Verify username and password are correct
-- Test connection in MongoDB Compass
-
-### Issue: "NextAuth error"
-
-**Solution**: Make sure `NEXTAUTH_SECRET` is set
+### Port 3000 already in use
 
 ```bash
-# Generate a new secret
-openssl rand -base64 32
-```
-
-### Issue: "Email sharing not working"
-
-**Solution**: This is normal if you haven't configured SMTP
-
-- Email configuration is optional
-- App will show "Email service not configured" message
-- See [.env.example](../.env.example) for setup instructions
-
-### Issue: Port 3000 already in use
-
-**Solution**: Use a different port
-
-```bash
-PORT=3001 npm run dev
+npx next dev -p 3001
 ```
 
 ---
 
-## Next Steps
+## Commands
 
-### For Development
-
-1. **Read the docs**:
-   - [API.md](API.md) - API endpoint documentation
-   - [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute
-   - [SECURITY.md](SECURITY.md) - Security policies
-
-2. **Explore the code**:
-   - `pages/` - Next.js pages and API routes
-   - `components/` - React components
-   - `lib/` - Utility functions
-   - `models/` - Database schemas
-
-3. **Make changes**:
-   - Follow coding standards in [CONTRIBUTING.md](CONTRIBUTING.md)
-   - Test your changes locally
-   - Create a pull request
-
-### For Production Deployment
-
-1. **Set up MongoDB Atlas**
-   - Create a production cluster
-   - Enable backups
-   - Whitelist Vercel IPs
-
-2. **Deploy to Vercel**
-   - Connect your GitHub repository
-   - Add environment variables
-   - Deploy!
-
-3. **Configure email** (optional)
-   - Set up SMTP service (Gmail, SendGrid, etc.)
-   - Add credentials to Vercel environment
-
-4. **Set up monitoring**
-   - Enable Vercel Analytics
-   - Add Sentry for error tracking
-   - Monitor MongoDB performance
-
----
-
-## Development Commands
-
-```bash
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Run linter
-npm run lint
-
-# Run tests (when available)
-npm test
-```
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the development server |
+| `npm run build` | Build for production |
+| `npm start` | Serve the production build |
+| `npm run lint` | Run ESLint over the whole project |
+| `npm test` | Run the Jest test suite |
+| `npm run test:coverage` | Run the tests with a coverage report |
 
 ---
 
 ## Project Structure
 
 ```text
-sight-word-story-generator/
-├── components/          # React components
-│   ├── analytics/      # Analytics dashboard
-│   ├── auth/          # Authentication components
-│   ├── story/         # Story-related components
-│   ├── Toast.js       # Toast notifications
-│   └── ...
-├── hooks/             # Custom React hooks
-├── lib/               # Utility functions
-│   ├── dbConnect.js   # MongoDB connection
-│   ├── storyGeneration.js  # Story generation logic
-│   └── ...
-├── models/            # Mongoose schemas
-│   ├── User.js
-│   ├── Story.js
-│   └── WordAnalytics.js
-├── pages/             # Next.js pages
-│   ├── api/          # API routes
-│   ├── index.js      # Home page
-│   └── _app.js       # App wrapper
-├── public/            # Static files
-├── styles/            # CSS files
-├── .env.example       # Environment template
-└── README.md          # Project overview
+components/   React components: storybook/ (the child-facing screens), story/, auth/, analytics/
+hooks/        React hooks (speech, toasts, sign-in, unsaved changes)
+lib/          Story engine, word matching, illustrations, OCR, validation, AI stories
+models/       Mongoose schemas: User, Story, WordAnalytics, RateLimit
+pages/        Next.js pages; pages/api/ holds the API routes
+public/       Static files
+styles/       Global CSS and the learning-needs styles
+test/         API route tests and test helpers
 ```
 
 ---
 
-## Feature Overview
+## Deploying
 
-### ✅ Working Features
+The [README](../README.md#deploying-to-vercel) covers deploying to Vercel, and [Production Readiness](PRODUCTION_READY.md) lists what is in place, the known gaps, and checks to run after deploying.
 
-- **User Authentication** - Sign up, login, logout
-- **Story Generation** - Classic stories in the browser, or AI stories with the grown-up's own Anthropic API key
-- **SVG Illustrations** - Automatic scene generation
-- **Learning Accommodations** - ADHD, Dyslexia, Autism, ESL, Visual Processing
-- **Word Formats** - Highlighted, Bold, Underlined, Normal
-- **Save Stories** - Store stories in database
-- **Analytics Dashboard** - Track word usage
-- **OCR Upload** - Extract words from images
-- **Print Stories** - Print-friendly format
+## More Documentation
 
-### ⚠️ Partial Features
+- [README](../README.md): project overview
+- [API documentation](API.md)
+- [Contributing](../CONTRIBUTING.md)
+- [Security policy](../SECURITY.md)
 
-- **Email Sharing** - Requires SMTP configuration (optional)
-- **PDF Download** - Coming soon (shows notification)
+Questions and bug reports go in [GitHub issues](https://github.com/ces0491/sight-word-app/issues).
 
----
-
-## Getting Help
-
-### Documentation
-
-- [README.md](README.md) - Project overview
-- [API.md](API.md) - API documentation
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Development guide
-- [PRODUCTION_READINESS_REPORT.md](PRODUCTION_READINESS_REPORT.md) - Production status
-
-### Support
-
-- **Issues**: [GitHub Issues](https://github.com/ces0491/sight-word-app/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/ces0491/sight-word-app/discussions)
-- **Email**: [Your contact email]
-
-### Community
-
-- Star the repo if you find it useful!
-- Share with teacher friends
-- Contribute improvements
-
----
-
-## Tips for Success
-
-1. **Start Small**: Create a simple story first
-2. **Explore Features**: Try different learning accommodations
-3. **Check Analytics**: See your word usage patterns
-4. **Save Favorites**: Build a library of stories
-5. **Share Feedback**: Help us improve!
-
----
-
-## License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-**Happy Story Creating! 📚✨**
-
-Last Updated: 2026-01-09
+The project is licensed under the MIT License; see [LICENSE](../LICENSE).

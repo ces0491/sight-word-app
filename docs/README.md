@@ -1,89 +1,72 @@
 # Documentation
 
-Welcome to the Sight Word Story Generator documentation!
-
 ## Quick Links
 
 ### Getting Started
 
-- **[Quick Start Guide](QUICK_START.md)** - Set up your development environment
+- **[Quick Start Guide](QUICK_START.md)** - Run the app on your own machine
 - **[API Documentation](API.md)** - API reference with examples
 - **[Production Readiness](PRODUCTION_READY.md)** - What is in place and what remains before a public launch
 
 ### About the Project
 
-- **[Why It's Free](FREE_AND_OPEN.md)** - How the app runs on free tiers, and who pays for AI stories
-- **[Changelog](CHANGELOG.md)** - Version history and recent updates
+- **[Free and Open Source](FREE_AND_OPEN.md)** - What costs nothing, who pays for AI stories, and what the app stores
 - **[Illustrations](ILLUSTRATIONS.md)** - How story pictures are drawn
+- **[Changelog](CHANGELOG.md)** - Version history
 
 ### Development
 
 - **[Contributing Guidelines](../CONTRIBUTING.md)** - How to contribute to the project
-- **[Security Policy](../SECURITY.md)** - How to report security vulnerabilities
-- **[License](../LICENSE)** - MIT License details
+- **[Security Policy](../SECURITY.md)** - How to report a security problem, and what is in place
+- **[License](../LICENSE)** - MIT License
 
-## Overview
-
-This folder contains all project documentation organized by topic:
+## What Each Document Covers
 
 ### QUICK_START.md
 
-5-minute setup guide covering:
-
 - Prerequisites (Node.js, MongoDB)
-- Environment configuration
-- Running the development server
-- Common issues and solutions
-- Project structure overview
+- Environment variables
+- Running the app and trying it out
+- Common issues
+- Commands and project structure
 
 ### API.md
 
-API reference including:
-
-- Story, sharing, AI generation and analytics endpoints
-- Request/response examples
+- Registration, story, sharing and analytics endpoints, with request and response examples
 - Authentication flow
-- Error codes and handling
+- Errors and rate limits
 - Data models
 - Security considerations
 
+### PRODUCTION_READY.md
+
+- What is in place: authentication, validation, share links, security headers, rate limits
+- Gaps before a public launch
+- Environment variables and checks to run after deploying
+
 ### FREE_AND_OPEN.md
 
-Explains the free-to-run design:
-
-- Why it's free (our mission)
-- How we keep it free (SVG illustrations, free hosting tiers)
-- Who pays for the optional AI stories
-- Cost comparison to paid alternatives
-- Privacy and data practices
-- Sustainability model
-- Community contribution
+- What costs nothing to run
+- Who pays for AI stories
+- What the app stores, and what leaves the browser
+- Self-hosting
 
 ### ILLUSTRATIONS.md
 
-How story pictures are drawn:
-
-- Scene-based pictures for Classic stories, keyword-based for the rest
-- One cast of characters per story
+- How each page's picture is chosen: from the story's scene, or from keywords
 - What can be drawn
 - How to add a scene
 
 ### CHANGELOG.md
 
-Version history including:
-
-- SVG illustration system enhancement (v0.9.0+)
-- Production readiness improvements (v0.9.0)
-- Cost-free architecture changes
-- Bug fixes and improvements
-- Upcoming features
+- Unreleased changes, then each version from newest to oldest
 
 ## Need Help?
 
-- **Setup Issues**: See [QUICK_START.md](QUICK_START.md) Common Issues section
-- **API Questions**: Check [API.md](API.md) for detailed examples
-- **Security Concerns**: Follow the process in [SECURITY.md](../SECURITY.md)
-- **Contributing**: Read [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines
+- **Setup issues**: see the Common Issues section of [QUICK_START.md](QUICK_START.md)
+- **API questions**: see [API.md](API.md)
+- **Security concerns**: follow [SECURITY.md](../SECURITY.md)
+- **Contributing**: read [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## Project Status
 
@@ -91,7 +74,3 @@ See [PRODUCTION_READY.md](PRODUCTION_READY.md) for the current status and the ga
 
 - **License**: MIT
 - **Cost**: free to run; AI stories are billed to each grown-up's own Anthropic account
-
----
-
-**Last Updated**: 2026-11-05

@@ -21,7 +21,7 @@ This document describes all API endpoints available in the Sight Word Story Gene
 ## Base URL
 
 **Development**: `http://localhost:3000/api`
-**Production**: `https://your-domain.com/api`
+**Production**: `https://sightwords.sheetsolved.com/api`
 
 ---
 
@@ -49,6 +49,12 @@ Create a new user account.
 }
 ```
 
+The body is validated before any query (`registerSchema`):
+
+- `name`: 1 to 60 characters; letters in any script, with spaces, apostrophes, hyphens and full stops. It appears in share emails.
+- `email`: a valid address of up to 254 characters, stored trimmed and lower-cased. An address already registered in any case is refused.
+- `password`: at least 8 characters and at most 72 bytes, the most bcrypt reads.
+
 **Response** (201 Created):
 
 ```json
@@ -65,16 +71,15 @@ Create a new user account.
 
 **Errors**:
 
-- `400` - Missing required fields or user already exists
+- `400` - A field fails validation (the `message` says which rule, and `issues` lists the fields) or the email is already registered
+- `405` - Method not allowed
 - `500` - Server error
 
 ---
 
 ### Login
 
-Login is handled by NextAuth at `/api/auth/signin`
-
-See NextAuth documentation for details.
+Login is handled by NextAuth's credentials provider: the app calls `signIn('credentials', { email, password })` from `next-auth/react`, which posts to `/api/auth/callback/credentials`. Emails are matched case-insensitively.
 
 ---
 
@@ -238,7 +243,7 @@ Update an existing story.
 
 - `id` (path) - Story ID
 
-**Request Body**: any subset of the fields accepted by Create Story. `usedWords` is recomputed when `content` or `words` changes.
+**Request Body**: any subset of the fields accepted by Create Story. `usedWords` is recomputed when `content` or `words` changes. `learningNeeds`, if sent, must include all five flags, because it replaces the stored object.
 
 ```json
 {
@@ -316,7 +321,7 @@ Share a story via email.
 }
 ```
 
-The first share creates a random token for the story; later shares reuse it, so every link sent for a story stays valid. The email links to `/shared-stories/:id?token=...` on `NEXTAUTH_URL`. User-supplied text in the email is HTML-escaped.
+The first share creates a random token for the story; later shares reuse it, so every link sent for a story stays valid until sharing is stopped. Two first shares at the same moment end up with the same token. The email links to `/shared-stories/:id?token=...` on `NEXTAUTH_URL`. User-supplied text in the email is HTML-escaped.
 
 **Response** (200 OK):
 
@@ -341,6 +346,30 @@ The first share creates a random token for the story; later shares reuse it, so 
 
 ---
 
+### Stop Sharing
+
+Remove a story's share token and recipient list. Every link sent for the story stops working; sharing it again sends a new link.
+
+**Endpoint**: `DELETE /stories/:id/share`
+
+**Authentication**: Required
+
+**Response** (200 OK):
+
+```json
+{
+  "success": true
+}
+```
+
+**Errors**:
+
+- `401` - Unauthorized
+- `404` - Story not found
+- `500` - Server error
+
+---
+
 ## Shared Stories
 
 ### Get Shared Story
@@ -351,7 +380,7 @@ Read a story through a share link.
 
 **Authentication**: None. The token is the credential.
 
-**Response** (200 OK): the story's `_id`, `title`, `content`, `words`, `usedWords`, `format`, `includeImages`, `grade`, `learningNeeds` and `createdAt`. The owner, recipients and token are not included.
+**Response** (200 OK): the story's `_id`, `title`, `content`, `scenes`, `words`, `usedWords`, `format`, `includeImages`, `grade` and `createdAt`. The owner, recipients and token are not included, and neither are the learning needs, which describe the child.
 
 **Errors**:
 
@@ -372,7 +401,7 @@ Words are trimmed and lower-cased, and may contain only letters, with apostrophe
 
 ### Track Word Usage
 
-Track sight words used in stories (called automatically by story generation).
+Count the sight words used in a story (the app calls it after making one). Word usage is shared by every signed-in user, so only Dolch words are counted; other words, such as a child's name, are dropped. `count` is the number of words counted.
 
 **Endpoint**: `POST /analytics/trackWords`
 
@@ -387,12 +416,12 @@ Track sight words used in stories (called automatically by story generation).
 }
 ```
 
-**Response** (200 OK):
+**Response** (200 OK), for `["cat", "dog", "run"]`, where only "run" is a Dolch word:
 
 ```json
 {
   "success": true,
-  "count": 3
+  "count": 1
 }
 ```
 
@@ -400,6 +429,7 @@ Track sight words used in stories (called automatically by story generation).
 
 - `400` - Missing or invalid `words`, or `grade` not an integer 0-3
 - `401` - Unauthorized
+- `429` - Word usage limit reached (see [Rate Limiting](#rate-limiting))
 - `500` - Server error
 
 ---
@@ -488,7 +518,7 @@ Uncaught server errors return `{ "message": "Internal server error" }` with stat
 
 ## Rate Limiting
 
-Share emails are limited per signed-in user, in fixed windows. The limits are `RATE_LIMITS` in [`lib/limits.js`](../lib/limits.js). Counters are stored in the `ratelimits` MongoDB collection and removed by a TTL index when their window ends.
+Share emails and word-usage updates are limited per signed-in user, in fixed windows. The limits are `RATE_LIMITS` in [`lib/limits.js`](../lib/limits.js). Counters are stored in the `ratelimits` MongoDB collection and removed by a TTL index when their window ends.
 
 Limited responses include `X-RateLimit-Limit` and `X-RateLimit-Remaining`. When the limit is reached the response is `429` with a `Retry-After` header and body:
 
@@ -548,7 +578,7 @@ Other endpoints are not rate limited.
 {
   _id: ObjectId,
   name: string,
-  email: string, // Unique
+  email: string, // Unique, stored lower-cased
   password: string, // Hashed with bcrypt
   role: 'teacher' | 'admin',
   createdAt: Date
@@ -566,9 +596,7 @@ Other endpoints are not rate limited.
     0: number,
     1: number,
     2: number,
-    3: number,
-    4: number,
-    5: number
+    3: number
   },
   lastUsed: Date
 }
@@ -633,7 +661,7 @@ console.log(`Total stories: ${analytics.totalStories}`);
 
 1. **Authentication**: story and analytics endpoints require a session. Shared stories need the share token instead.
 2. **Authorization**: users can only read, change or share their own stories.
-3. **Input validation**: Zod schemas on story, share and analytics bodies; unknown fields are dropped.
+3. **Input validation**: Zod schemas on registration, story, share and analytics bodies, checked before any query; unknown fields are dropped.
 4. **Password hashing**: bcrypt with 10 salt rounds.
 5. **Story text**: rendered as React text in the UI, never as HTML.
 
@@ -644,7 +672,7 @@ console.log(`Total stories: ${analytics.totalStories}`);
 1. No pagination on story lists (returns all user stories)
 2. Registration, sign-in and the story CRUD endpoints are not rate limited
 3. Email sharing requires SMTP configuration
-4. Word analytics are shared across all users
+4. Word analytics are shared across all users (Dolch words only)
 
 ---
 
@@ -656,4 +684,4 @@ For questions or issues:
 
 ---
 
-Last Updated: 2026-11-05
+Last Updated: 2026-11-06
