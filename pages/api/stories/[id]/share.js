@@ -6,7 +6,8 @@ import { requireSession, methodNotAllowed, sendValidationError, withApiErrors } 
 import { shareRequestSchema } from '../../../../lib/validation';
 import { enforceRateLimit } from '../../../../lib/rateLimit';
 import { RATE_LIMITS } from '../../../../lib/limits';
-import { buildShareEmail, getSmtpConfig, sendMail } from '../../../../lib/shareEmail';
+import { buildShareEmail } from '../../../../lib/shareEmail';
+import { getEmailConfig, sendEmail } from '../../../../lib/email';
 
 /**
  * The story's share token, created if it has none. One token per story,
@@ -25,9 +26,9 @@ async function ensureShareToken(story) {
 
 /** POST: email a link to the story. */
 async function share(req, res, session, id) {
-  const smtp = getSmtpConfig();
+  const emailConfig = getEmailConfig();
   const baseUrl = process.env.NEXTAUTH_URL;
-  if (!smtp || !baseUrl) {
+  if (!emailConfig || !baseUrl) {
     return res.status(503).json({
       message: 'Email service not configured. Please contact the administrator.',
       code: 'EMAIL_NOT_CONFIGURED',
@@ -54,7 +55,7 @@ async function share(req, res, session, id) {
     const token = await ensureShareToken(story);
     const link = `${baseUrl.replace(/\/+$/, '')}/shared-stories/${story._id}?token=${encodeURIComponent(token)}`;
     const mail = buildShareEmail({ senderName: session.user.name, story, link, message });
-    await sendMail(smtp, { to: email, ...mail });
+    await sendEmail(emailConfig, { to: email, ...mail });
 
     await Story.updateOne({ _id: story._id }, { $addToSet: { sharedWith: email } });
 

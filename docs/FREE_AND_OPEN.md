@@ -11,7 +11,7 @@ Sight Word Stories is MIT-licensed (see [LICENSE](../LICENSE)) and is built so t
 - **Reading aloud** uses the browser's built-in speech.
 - **Scanning a page** runs the Tesseract OCR engine in the browser. The photo isn't uploaded anywhere; the engine and its English language data are downloaded from jsDelivr the first time.
 - **Hosting** fits the free tiers of [MongoDB Atlas](https://www.mongodb.com/pricing) and [Vercel](https://vercel.com/pricing). Their limits and prices change, so check those pages.
-- **Email sharing** is optional. It works with any SMTP server, including a free Gmail account with an app password.
+- **Email sharing** is optional. It goes through [Resend](https://resend.com/pricing), whose free plan sends up to 3,000 emails a month and 100 a day.
 
 ## AI Stories
 
@@ -37,7 +37,7 @@ Not stored on the server:
 What leaves the browser:
 
 - **AI stories** send the chosen words, the reading level and the selected learning needs to Anthropic, with the grown-up's own key.
-- **Share emails** go through the deployment's SMTP server to the address entered.
+- **Share emails** go through Resend to the address entered.
 
 Saved stories can be deleted from the story library. Deleting the account, under Grown-ups → Account, deletes its saved stories too; the word usage counts stay, as nothing links them to the account.
 
@@ -45,7 +45,7 @@ Saved stories can be deleted from the story library. Deleting the account, under
 
 ## Self-Hosting
 
-To run your own copy you need a MongoDB database, somewhere to host a Next.js app (the project is set up for Vercel), and optionally an SMTP account for email sharing. The [Quick Start Guide](QUICK_START.md) and the [README](../README.md) cover the setup.
+To run your own copy you need a MongoDB database, somewhere to host a Next.js app (the project is set up for Vercel), and optionally a Resend account with a verified sending domain for email sharing. The [Quick Start Guide](QUICK_START.md) and the [README](../README.md) cover the setup.
 
 ## Support and Contributing
 

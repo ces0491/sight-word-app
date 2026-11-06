@@ -70,8 +70,8 @@ Reports are confirmed, checked and fixed, and the fix is released before anythin
    - Give the database user only the permissions the app needs
 
 5. **Email**
-   - Use an app-specific password for SMTP
-   - Use TLS for SMTP (port 465, or STARTTLS on other ports)
+   - Give the Resend API key the narrowest permission that can send, restricted to the sending domain
+   - Keep the key in the hosting environment only; it can send email as the app
 
 ### For Developers
 
@@ -132,7 +132,7 @@ The headers are set in `headers()` in [`next.config.js`](next.config.js), and [`
 - [ ] Different credentials for development and production
 - [ ] A long random `NEXTAUTH_SECRET` (`openssl rand -base64 32`)
 - [ ] Database connection over TLS
-- [ ] SMTP over TLS
+- [ ] A Resend API key restricted to the sending domain
 
 ## Contact
 

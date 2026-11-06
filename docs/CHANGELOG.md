@@ -54,7 +54,8 @@ Changes to Sight Word Stories, newest first.
 - **Emails are stored lower-cased** and matched case-insensitively at sign-up and sign-in, so accounts created with capitals still sign in.
 - **Word usage counts Dolch words only**, so a child's name typed as a word never reaches the dashboard all teachers see. The dashboard says its figures are across everyone.
 - A story takes up to 100 words. Adding more says how many weren't added, and the story editor explains what stops a save instead of saying "please try again".
-- Dependencies: `next` 16.4.5 with React 19.3, `next-auth` 4.24.15, `nodemailer` 10.3.1, `@anthropic-ai/sdk` 1.5.0 (Apache 2.0 licence), plus `npm audit fix`. `npm audit --omit=dev` reports no advisories. An npm `overrides` entry lets `next-auth` use the root `nodemailer`.
+- **Share emails go through Resend** (`lib/email.js`, the `resend` SDK) in place of SMTP and `nodemailer`. The settings are `RESEND_API_KEY` and `EMAIL_FROM`; the `EMAIL_SERVER_*` variables are gone. If Resend refuses an email, the share fails with a 500, the recipient isn't recorded, and the server log has Resend's reason.
+- Dependencies: `next` 16.4.5 with React 19.3, `next-auth` 4.24.15, `@anthropic-ai/sdk` 1.5.0 (Apache 2.0 licence), `resend` 6.37.0, plus `npm audit fix`. `npm audit --omit=dev` reports no advisories.
 - Node 24 everywhere: `engines` in `package.json` sets it for Vercel, and CI reads it from there. CI lints the whole project with the ESLint CLI (`next lint` skipped `hooks/`, `models/` and `test/`), runs the tests once with coverage, and fails on critical production advisories. The Codecov upload (no token) and the Dependency-Check step (its report went nowhere) are gone.
 - The photo scanner reads a picture once instead of three times with the same settings, and releases the image memory it uses.
 - **Next.js 16**: the build and dev server use webpack (`--webpack`). The Turbopack build puts an inline script in each page, which the Content-Security-Policy blocks, so the page never started.
@@ -98,7 +99,6 @@ Changes to Sight Word Stories, newest first.
 - **Share token bypass**: any story could be read with `?token=<story id>`.
 - **Share email injection**: the message, story title and sender name were inserted into the email HTML unescaped.
 - Sharing from the main screen always failed, because it sent a client-side id instead of the saved story's `_id`.
-- `secure` was never set for SMTP port 465 (string compared to number).
 - Sign-in from the Save button reopened the sign-in dialog instead of saving.
 - Highlighting crashed on words containing regex characters, such as `a)` from an uploaded file.
 - `PUT /api/stories/[id]` let an owner reassign a story's `userId`.

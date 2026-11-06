@@ -381,12 +381,12 @@ The first share creates a random token for the story; later shares reuse it, so 
 - `401` - Unauthorized
 - `404` - Story not found
 - `429` - Share email limit reached (see [Rate Limiting](#rate-limiting))
-- `500` - Server error, including SMTP failures
+- `500` - Server error, including an email Resend refused (the server log has its reason)
 - `503` - Email service not configured
 
 **Error Codes**:
 
-- `EMAIL_NOT_CONFIGURED` - SMTP settings or `NEXTAUTH_URL` not configured
+- `EMAIL_NOT_CONFIGURED` - `RESEND_API_KEY`, `EMAIL_FROM` or `NEXTAUTH_URL` not set
 
 ---
 
@@ -722,7 +722,7 @@ console.log(`Total stories: ${analytics.totalStories}`);
 ## Known Limitations
 
 1. No pagination on story lists (returns all user stories)
-2. Email sharing requires SMTP configuration
+2. Email sharing needs a Resend account with a verified sending domain
 3. Sessions are signed JWTs and can't be revoked: signing out or deleting the account clears the cookie in that browser, but a copied cookie stays valid until it expires (30 days)
 
 ---

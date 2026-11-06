@@ -6,15 +6,15 @@ jest.mock('../../lib/authOptions', () => ({ authOptions: {} }));
 jest.mock('../../lib/dbConnect', () => jest.fn());
 jest.mock('../../lib/rateLimit', () => ({ enforceRateLimit: jest.fn() }));
 jest.mock('../../lib/shareEmail', () => ({
-  getSmtpConfig: jest.fn(),
   buildShareEmail: jest.fn(() => ({ subject: 's', text: 't', html: 'h' })),
-  sendMail: jest.fn(),
 }));
+jest.mock('../../lib/email', () => ({ getEmailConfig: jest.fn(), sendEmail: jest.fn() }));
 jest.mock('../../models/Story', () => ({ findOne: jest.fn(), findById: jest.fn(), updateOne: jest.fn() }));
 
 const { getServerSession } = require('next-auth/next');
 const { enforceRateLimit } = require('../../lib/rateLimit');
-const { getSmtpConfig, buildShareEmail, sendMail } = require('../../lib/shareEmail');
+const { buildShareEmail } = require('../../lib/shareEmail');
+const { getEmailConfig, sendEmail } = require('../../lib/email');
 const Story = require('../../models/Story');
 const handler = require('../../pages/api/stories/[id]/share').default;
 
@@ -40,9 +40,9 @@ beforeEach(() => {
   jest.spyOn(console, 'error').mockImplementation(() => {});
   process.env.NEXTAUTH_URL = 'https://sightwords.example';
   getServerSession.mockResolvedValue({ user: { id: OWNER, name: 'Ms Smith' } });
-  getSmtpConfig.mockReturnValue({ host: 'smtp.example' });
+  getEmailConfig.mockReturnValue({ apiKey: 're_test', from: 'Stories <stories@example.com>' });
   enforceRateLimit.mockResolvedValue(true);
-  sendMail.mockResolvedValue(undefined);
+  sendEmail.mockResolvedValue({ id: 'email-1' });
   Story.updateOne.mockResolvedValue({ matchedCount: 1 });
 });
 
@@ -57,7 +57,7 @@ describe('POST /api/stories/[id]/share', () => {
 
     expect(Story.findOne).toHaveBeenCalledWith({ _id: STORY_ID, userId: OWNER });
     expect(res.statusCode).toBe(404);
-    expect(sendMail).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 
   it('reuses an existing token so earlier links keep working', async () => {
@@ -81,8 +81,28 @@ describe('POST /api/stories/[id]/share', () => {
     expect(sentLink()).toContain('token=winner-token');
   });
 
+  it('sends the email to the recipient and records them', async () => {
+    mockStory({ _id: STORY_ID, shareToken: 'existing-token' });
+    await call('POST');
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      { apiKey: 're_test', from: 'Stories <stories@example.com>' },
+      { to: 'parent@example.com', subject: 's', text: 't', html: 'h' }
+    );
+    expect(Story.updateOne).toHaveBeenCalledWith({ _id: STORY_ID }, { $addToSet: { sharedWith: 'parent@example.com' } });
+  });
+
+  it("answers 500 and doesn't record the recipient when the email isn't sent", async () => {
+    mockStory({ _id: STORY_ID, shareToken: 'existing-token' });
+    sendEmail.mockRejectedValue(new Error('Resend refused the email'));
+    const res = await call('POST');
+
+    expect(res.statusCode).toBe(500);
+    expect(Story.updateOne).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ $addToSet: expect.anything() }));
+  });
+
   it('answers 503 when email is not set up', async () => {
-    getSmtpConfig.mockReturnValue(null);
+    getEmailConfig.mockReturnValue(null);
     const res = await call('POST');
 
     expect(res.statusCode).toBe(503);
@@ -98,7 +118,7 @@ describe('POST /api/stories/[id]/share', () => {
     const res = await call('POST');
 
     expect(res.statusCode).toBe(429);
-    expect(sendMail).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 });
 
@@ -120,7 +140,7 @@ describe('DELETE /api/stories/[id]/share', () => {
   });
 
   it('works without email settings', async () => {
-    getSmtpConfig.mockReturnValue(null);
+    getEmailConfig.mockReturnValue(null);
     const res = await call('DELETE', {});
     expect(res.statusCode).toBe(200);
   });
