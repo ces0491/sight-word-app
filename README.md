@@ -2,7 +2,7 @@
 
 Short illustrated stories built from the sight words a child is learning, to read together. A grown-up picks the words; the child taps them to hear them, reads the story a page at a time, and finishes with a word hunt.
 
-[Sight Word Stories](https://sight-word-app.vercel.app/)
+[Sight Word Stories](https://sightwords.sheetsolved.com/)
 
 **Status**: see the [Production Readiness](docs/PRODUCTION_READY.md) page for what is in place and what remains before a public launch.
 
@@ -109,6 +109,7 @@ Size limits on stories and AI requests, and the per-user rate limit on share ema
 
    Vercel applies variable changes only to new deployments, so redeploy after adding or changing them. Without `MONGODB_URI`, API routes that need the database return a 503 with code `SERVICE_NOT_CONFIGURED`.
 3. Vercel will build the app and provide a URL
+4. To serve it on your own domain, add the domain in Vercel, set `NEXTAUTH_URL` to it and redeploy. Vercel goes on serving the generated `*.vercel.app` alias too, so `next.config.js` redirects this deployment's alias, `sight-word-app.vercel.app`, to `sightwords.sheetsolved.com`. Change that rule for your own deployment.
 
 The [Production Readiness](docs/PRODUCTION_READY.md) page has a list of checks to run after deploying.
 

@@ -469,6 +469,15 @@ const GrownUps = ({
             </div>
           )}
         </Section>
+
+        {/* Behind the parent gate, so a child can't follow it out of the app. */}
+        <p className="font-display text-sm text-ink/70">
+          Sight Word Stories is made by{' '}
+          <a href="https://sheetsolved.com" className="underline underline-offset-2 hover:text-ink">
+            Sheet Solved
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

@@ -32,6 +32,7 @@ All notable changes to the Sight Word Story Generator project.
 
 ### Changed
 
+- **The app is served at `sightwords.sheetsolved.com`.** `sight-word-app.vercel.app` redirects there (`next.config.js`), and the Grown-ups area links to Sheet Solved, which made it.
 - **Reading levels run from Kindergarten to Grade 3**, the span of the Dolch lists; Grades 4 and 5 are gone from the settings, the story editor, the API and the word usage dashboard. The setting says that Classic stories are the same at every level and save it as a label.
 - **Scanning a page adds only Dolch words, read exactly.** The scanner used its own word lists by grade, which left out 27 Dolch words and dropped "a" and "I", and its closest-match step turned other words into wrong ones ("red" into "read", "please" into "place"). Apostrophes are kept, so "don't" is found.
 - Grown-ups settings describe what each one changes, in place of the old "Learn more" learning-needs dialog. The old screen components (`StoryPreview`, `StoryViewer`, `StoryGenerator`, `LearningConsiderationsPanel`, `LearningNeedsInfo`) are removed.
