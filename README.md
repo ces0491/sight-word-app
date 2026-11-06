@@ -100,7 +100,7 @@ The styles use Tailwind CSS 4, which needs Safari 16.4, Chrome 111, Firefox 128 
 
 ### Limits
 
-Size limits on stories and AI requests, and the rate limits, are in [`lib/limits.js`](lib/limits.js). Registration is limited per IP address, sign-in per IP address and per email address, and account deletion, share emails and word-usage updates per user. Rate limit counters are kept in MongoDB so they hold across serverless instances.
+Size limits on stories and AI requests, the number of saved stories an account can keep, and the rate limits are in [`lib/limits.js`](lib/limits.js). Registration is limited per IP address, sign-in per IP address and per email address, and story saves and edits, account deletion, share emails and word-usage updates per user. Rate limit counters are kept in MongoDB so they hold across serverless instances.
 
 ## Deploying to Vercel
 

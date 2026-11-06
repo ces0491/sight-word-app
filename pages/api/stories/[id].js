@@ -4,6 +4,8 @@ import Story from '../../../models/Story';
 import { requireSession, methodNotAllowed, sendValidationError, withApiErrors } from '../../../lib/apiHelpers';
 import { storyUpdateSchema } from '../../../lib/validation';
 import { findUsedWords } from '../../../lib/sightWords';
+import { enforceRateLimit } from '../../../lib/rateLimit';
+import { RATE_LIMITS } from '../../../lib/limits';
 
 async function handler(req, res) {
   if (!['GET', 'PUT', 'DELETE'].includes(req.method)) {
@@ -37,6 +39,14 @@ async function handler(req, res) {
   if (req.method === 'PUT') {
     const parsed = storyUpdateSchema.safeParse(req.body);
     if (!parsed.success) return sendValidationError(res, parsed.error);
+
+    // Counted together with new stories (pages/api/stories/index.js)
+    const allowed = await enforceRateLimit(res, {
+      scope: 'storyWrite',
+      key: session.user.id,
+      ...RATE_LIMITS.storyWrite,
+    });
+    if (!allowed) return;
 
     try {
       const story = await Story.findOne(ownedStory);

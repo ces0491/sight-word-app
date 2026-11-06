@@ -230,6 +230,8 @@ Create a new story.
 
 - `400` - Invalid data
 - `401` - Unauthorized
+- `403` - The account already has the most saved stories it can keep (code `STORY_LIMIT_REACHED`, see [Rate Limiting](#rate-limiting))
+- `429` - Story write limit reached (see [Rate Limiting](#rate-limiting))
 - `500` - Server error
 
 ---
@@ -309,6 +311,7 @@ Update an existing story.
 - `400` - Invalid data
 - `401` - Unauthorized
 - `404` - Story not found
+- `429` - Story write limit reached (see [Rate Limiting](#rate-limiting))
 - `500` - Server error
 
 ---
@@ -542,7 +545,7 @@ Errors from these routes look like this (NextAuth's own routes under `/api/auth/
 - `201` - Created
 - `400` - Bad Request (validation errors)
 - `401` - Unauthorized (not logged in)
-- `403` - Forbidden (wrong password on account deletion)
+- `403` - Forbidden (wrong password on account deletion, or no room for another saved story)
 - `404` - Not Found
 - `405` - Method Not Allowed (the `Allow` header lists the accepted methods)
 - `429` - Too Many Requests
@@ -552,6 +555,7 @@ Errors from these routes look like this (NextAuth's own routes under `/api/auth/
 ### Special Error Codes
 
 - `EMAIL_NOT_CONFIGURED` - Email service is not set up
+- `STORY_LIMIT_REACHED` - The account already has the most saved stories it can keep (status `403`)
 - `SERVICE_NOT_CONFIGURED` - A server setting the request needs is missing, such as `MONGODB_URI` (status `503`). The server log names the missing setting.
 
 Uncaught server errors return `{ "message": "Internal server error" }` with status `500`; the detail goes to the server log only.
@@ -568,6 +572,7 @@ Limits are counted in fixed windows. The numbers are `RATE_LIMITS` in [`lib/limi
 | Sign-in attempts | IP address | 20 in 15 minutes |
 | Sign-in attempts | email address | 10 in 15 minutes |
 | Account deletion attempts | signed-in user | 5 in 15 minutes |
+| Story saves and edits, counted together | signed-in user | 60 an hour |
 | Share emails | signed-in user | 10 an hour |
 | Word-usage updates | signed-in user | 60 an hour |
 
@@ -586,7 +591,7 @@ Limited API routes include `X-RateLimit-Limit` and `X-RateLimit-Remaining` in th
 
 Sign-in goes through NextAuth instead, so it gets the `TooManySignInAttempts` error described under [Login](#login).
 
-The story endpoints are not rate limited.
+An account can also keep up to 200 saved stories (`STORY_LIMITS.maxStoriesPerAccount` in the same file). Saving another one past that returns `403` with code `STORY_LIMIT_REACHED`, and the message tells the grown-up to delete a story first.
 
 ---
 
@@ -717,9 +722,8 @@ console.log(`Total stories: ${analytics.totalStories}`);
 ## Known Limitations
 
 1. No pagination on story lists (returns all user stories)
-2. The story endpoints are not rate limited
-3. Email sharing requires SMTP configuration
-4. Sessions are signed JWTs and can't be revoked: signing out or deleting the account clears the cookie in that browser, but a copied cookie stays valid until it expires (30 days)
+2. Email sharing requires SMTP configuration
+3. Sessions are signed JWTs and can't be revoked: signing out or deleting the account clears the cookie in that browser, but a copied cookie stays valid until it expires (30 days)
 
 ---
 

@@ -4,9 +4,12 @@ import { createRequest, createResponse } from '../apiTestUtils';
 jest.mock('next-auth/next', () => ({ getServerSession: jest.fn() }));
 jest.mock('../../lib/authOptions', () => ({ authOptions: {} }));
 jest.mock('../../lib/dbConnect', () => jest.fn());
+jest.mock('../../lib/rateLimit', () => ({ enforceRateLimit: jest.fn() }));
 jest.mock('../../models/Story', () => ({ findOne: jest.fn(), findOneAndDelete: jest.fn() }));
 
 const { getServerSession } = require('next-auth/next');
+const { enforceRateLimit } = require('../../lib/rateLimit');
+const { RATE_LIMITS } = require('../../lib/limits');
 const Story = require('../../models/Story');
 const handler = require('../../pages/api/stories/[id]').default;
 
@@ -38,6 +41,7 @@ const put = async (body) => {
 beforeEach(() => {
   jest.clearAllMocks();
   getServerSession.mockResolvedValue({ user: { id: 'owner-1' } });
+  enforceRateLimit.mockResolvedValue(true);
 });
 
 describe('PUT /api/stories/[id]', () => {
@@ -97,6 +101,30 @@ describe('PUT /api/stories/[id]', () => {
     expect(res.statusCode).toBe(200);
     expect(doc.learningNeeds).toEqual(learningNeeds);
   });
+
+  it('counts each edit against the story write limit it shares with new stories', async () => {
+    Story.findOne.mockResolvedValue(makeStoryDoc());
+
+    await put({ title: 'A New Title' });
+
+    expect(enforceRateLimit).toHaveBeenCalledWith(expect.anything(), {
+      scope: 'storyWrite',
+      key: 'owner-1',
+      ...RATE_LIMITS.storyWrite,
+    });
+  });
+
+  it('changes nothing past the rate limit', async () => {
+    enforceRateLimit.mockImplementation(async (res) => {
+      res.status(429).json({ message: 'Too many requests. Please try again later.' });
+      return false;
+    });
+
+    const res = await put({ title: 'A New Title' });
+
+    expect(res.statusCode).toBe(429);
+    expect(Story.findOne).not.toHaveBeenCalled();
+  });
 });
 
 describe.each(['GET', 'PUT', 'DELETE'])('%s /api/stories/[id]', (method) => {
@@ -109,5 +137,7 @@ describe.each(['GET', 'PUT', 'DELETE'])('%s /api/stories/[id]', (method) => {
     const lookup = method === 'DELETE' ? Story.findOneAndDelete : Story.findOne;
     expect(lookup).toHaveBeenCalledWith({ _id: STORY_ID, userId: 'owner-1' });
     expect(res.statusCode).toBe(404);
+    // Only edits count against the write limit
+    expect(enforceRateLimit).toHaveBeenCalledTimes(method === 'PUT' ? 1 : 0);
   });
 });
