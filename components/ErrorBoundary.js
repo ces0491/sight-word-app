@@ -43,6 +43,8 @@ class ErrorBoundary extends React.Component {
   };
 
   handleGoHome = () => {
+    // A full page load, so none of the state that crashed survives
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/';
   };
 
@@ -77,7 +79,7 @@ class ErrorBoundary extends React.Component {
                   {this.state.errorInfo && (
                     <div>
                       <strong>Component Stack:</strong>
-                      <pre className="mt-1 overflow-auto text-xs bg-white p-2 rounded border">
+                      <pre className="mt-1 overflow-auto text-xs bg-white p-2 rounded-sm border border-gray-200">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     </div>

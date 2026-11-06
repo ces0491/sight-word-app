@@ -2,6 +2,7 @@
 import { createRequest, createResponse } from '../apiTestUtils';
 
 jest.mock('../../lib/dbConnect', () => jest.fn());
+jest.mock('../../lib/rateLimit', () => ({ enforceRateLimit: jest.fn() }));
 jest.mock('../../models/User', () => ({
   __esModule: true,
   default: { findOne: jest.fn(), create: jest.fn() },
@@ -9,6 +10,7 @@ jest.mock('../../models/User', () => ({
 }));
 
 const User = require('../../models/User').default;
+const { enforceRateLimit } = require('../../lib/rateLimit');
 const handler = require('../../pages/api/auth/register').default;
 
 const validBody = { name: 'Ms Smith', email: ' Teacher@School.EDU ', password: 'correct horse' };
@@ -30,6 +32,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.spyOn(console, 'error').mockImplementation(() => {});
   mockLookup(null);
+  enforceRateLimit.mockResolvedValue(true);
   User.create.mockImplementation(async (fields) => ({ _id: 'user-1', ...fields }));
 });
 
@@ -67,7 +70,7 @@ describe('POST /api/auth/register', () => {
 
   it.each([
     ['a short password', { password: 'short' }, 'Passwords need at least 8 characters.'],
-    ['a password over 72 bytes', { password: 'é'.repeat(37) }, 'Passwords can be up to 72 characters.'],
+    ['a password over 72 bytes', { password: 'é'.repeat(37) }, 'Passwords can be up to 72 characters, or fewer with accented letters or emoji.'],
     ['a name with a phone number', { name: 'Call +1 555 0100 now' }, 'Names can use letters, spaces, apostrophes, hyphens and full stops.'],
     ['a long name', { name: 'A'.repeat(61) }, 'Names can be up to 60 characters.'],
     ['an invalid email', { email: 'not-an-email' }, 'Enter a valid email address.'],
@@ -88,6 +91,19 @@ describe('POST /api/auth/register', () => {
 
     expect(res.statusCode).toBe(400);
     expect(res.body.message).toBe('An account with this email already exists.');
+    expect(User.create).not.toHaveBeenCalled();
+  });
+
+  it('limits sign-ups per IP address', async () => {
+    enforceRateLimit.mockImplementation(async (res) => {
+      res.status(429).json({ message: 'Too many requests. Please try again later.' });
+      return false;
+    });
+    const res = createResponse();
+    await handler({ ...createRequest({ method: 'POST', body: validBody }), headers: { 'x-real-ip': '203.0.113.7' } }, res);
+
+    expect(res.statusCode).toBe(429);
+    expect(enforceRateLimit.mock.calls[0][1]).toMatchObject({ scope: 'register', key: '203.0.113.7' });
     expect(User.create).not.toHaveBeenCalled();
   });
 

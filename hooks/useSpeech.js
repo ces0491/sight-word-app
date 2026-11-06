@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 /** A slightly slow, clear pace for children learning to read. */
 const CHILD_RATE = 0.85;
@@ -7,6 +7,9 @@ const isSpeechAvailable = () =>
   typeof window !== 'undefined' &&
   'speechSynthesis' in window &&
   typeof window.SpeechSynthesisUtterance === 'function';
+
+// Speech support doesn't change while the page is open, so there is nothing to subscribe to
+const noSubscription = () => () => {};
 
 /** Prefer an English voice that runs on the device, then any English voice. */
 const pickVoice = (voices) =>
@@ -22,7 +25,8 @@ const pickVoice = (voices) =>
  * report word boundaries still speak; they just don't highlight.
  */
 export function useSpeech() {
-  const [supported, setSupported] = useState(false);
+  // False on the server and while hydrating, then the browser's answer
+  const supported = useSyncExternalStore(noSubscription, isSpeechAvailable, () => false);
   const [speaking, setSpeaking] = useState(false);
   const [charIndex, setCharIndex] = useState(null);
   const voiceRef = useRef(null);
@@ -30,7 +34,6 @@ export function useSpeech() {
   useEffect(() => {
     if (!isSpeechAvailable()) return undefined;
     const synth = window.speechSynthesis;
-    setSupported(true);
 
     const updateVoice = () => {
       voiceRef.current = pickVoice(synth.getVoices());

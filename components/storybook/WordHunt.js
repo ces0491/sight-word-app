@@ -118,7 +118,7 @@ const WordHunt = ({ words, speech, onDone }) => {
     return (
       <section className="mx-auto max-w-xl space-y-6 text-center" aria-labelledby="hunt-title">
         {stars}
-        <h2 id="hunt-title" ref={headingRef} tabIndex={-1} className="animate-rise font-display text-4xl font-bold text-ink focus:outline-none sm:text-5xl">
+        <h2 id="hunt-title" ref={headingRef} tabIndex={-1} className="animate-rise font-display text-4xl font-bold text-ink focus:outline-hidden sm:text-5xl">
           You found them all!
         </h2>
         <div className="flex flex-wrap justify-center gap-3">
@@ -137,7 +137,7 @@ const WordHunt = ({ words, speech, onDone }) => {
     <section className="mx-auto max-w-2xl space-y-8 text-center" aria-labelledby="hunt-title">
       {stars}
       <div className="space-y-4">
-        <h2 id="hunt-title" ref={headingRef} tabIndex={-1} className="font-display text-3xl font-bold text-ink focus:outline-none sm:text-4xl">
+        <h2 id="hunt-title" ref={headingRef} tabIndex={-1} className="font-display text-3xl font-bold text-ink focus:outline-hidden sm:text-4xl">
           {supported ? 'Find the word you hear' : 'Find this word'}
         </h2>
         <div className="flex flex-wrap items-center justify-center gap-3">

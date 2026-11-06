@@ -32,8 +32,7 @@
 
 ### API.md
 
-- Registration, story, sharing and analytics endpoints, with request and response examples
-- Authentication flow
+- Registration, sign-in, account deletion, story, sharing and analytics endpoints, with request and response examples
 - Errors and rate limits
 - Data models
 - Security considerations
@@ -60,17 +59,3 @@
 ### CHANGELOG.md
 
 - Unreleased changes, then each version from newest to oldest
-
-## Need Help?
-
-- **Setup issues**: see the Common Issues section of [QUICK_START.md](QUICK_START.md)
-- **API questions**: see [API.md](API.md)
-- **Security concerns**: follow [SECURITY.md](../SECURITY.md)
-- **Contributing**: read [CONTRIBUTING.md](../CONTRIBUTING.md)
-
-## Project Status
-
-See [PRODUCTION_READY.md](PRODUCTION_READY.md) for the current status and the gaps before a public launch, and [CHANGELOG.md](CHANGELOG.md) for versions.
-
-- **License**: MIT
-- **Cost**: free to run; AI stories are billed to each grown-up's own Anthropic account

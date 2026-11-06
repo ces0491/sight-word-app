@@ -1,6 +1,6 @@
 # Free and Open Source
 
-Sight Word Stories is MIT-licensed (see [LICENSE](../LICENSE)) and is built so that running it costs nothing beyond free hosting tiers. This page explains where that comes from, who pays for the optional AI stories, and what the app stores.
+Sight Word Stories is MIT-licensed (see [LICENSE](../LICENSE)) and is built so that running it costs nothing beyond free hosting tiers.
 
 ---
 
@@ -27,7 +27,7 @@ In MongoDB:
 - **Saved stories**: title, sentences, sight words, display settings, reading level and learning needs, and the email addresses a story has been shared with.
 - **Share tokens**: one random token per shared story. Stopping sharing from the story library removes it, and every link sent stops working.
 - **Word usage**: how often each Dolch word has been used in stories, by reading level, across everyone who uses the app. Nothing links a count to an account, and words that aren't on the Dolch lists, such as a child's name, aren't counted.
-- **Rate-limit counters**: per account, deleted automatically when their time window ends.
+- **Rate-limit counters**: keyed by account, by IP address (registration and sign-in) or by a hash of the email address (sign-in), and deleted automatically when their time window ends.
 
 Not stored on the server:
 
@@ -39,7 +39,7 @@ What leaves the browser:
 - **AI stories** send the chosen words, the reading level and the selected learning needs to Anthropic, with the grown-up's own key.
 - **Share emails** go through the deployment's SMTP server to the address entered.
 
-Saved stories can be deleted from the story library. The app has no way to delete an account yet.
+Saved stories can be deleted from the story library. Deleting the account, under Grown-ups → Account, deletes its saved stories too; the word usage counts stay, as nothing links them to the account.
 
 ---
 

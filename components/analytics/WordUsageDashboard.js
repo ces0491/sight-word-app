@@ -1,37 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, TrendingUp, BookOpen, Target } from 'lucide-react';
 
-/**
- * Word Usage Analytics Dashboard
- * Displays word usage statistics and trends for teachers
- */
+/** Word usage counts across everyone who uses the app, and the signed-in user's story total. */
 const WordUsageDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [reload, setReload] = useState(0);
+
+  // Load on open and on "Try Again". State is set only when the request returns.
   useEffect(() => {
-    fetchAnalytics();
-  }, []);
+    let current = true;
+    fetch('/api/analytics/wordUsage')
+      .then((response) => {
+        if (!response.ok) throw new Error('Failed to fetch analytics');
+        return response.json();
+      })
+      .then((data) => {
+        if (!current) return;
+        setAnalytics(data);
+        setError(null);
+      })
+      .catch((err) => {
+        console.error('Error fetching analytics:', err);
+        if (current) setError(err.message);
+      })
+      .finally(() => {
+        if (current) setIsLoading(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [reload]);
 
-  const fetchAnalytics = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await fetch('/api/analytics/wordUsage');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics');
-      }
-
-      const data = await response.json();
-      setAnalytics(data);
-    } catch (err) {
-      console.error('Error fetching analytics:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+  const fetchAnalytics = () => {
+    setIsLoading(true);
+    setError(null);
+    setReload((n) => n + 1);
   };
 
   if (isLoading) {
@@ -48,7 +54,7 @@ const WordUsageDashboard = () => {
   if (error) {
     return (
       <div className="bg-berry/10 border border-berry/30 rounded-lg p-6 text-center">
-        <p className="text-ink">Error loading analytics: {error}</p>
+        <p className="text-ink">The word usage figures couldn&apos;t be loaded.</p>
         <button
           onClick={fetchAnalytics}
           className="mt-4 px-4 py-2 bg-berry text-white rounded-xl hover:bg-berry/90"
@@ -109,7 +115,7 @@ const WordUsageDashboard = () => {
             </div>
           </div>
           <p className="text-xs text-ink/70 mt-4">
-            Different Dolch words used, across everyone
+            Different Dolch words used
           </p>
         </div>
 
@@ -131,10 +137,7 @@ const WordUsageDashboard = () => {
               <TrendingUp className="w-8 h-8 text-ink" />
             </div>
           </div>
-          <p className="text-xs text-ink/70 mt-4">
-            Across everyone who uses the app
-          </p>
-        </div>
+</div>
       </div>
 
       {/* Top Words Used */}
@@ -149,7 +152,7 @@ const WordUsageDashboard = () => {
             {analytics.topWords.map((wordData, index) => (
               <div
                 key={wordData._id || index}
-                className="bg-gradient-to-br from-mist to-sky rounded-lg p-4 border border-ink/20"
+                className="bg-linear-to-br from-mist to-sky rounded-lg p-4 border border-ink/20"
               >
                 <div className="flex items-baseline justify-between">
                   <span className="text-2xl font-bold text-ink">
@@ -194,7 +197,7 @@ const WordUsageDashboard = () => {
                 </div>
                 <div className="w-full bg-ink/10 rounded-full h-3">
                   <div
-                    className="bg-gradient-to-r from-ink to-ink h-3 rounded-full transition-all duration-300"
+                    className="bg-linear-to-r from-ink to-ink h-3 rounded-full transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -209,28 +212,7 @@ const WordUsageDashboard = () => {
           </p>
         )}
       </div>
-
-      {/* Tips Section */}
-      <div className="bg-gradient-to-r from-mist to-mist border border-ink/20 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-ink mb-3">
-          Reading these figures
-        </h3>
-        <ul className="space-y-2 text-sm text-ink">
-          <li className="flex items-start gap-2">
-            <span className="text-ink font-bold">•</span>
-            <span><strong>Top words:</strong> the Dolch words used most often in stories, by everyone who uses the app. Other words, such as names, aren&apos;t counted.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-ink font-bold">•</span>
-            <span><strong>Reading levels:</strong> how many words were counted at each reading level, across everyone.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-ink font-bold">•</span>
-            <span><strong>Unique words:</strong> how many different Dolch words have been used, across everyone.</span>
-          </li>
-        </ul>
-      </div>
-    </div>
+</div>
   );
 };
 

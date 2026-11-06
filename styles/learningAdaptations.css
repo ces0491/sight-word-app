@@ -22,7 +22,7 @@
   display: none;
 }
 
-/* Visual processing: bigger text, a stronger marker */
+/* Visual processing: bigger text, a thicker page outline, and the full-strength marker even with dyslexia on */
 .visual-processing-enabled {
   --reader-size: clamp(2rem, 1.3rem + 3vw, 3.25rem);
   --reader-line: 1.8;

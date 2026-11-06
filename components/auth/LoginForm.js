@@ -1,6 +1,7 @@
 import React, { useId, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { Mail, Lock, LogIn } from 'lucide-react';
+import { signInErrorMessage } from '../../lib/authErrors';
 
 const LoginForm = ({ onSuccess, onToggleMode }) => {
   const [email, setEmail] = useState('');
@@ -22,7 +23,7 @@ const LoginForm = ({ onSuccess, onToggleMode }) => {
       });
 
       if (result.error) {
-        setError('Invalid email or password');
+        setError(signInErrorMessage(result.error));
         setIsSubmitting(false);
       } else {
         onSuccess && onSuccess();
@@ -56,7 +57,7 @@ const LoginForm = ({ onSuccess, onToggleMode }) => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-hidden focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="you@example.com"
             required
           />
@@ -77,7 +78,7 @@ const LoginForm = ({ onSuccess, onToggleMode }) => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-hidden focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="••••••••"
             required
           />

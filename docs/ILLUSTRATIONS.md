@@ -14,7 +14,7 @@ Each sentence of a story gets a picture drawn in code as SVG. No image API is in
 - A scene with no fixed place (for example `meet_friend`) stays where the previous page was, unless that was a room in the house, in which case it moves to the park.
 - A keyword-only sentence that names no place stays where the previous page was.
 
-## The same characters on every page
+## Keeping the characters the same
 
 A story's seed comes from its title and first sentence, so it is the same before and after the story is saved. `createCast(seed)` fixes each role's skin tone, hair and shirt for the whole story, and the seed also drives the remaining randomness (star and snowflake positions). A story renders the same way every time it is shown, shared or printed. The illustration code does not call `Math.random`.
 

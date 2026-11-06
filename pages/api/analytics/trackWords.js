@@ -40,7 +40,7 @@ async function handler(req, res) {
         WordAnalytics.findOneAndUpdate(
           { word },
           { $inc: { count: 1, [`gradeLevel.${grade}`]: 1 }, $set: { lastUsed: new Date() } },
-          { upsert: true, new: true }
+          { upsert: true, returnDocument: 'after' }
         )
       )
     );

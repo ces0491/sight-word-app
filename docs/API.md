@@ -1,14 +1,13 @@
-# API Documentation
+# Sight Word Stories API
 
-## Sight Word Story Generator
-
-This document describes all API endpoints available in the Sight Word Story Generator application.
+The routes under `pages/api/`.
 
 ---
 
 ## Table of Contents
 
 - [Authentication](#authentication)
+- [Account](#account)
 - [Stories](#stories)
 - [Shared Stories](#shared-stories)
 - [AI Stories](#ai-stories)
@@ -27,7 +26,7 @@ This document describes all API endpoints available in the Sight Word Story Gene
 
 ## Authentication
 
-All protected endpoints require authentication via NextAuth session cookies.
+Endpoints marked **Authentication: Required** need a NextAuth session cookie.
 
 Request bodies are validated with the Zod schemas in [`lib/validation.js`](../lib/validation.js). Fields a schema doesn't list are ignored, and size limits come from [`lib/limits.js`](../lib/limits.js).
 
@@ -73,6 +72,7 @@ The body is validated before any query (`registerSchema`):
 
 - `400` - A field fails validation (the `message` says which rule, and `issues` lists the fields) or the email is already registered
 - `405` - Method not allowed
+- `429` - Registration limit for this IP address reached (see [Rate Limiting](#rate-limiting))
 - `500` - Server error
 
 ---
@@ -80,6 +80,47 @@ The body is validated before any query (`registerSchema`):
 ### Login
 
 Login is handled by NextAuth's credentials provider: the app calls `signIn('credentials', { email, password })` from `next-auth/react`, which posts to `/api/auth/callback/credentials`. Emails are matched case-insensitively.
+
+Sign-in attempts, successful or not, are counted per IP address and per email address (see [Rate Limiting](#rate-limiting)). Past either limit the password isn't checked, and `signIn()` resolves with `error: "TooManySignInAttempts"`. A wrong email or password gives NextAuth's `CredentialsSignin`.
+
+---
+
+## Account
+
+### Delete Account
+
+Delete the signed-in account and its saved stories. Share links to those stories stop working. Word usage counts aren't linked to accounts, so they stay. The session cookie isn't cleared by this call; the app signs out afterwards.
+
+**Endpoint**: `DELETE /account`
+
+**Authentication**: Required
+
+**Request Body**:
+
+```json
+{
+  "password": "the account's password"
+}
+```
+
+**Response** (200 OK):
+
+```json
+{
+  "success": true,
+  "storiesDeleted": 3
+}
+```
+
+**Errors**:
+
+- `400` - No password sent
+- `401` - Unauthorized
+- `403` - Wrong password
+- `404` - The session's account no longer exists
+- `405` - Method not allowed
+- `429` - Too many attempts (see [Rate Limiting](#rate-limiting))
+- `500` - Server error
 
 ---
 
@@ -477,7 +518,7 @@ Get analytics on word usage. `topWords`, `byGrade` and `totalUniqueWords` count 
 
 ## Error Handling
 
-All endpoints return errors in a consistent format:
+Errors from these routes look like this (NextAuth's own routes under `/api/auth/` excepted):
 
 ```json
 {
@@ -501,6 +542,7 @@ All endpoints return errors in a consistent format:
 - `201` - Created
 - `400` - Bad Request (validation errors)
 - `401` - Unauthorized (not logged in)
+- `403` - Forbidden (wrong password on account deletion)
 - `404` - Not Found
 - `405` - Method Not Allowed (the `Allow` header lists the accepted methods)
 - `429` - Too Many Requests
@@ -518,9 +560,22 @@ Uncaught server errors return `{ "message": "Internal server error" }` with stat
 
 ## Rate Limiting
 
-Share emails and word-usage updates are limited per signed-in user, in fixed windows. The limits are `RATE_LIMITS` in [`lib/limits.js`](../lib/limits.js). Counters are stored in the `ratelimits` MongoDB collection and removed by a TTL index when their window ends.
+Limits are counted in fixed windows. The numbers are `RATE_LIMITS` in [`lib/limits.js`](../lib/limits.js):
 
-Limited responses include `X-RateLimit-Limit` and `X-RateLimit-Remaining`. When the limit is reached the response is `429` with a `Retry-After` header and body:
+| What | Counted per | Limit |
+| --- | --- | --- |
+| Registration | IP address | 5 an hour |
+| Sign-in attempts | IP address | 20 in 15 minutes |
+| Sign-in attempts | email address | 10 in 15 minutes |
+| Account deletion attempts | signed-in user | 5 in 15 minutes |
+| Share emails | signed-in user | 10 an hour |
+| Word-usage updates | signed-in user | 60 an hour |
+
+The IP address is the one Vercel puts in `x-real-ip`. The per-email sign-in limit means someone who knows an address can lock its owner out of signing in for up to 15 minutes.
+
+Counters are stored in the `ratelimits` MongoDB collection and removed by a TTL index when their window ends.
+
+Limited API routes include `X-RateLimit-Limit` and `X-RateLimit-Remaining` in their responses. When the limit is reached the response is `429` with a `Retry-After` header and body:
 
 ```json
 {
@@ -529,17 +584,9 @@ Limited responses include `X-RateLimit-Limit` and `X-RateLimit-Remaining`. When 
 }
 ```
 
-Other endpoints are not rate limited.
+Sign-in goes through NextAuth instead, so it gets the `TooManySignInAttempts` error described under [Login](#login).
 
----
-
-## Authentication Flow
-
-1. User registers via `/api/auth/register`
-2. User logs in via NextAuth
-3. NextAuth creates a session cookie
-4. Session cookie is sent with each request
-5. Server validates session on protected routes
+The story endpoints are not rate limited.
 
 ---
 
@@ -659,9 +706,9 @@ console.log(`Total stories: ${analytics.totalStories}`);
 
 ## Security Considerations
 
-1. **Authentication**: story and analytics endpoints require a session. Shared stories need the share token instead.
+1. **Authentication**: the account, story and analytics endpoints require a session, and account deletion also takes the password. Shared stories need the share token instead.
 2. **Authorization**: users can only read, change or share their own stories.
-3. **Input validation**: Zod schemas on registration, story, share and analytics bodies, checked before any query; unknown fields are dropped.
+3. **Input validation**: Zod schemas on registration, account, story, share and analytics bodies, checked before any query; unknown fields are dropped.
 4. **Password hashing**: bcrypt with 10 salt rounds.
 5. **Story text**: rendered as React text in the UI, never as HTML.
 
@@ -670,17 +717,15 @@ console.log(`Total stories: ${analytics.totalStories}`);
 ## Known Limitations
 
 1. No pagination on story lists (returns all user stories)
-2. Registration, sign-in and the story CRUD endpoints are not rate limited
+2. The story endpoints are not rate limited
 3. Email sharing requires SMTP configuration
-4. Word analytics are shared across all users (Dolch words only)
+4. Sessions are signed JWTs and can't be revoked: signing out or deleting the account clears the cookie in that browser, but a copied cookie stays valid until it expires (30 days)
 
 ---
 
 ## Support
 
-For questions or issues:
-
-- GitHub Issues: [https://github.com/ces0491/sight-word-app/issues](https://github.com/ces0491/sight-word-app/issues)
+Questions and bugs go to [GitHub Issues](https://github.com/ces0491/sight-word-app/issues).
 
 ---
 

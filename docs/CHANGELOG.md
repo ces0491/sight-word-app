@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Sight Word Story Generator project.
+Changes to Sight Word Stories, newest first.
 
 ---
 
@@ -23,14 +23,15 @@ All notable changes to the Sight Word Story Generator project.
 - **One cast per story**: each character keeps the same skin tone, hair and clothes on every page, fixed by a seed from the story's title and first sentence. Illustrations no longer use `Math.random`, so a story renders the same way every time.
 - Pages with no named place keep the previous page's setting, for AI stories too.
 - **AI story mode**: Claude Haiku 4.5 writes a story with structured outputs, billed to the signed-in grown-up's own Anthropic API key. The key is saved in their browser under their account (`lib/anthropicKey.js`), removed on sign-out, and sent from the browser straight to Anthropic (`lib/aiStory.js`), so the server never receives it. The Anthropic SDK loads only when an AI story is made. The app falls back to Classic mode if AI fails, with a message saying why (key rejected, out of credit, rate limit, Anthropic busy or unreachable).
-- **Rate limiting** on share emails and word-usage updates, per user, with counters in MongoDB (`lib/rateLimit.js`, limits in `lib/limits.js`). The 1.0.0 in-memory limiter was never applied to any route and has been replaced.
+- **Rate limiting** with counters in MongoDB (`lib/rateLimit.js`, limits in `lib/limits.js`): registration per IP address, sign-in per IP address and per email address, and account deletion, share emails and word-usage updates per user. Past a sign-in limit the form says to wait instead of "Invalid email or password". The 1.0.0 in-memory limiter was never applied to any route and has been replaced.
+- **Account deletion** under Grown-ups → Account (`DELETE /api/account`), with the password. The account's saved stories are deleted with it, and the app signs out.
 - **Stop sharing** a story from the story library (`DELETE /api/stories/[id]/share`): the share token is removed and every link sent for the story stops working.
 - **Work kept across a reload**: the words, settings and newest unsaved story stay for the browser tab. The story editor asks before leaving with unsaved changes, and stays open with a notice if the session ends in another tab.
-- **An extra sentence for every Dolch word** (`lib/extraSentences.js`), so each of the 220 words appears in a Classic story when chosen; 85 of them couldn't before. A story for the whole pre-primer list now uses 78% of its words.
+- **Extra sentences for 130 Dolch words** (`lib/extraSentences.js`), so each of the 220 words appears in a Classic story when it's the only word chosen; 85 couldn't before. A story for the whole pre-primer list now uses 31 of its 40 words, up from 20.
 - **Security headers** on every page (`next.config.js`): a Content-Security-Policy that limits scripts to this site and the OCR engine's exact jsDelivr paths, and requests to this site, the Anthropic API and the OCR language data, plus `X-Content-Type-Options`, `Referrer-Policy` and `X-Frame-Options`.
-- **Request validation** with Zod for registration, the story, share and analytics routes, and AI story input (`lib/validation.js`), before any query. Registration takes names of up to 60 letters, spaces, apostrophes, hyphens and full stops, and passwords of 8 to 72 bytes.
+- **Request validation** with Zod for registration, account deletion, the story, share and analytics routes, and AI story input (`lib/validation.js`), before any query. Registration takes names of up to 60 letters, spaces, apostrophes, hyphens and full stops, and passwords of 8 to 72 bytes.
 - `usedWords` on saved stories, computed by the server from the story text.
-- Tests for sight word matching, story composition, story rendering, validation, registration, sharing and stopping sharing, word tracking, share email, rate limiting, sign-in redirects, AI stories and saved keys, scanned-word matching, security headers, dialogs, the story editor, and the main generator screen.
+- Tests for sight word matching, story composition, story rendering, validation, registration, sign-in limits, account deletion, client IP lookup, sharing and stopping sharing, word tracking, share email, rate limiting, sign-in redirects, AI stories and saved keys, scanned-word matching, security headers, dialogs, the story editor, and the main generator screen.
 - `.env.example` is now committed (it was caught by the `.env*` ignore rule).
 
 ### Changed
@@ -47,11 +48,15 @@ All notable changes to the Sight Word Story Generator project.
 - **Classic stories hang together**: a scene's words are read from its sentences, a scene that mentions a friend or Mom comes after one that introduces them, and two scenes on the same topic aren't used together (the "why" question was asked twice). Extra sentences make sense on their own in the middle of the day.
 - **Learning needs are read from the story**: the reader applies the needs saved with the story it opens, so a saved story keeps them in the library, and the editor's checkboxes change how it reads.
 - **Emails are stored lower-cased** and matched case-insensitively at sign-up and sign-in, so accounts created with capitals still sign in.
-- **Word usage counts Dolch words only**, so a child's name typed as a word never reaches the dashboard every teacher sees. The dashboard says its figures are across everyone.
+- **Word usage counts Dolch words only**, so a child's name typed as a word never reaches the dashboard all teachers see. The dashboard says its figures are across everyone.
 - A story takes up to 100 words. Adding more says how many weren't added, and the story editor explains what stops a save instead of saying "please try again".
-- Dependencies: `next` 15.5.29, `nodemailer` 10.3.1, `@anthropic-ai/sdk` 1.5.0 (Apache 2.0 licence), plus `npm audit fix`. An npm `overrides` entry lets `next-auth` use the root `nodemailer`.
+- Dependencies: `next` 16.4.5 with React 19.3, `next-auth` 4.24.15, `nodemailer` 10.3.1, `@anthropic-ai/sdk` 1.5.0 (Apache 2.0 licence), plus `npm audit fix`. `npm audit --omit=dev` reports no advisories. An npm `overrides` entry lets `next-auth` use the root `nodemailer`.
 - Node 24 everywhere: `engines` in `package.json` sets it for Vercel, and CI reads it from there. CI lints the whole project with the ESLint CLI (`next lint` skipped `hooks/`, `models/` and `test/`), runs the tests once with coverage, and fails on critical production advisories. The Codecov upload (no token) and the Dependency-Check step (its report went nowhere) are gone.
 - The photo scanner reads a picture once instead of three times with the same settings, and releases the image memory it uses.
+- **Next.js 16**: the build and dev server use webpack (`--webpack`). The Turbopack build puts an inline script in each page, which the Content-Security-Policy blocks, so the page never started.
+- **Tailwind CSS 4**: the theme moved from `tailwind.config.js` to an `@theme` block in `styles/globals.css`, PostCSS uses `@tailwindcss/postcss` in place of `tailwindcss` and `autoprefixer`, and renamed utilities were updated (`outline-none` to `outline-hidden`, `rounded` to `rounded-sm`, `bg-opacity-*` to `bg-white/75`). Buttons keep the pointer cursor. The next/font variables are now `--font-andika` and `--font-fredoka`, so they don't clash with the `font-read` and `font-display` theme names. Tailwind 4 needs Safari 16.4, Chrome 111, Firefox 128 or newer.
+- `mongoose` 9: the password hook is a plain async function (Mongoose 9 no longer passes `next`), and updates ask for the new document with `returnDocument: 'after'`.
+- `eslint-config-next` 16, a native flat config, replaces the `FlatCompat` bridge. Its React hook rules found state set directly in effects and refs read during render; those components now derive the state, load data from a promise chain inside the effect, or read the ref in the event handler.
 - Illustrations give their places only to things that can be drawn, draw at most two vehicles, and no longer draw snow for "cold" or "ice".
 - README and docs updated to match; `docs/PRODUCTION_READY.md` now lists what is in place and the remaining gaps. `docs/FREE_AND_OPEN.md` now describes only what the app does and stores; the testimonials, prices and competitor comparisons it had were unsourced.
 - `package.json` version set to 1.1.0, to match this changelog.
@@ -98,6 +103,7 @@ All notable changes to the Sight Word Story Generator project.
 - The shared-story page spun forever when the link had no token.
 - Lint errors that failed `next build`.
 - Image generation tests updated for the 1.1.0 rewrite of `lib/imageGeneration.js`.
+- Headings and pages the app moves focus to, such as "The end!", showed the keyboard focus ring.
 
 ---
 

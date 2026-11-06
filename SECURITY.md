@@ -2,16 +2,16 @@
 
 ## Supported Versions
 
-We take security seriously. The following versions of Sight Word Story Generator are currently supported with security updates:
+These versions get security updates:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| `main` and 1.1.x | :white_check_mark: |
-| < 1.1   | :x:                |
+| Version | Supported |
+| --- | --- |
+| `main` and 1.1.x | Yes |
+| < 1.1 | No |
 
 ## Reporting a Vulnerability
 
-**Please do NOT report security vulnerabilities through public GitHub issues.**
+Please don't report security problems in public GitHub issues.
 
 ### How to Report
 
@@ -19,120 +19,77 @@ Use GitHub's private vulnerability reporting: [report a vulnerability](https://g
 
 ### What to Include
 
-Please include the following information:
-
-- **Type of vulnerability** (e.g., SQL injection, XSS, authentication bypass)
-- **Location** (file path, URL, or specific component)
-- **Step-by-step instructions** to reproduce the issue
-- **Potential impact** of the vulnerability
-- **Suggested fix** (if you have one)
-- **Your contact information** for follow-up
+- **Type of vulnerability** (e.g., query injection, XSS, authentication bypass)
+- **Location** (file path, URL, or component)
+- **Steps to reproduce** the issue
+- **Potential impact**
+- **Suggested fix**, if you have one
 
 ### Example Report
 
 ```text
-Subject: [SECURITY] Authentication Bypass in User Login
-
-Description:
-I found a way to bypass authentication by...
+Subject: [SECURITY] Query operator accepted in sign-in
 
 Steps to Reproduce:
-1. Navigate to /login
-2. Enter username: admin' OR '1'='1
-3. [etc.]
+1. Open /auth/signin
+2. Send {"email": {"$ne": null}, "password": "x"} as the sign-in body
 
 Impact:
-An attacker could gain unauthorized access to any user account.
+An attacker could sign in without knowing an email address.
 
 Suggested Fix:
-Use parameterized queries instead of string concatenation.
-
-Contact: researcher@security.com
+Check that the email is a string before it reaches the query.
 ```
 
-## Response Timeline
+## Response and Disclosure
 
-- **Initial Response**: Within 48 hours
-- **Status Update**: Within 7 days
-- **Fix Timeline**: Depends on severity
-  - Critical: 1-7 days
-  - High: 7-30 days
-  - Medium: 30-90 days
-  - Low: Next scheduled release
+The maintainer aims to reply within a few days. How soon a fix ships depends on severity.
 
-## Security Update Process
-
-1. **Acknowledgment**: We'll confirm receipt of your report
-2. **Investigation**: We'll verify and assess the vulnerability
-3. **Fix Development**: We'll develop and test a patch
-4. **Disclosure**: We'll coordinate disclosure with you
-5. **Release**: We'll release the fix and credit you (if desired)
-
-## Vulnerability Disclosure Policy
-
-We follow coordinated disclosure:
-
-- We'll work with you to understand and fix the issue
-- We won't publicly disclose until a fix is available
-- We'll credit you in the security advisory (unless you prefer anonymity)
-- We ask that you don't publicly disclose before we release a fix
+Reports are confirmed, checked and fixed, and the fix is released before anything is made public. Please don't disclose the problem until then. Reporters are credited in the security advisory unless they'd rather not be.
 
 ## Security Best Practices
 
-### For Users/Administrators
+### For Administrators
 
-1. **Keep Software Updated**
-   - Always use the latest version
+1. **Keep software updated**
    - Update dependencies regularly
-   - Subscribe to security announcements
+   - Watch the repository on GitHub for security advisories
 
-2. **Secure Your Environment**
+2. **Secure your environment**
    - Use strong, unique passwords
-   - Enable two-factor authentication (when available)
-   - Keep your `.env.local` file secure
-   - Never commit credentials to version control
-   - Use environment variables for secrets
+   - Turn on two-factor authentication for the GitHub, Vercel and MongoDB Atlas accounts
+   - Keep secrets in environment variables; `.env.local` is git-ignored and stays out of version control
 
-3. **Rotate Credentials**
+3. **Rotate credentials**
    - Change database passwords regularly
-   - Rotate API keys every 90 days
-   - Update NextAuth secret on security concerns
+   - Change `NEXTAUTH_SECRET` if it may have leaked; this signs everyone out
 
-4. **Database Security**
-   - Use MongoDB Atlas with IP whitelisting
-   - Enable MongoDB authentication
-   - Use TLS/SSL for database connections
-   - Limit database user permissions (principle of least privilege)
+4. **Database**
+   - Restrict the Atlas IP access list if the host has fixed outbound IPs
+   - Use TLS for database connections
+   - Give the database user only the permissions the app needs
 
-5. **Email Security**
-   - Use app-specific passwords for SMTP
-   - Don't store email passwords in plain text
-   - Use secure SMTP connections (TLS)
+5. **Email**
+   - Use an app-specific password for SMTP
+   - Use TLS for SMTP (port 465, or STARTTLS on other ports)
 
 ### For Developers
 
-1. **Code Security**
-   - Never commit `.env.local` or secrets
+1. **Code**
    - Validate request bodies with the Zod schemas in [`lib/validation.js`](lib/validation.js) before they reach a query. Mongoose passes query operators such as `$regex` through, so an unvalidated `{ "email": { "$regex": "^a" } }` becomes part of the query
-   - Sanitize HTML output
-   - Implement rate limiting on APIs
-   - Use HTTPS in production
+   - Render user text as React text, never as HTML
+   - Rate-limit endpoints that send email or check passwords ([`lib/rateLimit.js`](lib/rateLimit.js))
 
 2. **Authentication**
    - Use bcrypt with salt rounds ≥ 10
-   - Implement proper session management
-   - Validate JWT tokens correctly
-   - Use secure, random secrets
+   - Leave session and JWT handling to NextAuth ([`lib/authOptions.js`](lib/authOptions.js))
 
 3. **Dependencies**
    - Run `npm audit` regularly
-   - Update dependencies to patch vulnerabilities
    - Review dependencies before adding them
 
 4. **Testing**
-   - Test authentication and authorization
-   - Test input validation
-   - Test for common vulnerabilities (OWASP Top 10)
+   - Test authentication, authorization and input validation
 
 ## Known Security Considerations
 
@@ -140,47 +97,41 @@ We follow coordinated disclosure:
 
 1. **Password storage**: bcrypt with 10 salt rounds.
 2. **Sessions**: JWT-based with NextAuth. API routes read the session with `getServerSession`.
-3. **Input validation**: Zod schemas on registration, the story, share and analytics routes, and AI story input ([`lib/validation.js`](lib/validation.js)), checked before any query. Unknown fields are dropped, so clients can't set `userId`, `shareToken` or `sharedWith`.
+3. **Input validation**: Zod schemas on registration, account deletion, the story, share and analytics routes, and AI story input ([`lib/validation.js`](lib/validation.js)), checked before any query. Unknown fields are dropped, so clients can't set `userId`, `shareToken` or `sharedWith`.
    - Registration: names of up to 60 letters, spaces, apostrophes, hyphens and full stops (they appear in share emails), passwords of 8 to 72 bytes, and emails stored lower-cased and looked up case-insensitively.
 4. **Story rendering**: story text is rendered as React text, never as HTML, wherever it came from (scene generator, AI, database).
 5. **Share links**: a random 256-bit token per story, compared in constant time, created once even when two shares start together. Wrong tokens and missing stories get the same 404. The owner can stop sharing from the story library, which removes the token. The shared story leaves out the learning needs, which describe the child.
 6. **Share email**: user text is HTML-escaped, and line breaks are removed from the subject.
-7. **Rate limiting**: share emails and word-usage updates, per user, counted in MongoDB ([`lib/limits.js`](lib/limits.js)). Word usage is shared by every signed-in teacher, so it counts Dolch words only: other words, such as a child's name, never reach it.
-8. **Sign-in redirects**: after sign-in, the `callbackUrl` is followed only if it resolves to a page on this site ([`lib/safeRedirect.js`](lib/safeRedirect.js)); a prefix check alone let `/<tab>/evil.example` through.
-9. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
-10. **Anthropic API keys**: AI stories use each grown-up's own key. It is kept in their browser's localStorage under their account id, removed on sign-out, and sent from the browser straight to Anthropic; the app's server never receives it ([`lib/anthropicKey.js`](lib/anthropicKey.js), [`lib/aiStory.js`](lib/aiStory.js)).
-11. **CSRF**: NextAuth protects its own auth routes.
-12. **Security headers**: a Content-Security-Policy on every page, set in [`next.config.js`](next.config.js). Scripts run only from this site and the exact jsDelivr paths of the OCR engine, and the page can only send requests to this site, the Anthropic API and the OCR language data, so injected script could neither run nor send a saved API key elsewhere. Also `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: DENY`. `style-src` allows inline styles, because server-rendered markup carries style attributes.
+7. **Rate limiting**, counted in MongoDB ([`lib/limits.js`](lib/limits.js)):
+   - Registration, per IP address
+   - Sign-in, per IP address and per email address (stored hashed). Someone who knows an address can use up its attempts and hold its owner off for up to 15 minutes
+   - Share emails, word-usage updates and account deletion, per account
+8. **Word usage** is shared by every signed-in teacher, so it counts Dolch words only: other words, such as a child's name, never reach it.
+9. **Sign-in redirects**: after sign-in, the `callbackUrl` is followed only if it resolves to a page on this site ([`lib/safeRedirect.js`](lib/safeRedirect.js)). A prefix check isn't enough, because URL parsing drops tabs and turns `/<tab>/evil.example` into another site.
+10. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
+11. **Anthropic API keys**: AI stories use each grown-up's own key. It is kept in their browser's localStorage under their account id, removed on sign-out, and sent from the browser straight to Anthropic; the app's server never receives it ([`lib/anthropicKey.js`](lib/anthropicKey.js), [`lib/aiStory.js`](lib/aiStory.js)).
+12. **Account deletion**: asks for the password again, then deletes the account and its saved stories ([`pages/api/account.js`](pages/api/account.js)).
+13. **CSRF**: NextAuth protects its own auth routes. The session cookie is `SameSite=Lax`, so other sites' pages can't send it with the app's API requests.
+14. **Security headers**: a Content-Security-Policy on every page, set in [`next.config.js`](next.config.js). Scripts run only from this site and the exact jsDelivr paths of the OCR engine, so an injected inline script doesn't run. Requests can go only to this site, the Anthropic API and the OCR language data; the policy doesn't cover a script navigating the page to another site. Also `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: DENY`. `style-src` allows inline styles, because server-rendered markup carries style attributes.
 
 ### Areas for Improvement
 
-- [ ] Rate limit registration and sign-in attempts
-- [ ] Implement audit logging
-- [ ] Implement account lockout after failed attempts
-- [ ] Add error monitoring; errors reach only the server logs today
-- [ ] Let people delete their account
+- [ ] Sessions can't be revoked: a copied session cookie keeps working until it expires (30 days), even after sign-out or account deletion
+- [ ] No email verification at registration
+- [ ] No audit logging
+- [ ] No error monitoring; errors reach only the server logs
 
-## Responsible Disclosure Hall of Fame
-
-We recognize security researchers who help us keep our users safe:
-
-*No researchers credited yet - be the first!*
-
-## Security-Related Configuration
-
-### Security Headers
+## Security Headers
 
 The headers are set in `headers()` in [`next.config.js`](next.config.js), and [`test/config/securityHeaders.test.js`](test/config/securityHeaders.test.js) checks the policy. A new external service the browser talks to needs adding to `connect-src` (and `script-src` if it serves code), or the browser blocks it.
 
-### Environment Security Checklist
+## Environment Checklist
 
-- [ ] All secrets in environment variables
-- [ ] `.env.local` in `.gitignore`
-- [ ] Different credentials for dev/prod
-- [ ] Strong `NEXTAUTH_SECRET` (32+ characters)
-- [ ] Database connection uses TLS
-- [ ] Email uses secure SMTP
-- [ ] API keys have limited permissions
+- [ ] Secrets in environment variables
+- [ ] Different credentials for development and production
+- [ ] A long random `NEXTAUTH_SECRET` (`openssl rand -base64 32`)
+- [ ] Database connection over TLS
+- [ ] SMTP over TLS
 
 ## Contact
 

@@ -1,10 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 
-/**
- * Toast Notification Component
- * Provides non-intrusive notifications to replace browser alerts
- */
+/** A short message in the corner that closes itself after `duration` ms (0 or less keeps it open). */
 const Toast = ({ message, type = 'info', onClose, duration = 4000 }) => {
   // The container passes a new onClose on every render; the timer must not restart each time
   const onCloseRef = useRef(onClose);
@@ -52,7 +49,7 @@ const Toast = ({ message, type = 'info', onClose, duration = 4000 }) => {
  */
 export const ToastContainer = ({ toasts, removeToast }) => {
   return (
-    <div className="no-print fixed right-4 top-4 z-[60] flex flex-col gap-2">
+    <div className="no-print fixed right-4 top-4 z-60 flex flex-col gap-2">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}

@@ -18,9 +18,13 @@ const isDev = process.env.NODE_ENV === 'development';
 
 /**
  * Content-Security-Policy. Scripts run only from this site and the OCR
- * engine, and the page can only send requests to this site, Anthropic and
- * the OCR language data, so an injected script could neither run nor send a
- * saved Anthropic API key anywhere else.
+ * engine, so an injected inline script doesn't run, and requests can go
+ * only to this site, Anthropic and the OCR language data. The policy
+ * doesn't stop a script navigating the page to another site.
+ *
+ * The build and dev server use webpack (--webpack in package.json). Turbopack,
+ * the Next.js 16 default, puts an inline bootstrap script in each page, which
+ * script-src 'self' blocks, and the page never starts.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",

@@ -2,6 +2,9 @@ import dbConnect from '../../../lib/dbConnect';
 import { methodNotAllowed, sendValidationError, withApiErrors } from '../../../lib/apiHelpers';
 import { registerSchema } from '../../../lib/validation';
 import User, { EMAIL_COLLATION } from '../../../models/User';
+import { enforceRateLimit } from '../../../lib/rateLimit';
+import { RATE_LIMITS } from '../../../lib/limits';
+import { clientIp } from '../../../lib/clientIp';
 
 const DUPLICATE_KEY = 11000;
 const ALREADY_REGISTERED = 'An account with this email already exists.';
@@ -15,6 +18,14 @@ async function handler(req, res) {
   const { name, email, password } = parsed.data;
 
   await dbConnect();
+
+  // Counted per IP address, as there's no account yet
+  const allowed = await enforceRateLimit(res, {
+    scope: 'register',
+    key: clientIp(req.headers, req.socket),
+    ...RATE_LIMITS.register,
+  });
+  if (!allowed) return;
 
   try {
     // Case-insensitive, so ana@example.com can't sign up beside an existing Ana@example.com

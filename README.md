@@ -29,13 +29,16 @@ Short illustrated stories built from the sight words a child is learning, to rea
 - **Sight word style** (highlighted, bold, underlined or plain) and pictures on or off
 - **Learning needs**: settings that change how a story reads (below)
 - **Save, share and print**: save stories to an account, email a link (needs SMTP settings), print every page, and manage saved stories in the story library, where sharing can also be stopped
-- **Nothing lost on a reload**: the words, settings and newest unsaved story stay for the browser tab; the story editor asks before leaving with unsaved changes
+- **Deleting an account**: under Account, with the password; it removes the account and its saved stories
+- **Kept on a reload**: the words, settings and newest unsaved story stay for the browser tab; the story editor asks before leaving with unsaved changes
 
 ## Cost
 
-Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's free tier have no running cost. Email sharing works with a free Gmail account and an app password. AI stories are billed to each grown-up's own Anthropic account at Claude Haiku 4.5 rates, with output capped at 1,024 tokens a story, so they cost whoever runs the site nothing.
+Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's free tier have no running cost. Email sharing works with a free Gmail account and an app password. AI stories are billed to each grown-up's own Anthropic account at Claude Haiku 4.5 rates, with output capped at 1,024 tokens a story, so they cost whoever runs the site nothing. More in [Why It's Free](docs/FREE_AND_OPEN.md).
 
-👉 **[Read why & how we keep it free →](docs/FREE_AND_OPEN.md)**
+## Browser support
+
+The styles use Tailwind CSS 4, which needs Safari 16.4, Chrome 111, Firefox 128 or newer. In older browsers, such as on iPads that can't update past iPadOS 15, pages won't look right.
 
 ## Getting Started
 
@@ -89,7 +92,7 @@ Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's fr
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the development server |
-| `npm run build` | Build for production |
+| `npm run build` | Build for production. Both use webpack: the Turbopack build adds an inline script that the Content-Security-Policy blocks |
 | `npm start` | Serve the production build |
 | `npm run lint` | Run ESLint over the whole project |
 | `npm test` | Run the Jest test suite |
@@ -97,7 +100,7 @@ Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's fr
 
 ### Limits
 
-Size limits on stories and AI requests, and the per-user rate limits on share emails and word-usage updates, are in [`lib/limits.js`](lib/limits.js). Rate limit counters are kept in MongoDB so they hold across serverless instances.
+Size limits on stories and AI requests, and the rate limits, are in [`lib/limits.js`](lib/limits.js). Registration is limited per IP address, sign-in per IP address and per email address, and account deletion, share emails and word-usage updates per user. Rate limit counters are kept in MongoDB so they hold across serverless instances.
 
 ## Deploying to Vercel
 
@@ -116,11 +119,7 @@ The [Production Readiness](docs/PRODUCTION_READY.md) page has a list of checks t
 
 ### Continuous Deployment
 
-Vercel automatically deploys changes when you push to your repository. To ensure smooth deployments:
-
-- Run `npm run lint`, `npm test` and `npm run build` before pushing (CI runs the same checks)
-- Use the Vercel CLI for previewing production builds locally
-- Set up environment variables in the Vercel project settings
+Vercel deploys each push to the connected repository. Run `npm run lint`, `npm test` and `npm run build` before pushing; CI runs the same checks.
 
 ## Learning needs
 
@@ -147,11 +146,11 @@ Documentation is available in the [docs](docs/) folder:
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting a Pull Request.
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
 ## Security
 
-For security concerns, please review our [Security Policy](SECURITY.md) for reporting vulnerabilities.
+Report vulnerabilities privately, as [SECURITY.md](SECURITY.md) describes.
 
 ## License
 

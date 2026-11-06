@@ -127,12 +127,12 @@ const StoryReader = ({ story, onClose, closeLabel = 'Done', actions = {} }) => {
               key={pageIndex}
               ref={pageRef}
               tabIndex={-1}
-              className="reader-page cutout animate-page-in mx-auto max-w-3xl overflow-hidden focus:outline-none"
+              className="reader-page cutout animate-page-in mx-auto max-w-3xl overflow-hidden focus:outline-hidden"
               style={{ '--page-from': `${direction * 32}px` }}
               aria-label={`Page ${pageIndex + 1} of ${pages.length}`}
             >
               {story.includeImages !== false && (
-                <div className="aspect-[2/1] w-full border-b-3 border-ink bg-mist">
+                <div className="aspect-2/1 w-full border-b-3 border-ink bg-mist">
                   <StoryIllustration
                     sentence={sentence}
                     options={plan[pageIndex]}
@@ -197,7 +197,7 @@ const StoryReader = ({ story, onClose, closeLabel = 'Done', actions = {} }) => {
                 />
               ))}
             </div>
-            <h2 id="the-end" ref={endRef} tabIndex={-1} className="font-display text-5xl font-bold text-ink focus:outline-none sm:text-6xl">
+            <h2 id="the-end" ref={endRef} tabIndex={-1} className="font-display text-5xl font-bold text-ink focus:outline-hidden sm:text-6xl">
               The end!
             </h2>
             <p className="font-display text-xl text-ink/80">You read &ldquo;{story.title}&rdquo;.</p>

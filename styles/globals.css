@@ -1,37 +1,67 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@import 'tailwindcss';
 
-/* Picture-book palette, defined once in tailwind.config.js. One light theme: the app is a book. */
-:root {
-  color-scheme: light;
-  --ink: theme('colors.ink');
-  --paper: theme('colors.paper');
-  --sky: theme('colors.sky');
-  --sun: theme('colors.sun');
-  --card-lilac: theme('colors.card.lilac');
+/* Picture-book palette. One light theme: the app is a book. */
+@theme {
+  --color-ink: #233059;
+  --color-paper: #ffffff;
+  --color-sky: #d9eeff;
+  --color-mist: #eef6ff;
+  --color-sun: #ffc83d;
+  --color-leaf: #26a96c;
+  --color-berry: #ee4f7a;
 
-  /* Reader settings; learning needs adjust these (styles/learningAdaptations.css) */
-  --reader-size: clamp(1.75rem, 1.1rem + 2.6vw, 2.75rem);
-  --reader-line: 1.6;
-  --reader-word-gap: 0.08em;
-  --reader-letter-gap: 0.01em;
-  --mark-color: var(--sun);
+  /* Word card tints, used in rotation */
+  --color-card-sun: #ffd96b;
+  --color-card-mint: #a8e8c9;
+  --color-card-pink: #ffc2d1;
+  --color-card-blue: #b5dbff;
+  --color-card-lilac: #dccfff;
+
+  /* Cut-out shadows: a solid offset in ink */
+  --shadow-cutout: 4px 4px 0 var(--color-ink);
+  --shadow-cutout-sm: 2px 2px 0 var(--color-ink);
+  --shadow-cutout-lg: 6px 6px 0 var(--color-ink);
 }
 
-body {
-  background: var(--sky);
-  color: var(--ink);
-  font-family: var(--font-display), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* next/font sets --font-andika and --font-fredoka on the app's wrapper (pages/_app.js) */
+@theme inline {
+  /* Andika: made for beginning readers (single-storey a and g) */
+  --font-read: var(--font-andika), system-ui, sans-serif;
+  /* Fredoka: rounded headings and buttons */
+  --font-display: var(--font-fredoka), system-ui, sans-serif;
 }
 
-/* Visible focus everywhere: a thick sun ring with an ink edge */
-:focus-visible {
-  outline: 4px solid var(--sun);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 6px var(--ink);
+@layer base {
+  :root {
+    color-scheme: light;
+    /* Short names for the plain CSS here and in styles/learningAdaptations.css */
+    --ink: var(--color-ink);
+    --paper: var(--color-paper);
+    --sky: var(--color-sky);
+    --sun: var(--color-sun);
+    --card-lilac: var(--color-card-lilac);
+
+    /* Reader settings; learning needs adjust these (styles/learningAdaptations.css) */
+    --reader-size: clamp(1.75rem, 1.1rem + 2.6vw, 2.75rem);
+    --reader-line: 1.6;
+    --reader-word-gap: 0.08em;
+    --reader-letter-gap: 0.01em;
+    --mark-color: var(--sun);
+  }
+
+  body {
+    background: var(--sky);
+    color: var(--ink);
+    font-family: var(--font-fredoka), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Tailwind's reset gives buttons the default arrow; these show the pointer */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 @layer components {
@@ -79,9 +109,31 @@ body {
   }
 }
 
+/*
+ * Focus styles go in the utilities layer, after Tailwind's own utilities, so
+ * the ring replaces a focused button's cut-out shadow, and focus: utilities
+ * such as an input's focus:ring-2 still win over it.
+ */
+@layer utilities {
+  /* Visible focus on controls: a thick sun ring with an ink edge */
+  :focus-visible {
+    outline: 4px solid var(--sun);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px var(--ink);
+  }
+
+  /* Headings and pages the app moves focus to (tabindex="-1") are focused so
+     screen readers announce them; they aren't controls, so they get no ring
+     and keep their own shadow (the reader page's cut-out) */
+  [tabindex='-1']:focus-visible {
+    outline: none;
+    box-shadow: revert-layer;
+  }
+}
+
 /* The page of the book being read */
 .reader-text {
-  font-family: var(--font-read), system-ui, sans-serif;
+  font-family: var(--font-andika), system-ui, sans-serif;
   font-size: var(--reader-size);
   line-height: var(--reader-line);
   word-spacing: var(--reader-word-gap);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { User, Mail, Lock, LogIn } from 'lucide-react';
 import Modal from '../storybook/Modal';
+import { signInErrorMessage } from '../../lib/authErrors';
 
 const AuthDialog = ({ onClose, onSuccess }) => {
   const [mode, setMode] = useState('login'); // 'login' or 'register'
@@ -25,7 +26,7 @@ const AuthDialog = ({ onClose, onSuccess }) => {
       });
 
       if (result.error) {
-        setError('Invalid email or password');
+        setError(signInErrorMessage(result.error));
         setIsSubmitting(false);
       } else {
         onSuccess();

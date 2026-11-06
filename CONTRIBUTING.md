@@ -1,6 +1,6 @@
-# Contributing to Sight Word Story Generator
+# Contributing to Sight Word Stories
 
-Thank you for your interest in contributing to the Sight Word Story Generator! This document provides guidelines for contributing to the project.
+Thanks for helping with Sight Word Stories.
 
 ## Table of Contents
 
@@ -15,12 +15,11 @@ Thank you for your interest in contributing to the Sight Word Story Generator! T
 
 ## Code of Conduct
 
-This project adheres to a code of conduct that all contributors are expected to follow:
+Contributors are expected to:
 
 - Be respectful and inclusive
-- Welcome newcomers and help them learn
-- Focus on what is best for the community and the students who will use this tool
-- Show empathy towards other community members
+- Help newcomers learn
+- Put the children and grown-ups who use the app first
 - Be patient with questions and feedback
 
 ## Getting Started
@@ -71,7 +70,7 @@ This project adheres to a code of conduct that all contributors are expected to 
 
 ### Branching Strategy
 
-- `main` - Production-ready code; Vercel deploys it
+- `main` - the deployed branch; Vercel deploys it
 - `feat/*` - New features (e.g., `feat/own-api-keys`)
 - `fix/*` - Bug fixes (e.g., `fix/story-generation-bug`)
 - `docs/*` - Documentation updates
@@ -157,29 +156,12 @@ export const generateStory = (words, grade, learningNeeds) => {
 
 ### File Organization
 
-```text
-components/
-  ├── ComponentName.js        # Component implementation
-  ├── __tests__/              # Component tests
-  └── index.js                # Re-exports (if needed)
-
-pages/
-  ├── api/                    # API routes
-  └── [page].js               # Page components
-
-lib/
-  └── utility.js              # Shared utilities
-
-models/
-  └── Model.js                # Mongoose schemas
-```
+See [Project Structure](docs/QUICK_START.md#project-structure) in the Quick Start Guide.
 
 ### CSS/Styling
 
-- Use Tailwind CSS utility classes
-- Keep custom CSS in `styles/globals.css`
-- Use CSS modules for component-specific styles if needed
-- Follow BEM naming if custom classes are necessary
+- Use Tailwind CSS utility classes. The palette, fonts and cut-out shadows are the `@theme` block at the top of `styles/globals.css`
+- Custom CSS goes in `styles/globals.css`; the learning-needs rules are in `styles/learningAdaptations.css`
 
 ### Accessibility
 
@@ -193,7 +175,7 @@ models/
 
 ### Writing Tests
 
-Tests use Jest and React Testing Library. Put them next to the code they cover:
+Tests use Jest and React Testing Library, and go in:
 
 - `lib/__tests__/` for library functions
 - `components/__tests__/` for components
@@ -257,9 +239,8 @@ npm run test:coverage # Generate coverage report
    ```
 
 3. **Review Process**:
-   - Maintainers will review within 3-5 business days
-   - Address any requested changes
-   - Once approved, maintainers will merge
+   - The maintainer reviews the PR and may ask for changes
+   - Once approved, the maintainer merges it
 
 ## Reporting Bugs
 
@@ -289,8 +270,8 @@ If applicable, add screenshots.
 
 **Environment:**
  - OS: [e.g., Windows 10, macOS 12]
- - Browser: [e.g., Chrome 96, Safari 15]
- - Version: [e.g., 0.1.0]
+ - Browser: [e.g., Chrome 130, Safari 18]
+ - Version: [e.g., 1.1.0]
 
 **Additional context**
 Any other relevant information.
@@ -319,25 +300,15 @@ How will this help teachers and students?
 
 ## Areas We Need Help
 
-- 📝 Documentation improvements
-- 🧪 Writing tests
-- 🎨 UI/UX enhancements
-- ♿ Accessibility improvements
-- 🌍 Internationalization (i18n)
-- 🐛 Bug fixes
-- ✨ New learning accommodation features
+- Documentation
+- Tests
+- UI and UX
+- Accessibility
+- Translations
+- Bug fixes
+- New learning-needs settings
 
 ## Questions?
 
 - Open a [GitHub issue](https://github.com/ces0491/sight-word-app/issues)
 - Check existing issues and pull requests
-
-## Recognition
-
-Contributors will be acknowledged in:
-
-- README.md
-- Release notes
-- Project website (future)
-
-Thank you for helping make learning to read more accessible! 📚✨

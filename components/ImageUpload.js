@@ -5,13 +5,8 @@ import Image from 'next/image';
 import { performEnhancedOCR } from '../lib/ocr';
 
 /**
- * Enhanced Image Upload Component with improved mobile device access
- * 
- * Features:
- * - Image preview and cropping
- * - Access to both camera and photo library on mobile
- * - Clear feedback during processing
- * - Better error handling with user-friendly messages
+ * Scan a photo for Dolch words. On phones it offers the camera or the photo
+ * library; the words found go to `onWordsDetected`.
  */
 const ImageUpload = ({ onWordsDetected }) => {
   const [previewImage, setPreviewImage] = useState(null);
@@ -122,7 +117,7 @@ const ImageUpload = ({ onWordsDetected }) => {
   return (
     <div className="space-y-4">
       <div className="text-sm font-medium text-ink mb-1">
-        Take a picture or upload an image of sight words. Words from the Dolch lists below are picked out; type any others.
+        Words from the Dolch lists below are picked out of the picture; type any others.
       </div>
 
       {/* Image Preview Area */}
@@ -147,10 +142,10 @@ const ImageUpload = ({ onWordsDetected }) => {
 
           {/* Processing Indicator */}
           {isProcessing && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+            <div className="absolute inset-0 flex items-center justify-center bg-white/75">
               <div className="text-center">
                 <div className="inline-block animate-spin h-8 w-8 border-4 border-ink border-t-transparent rounded-full"></div>
-                <p className="mt-2 text-sm text-ink/70 font-medium">Processing sight words...</p>
+                <p className="mt-2 text-sm text-ink/70 font-medium">Reading the picture…</p>
               </div>
             </div>
           )}
@@ -224,7 +219,7 @@ const ImageUpload = ({ onWordsDetected }) => {
 
           {/* Image Source Options */}
           {showPhotoOptions && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-xl z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-xl z-10">
               <div className="space-y-4 w-full px-4">
                 <button
                   onClick={openCamera}

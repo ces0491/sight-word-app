@@ -10,8 +10,8 @@ export const tintFor = (index) => TINTS[index % TINTS.length];
 const TILTS = ['-rotate-2', 'rotate-1', '-rotate-1', 'rotate-2', 'rotate-0'];
 
 const SIZES = {
-  lg: 'min-w-[6.5rem] px-6 py-4 text-4xl sm:text-5xl border-3 shadow-cutout',
-  md: 'min-w-[6rem] px-5 py-3 text-3xl sm:text-4xl border-3 shadow-cutout',
+  lg: 'min-w-26 px-6 py-4 text-4xl sm:text-5xl border-3 shadow-cutout',
+  md: 'min-w-24 px-5 py-3 text-3xl sm:text-4xl border-3 shadow-cutout',
   sm: 'px-3 py-1 text-xl border-2 shadow-cutout-sm',
 };
 

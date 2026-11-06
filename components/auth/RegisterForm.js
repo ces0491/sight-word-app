@@ -84,7 +84,7 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-hidden focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="John Smith"
             required
           />
@@ -105,7 +105,7 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-hidden focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="you@example.com"
             required
           />
@@ -127,7 +127,7 @@ const RegisterForm = ({ onSuccess, onToggleMode }) => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-hidden focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="••••••••"
             required
             minLength={8}

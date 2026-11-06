@@ -14,16 +14,12 @@ export default function SharedStoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const missingToken = router.isReady && (!id || !token);
+
   useEffect(() => {
-    if (!router.isReady) return;
-    if (!id || !token) {
-      setError(INVALID_LINK);
-      setIsLoading(false);
-      return;
-    }
+    if (!router.isReady || !id || !token) return;
 
     const fetchSharedStory = async () => {
-      setIsLoading(true);
       try {
         const response = await fetch(
           `/api/shared-stories/${encodeURIComponent(id)}?token=${encodeURIComponent(token)}`
@@ -42,6 +38,12 @@ export default function SharedStoryPage() {
     };
     fetchSharedStory();
   }, [router.isReady, id, token]);
+
+  if (missingToken) {
+    return (
+      <StatusScreen title="This story can't be opened" message={INVALID_LINK} action={{ href: '/', label: 'Make your own story' }} />
+    );
+  }
 
   if (isLoading) {
     return <StatusScreen title="Opening the story…" />;

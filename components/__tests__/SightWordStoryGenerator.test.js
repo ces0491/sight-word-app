@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import SightWordStoryGenerator from '../SightWordStoryGenerator';
 import { answerGate } from '../../test/gateHelpers';
 import { STARTER_WORDS } from '../../lib/wordLists';
@@ -69,6 +69,7 @@ beforeEach(() => {
   window.localStorage.clear();
   writeAiStory.mockReset();
   signOut.mockReset();
+  signIn.mockReset();
   jest.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -317,11 +318,20 @@ describe('AI stories', () => {
 });
 
 describe('review fixes', () => {
+  /** Fill in and submit the sign-in dialog; signIn is mocked to succeed. */
+  const signInThroughDialog = async (user) => {
+    signIn.mockResolvedValue({ ok: true, error: null });
+    const dialog = screen.getByRole('dialog', { name: 'Sign in' });
+    await user.type(within(dialog).getByLabelText('Email address'), 'teacher@example.com');
+    await user.type(within(dialog).getByLabelText('Password'), 'correct horse');
+    await user.click(within(dialog).getByRole('button', { name: 'Sign in' }));
+  };
+
   it('asks a signed-out grown-up to sign in before sharing, then opens the share form', async () => {
     useSession.mockReturnValue(signedOut);
     mockFetch({});
     const user = userEvent.setup();
-    const { rerender } = render(<SightWordStoryGenerator />);
+    render(<SightWordStoryGenerator />);
 
     await user.click(screen.getByRole('button', { name: 'Try some words' }));
     await user.click(screen.getByRole('button', { name: 'Make my story' }));
@@ -329,12 +339,26 @@ describe('review fixes', () => {
     await user.click(screen.getByRole('button', { name: 'Share' }));
 
     expect(screen.queryByRole('dialog', { name: 'Share this story' })).not.toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-
-    useSession.mockReturnValue(signedIn);
-    rerender(<SightWordStoryGenerator />);
+    await signInThroughDialog(user);
 
     expect(await screen.findByRole('dialog', { name: 'Share this story' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Sign in' })).not.toBeInTheDocument();
+  });
+
+  it('saves the story once sign-in from Save succeeds', async () => {
+    useSession.mockReturnValue(signedOut);
+    mockFetch({ 'POST /api/stories': [201, savedStory] });
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+
+    await user.click(screen.getByRole('button', { name: 'Try some words' }));
+    await user.click(screen.getByRole('button', { name: 'Make my story' }));
+    await readToTheEnd(user);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await signInThroughDialog(user);
+
+    await waitFor(() => expect(fetchCalls('POST', '/api/stories')).toHaveLength(1));
+    expect(await screen.findByRole('button', { name: 'Saved' })).toBeDisabled();
   });
 
   it('stops adding words at the story limit and says how many were left out', async () => {
@@ -384,5 +408,43 @@ describe('review fixes', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByText('No saved stories yet. Save one from the last page of a story.')).toBeInTheDocument();
+  });
+});
+
+describe('account deletion', () => {
+  it('deletes the account after the password is entered, then signs out and forgets the key', async () => {
+    useSession.mockReturnValue(signedIn);
+    storeAnthropicKey('user-1', testKey);
+    mockFetch({ 'GET /api/stories': [200, []], 'DELETE /api/account': [200, { success: true, storiesDeleted: 0 }] });
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+    await openGrownUps(user);
+
+    await user.click(screen.getByRole('button', { name: 'Delete account' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete your account?' });
+    await user.type(within(dialog).getByLabelText('Password'), 'correct horse');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete account' }));
+
+    await waitFor(() => expect(signOut).toHaveBeenCalled());
+    const [deleteCall] = fetchCalls('DELETE', '/api/account');
+    expect(JSON.parse(deleteCall[1].body)).toEqual({ password: 'correct horse' });
+    expect(loadAnthropicKey('user-1')).toBeNull();
+    expect(screen.getByText('Your account and saved stories were deleted.')).toBeInTheDocument();
+  });
+
+  it('keeps the account and says why when the password is wrong', async () => {
+    useSession.mockReturnValue(signedIn);
+    mockFetch({ 'GET /api/stories': [200, []], 'DELETE /api/account': [403, { message: "That password isn't right." }] });
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+    await openGrownUps(user);
+
+    await user.click(screen.getByRole('button', { name: 'Delete account' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete your account?' });
+    await user.type(within(dialog).getByLabelText('Password'), 'wrong');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete account' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent("That password isn't right.");
+    expect(signOut).not.toHaveBeenCalled();
   });
 });

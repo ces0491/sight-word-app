@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { BookOpen, Plus, Search, Trash2, Pencil, Link2Off } from 'lucide-react';
 import GrownUpPage from '../../components/storybook/GrownUpPage';
@@ -28,24 +28,39 @@ export default function StoriesPage() {
   const [toUnshare, setToUnshare] = useState(null);
   const [unshareError, setUnshareError] = useState('');
 
-  const fetchStories = useCallback(async () => {
+  const [reload, setReload] = useState(0);
+
+  // Load once signed in, and again on "Try again". State is set only when the request returns.
+  useEffect(() => {
+    if (status !== 'authenticated') return undefined;
+    let current = true;
+    fetch('/api/stories')
+      .then((response) => {
+        if (!response.ok) throw new Error(`Stories request failed: ${response.status}`);
+        return response.json();
+      })
+      .then((list) => {
+        if (!current) return;
+        setStories(list);
+        setLoadError(false);
+      })
+      .catch((error) => {
+        console.error('Error fetching stories:', error);
+        if (current) setLoadError(true);
+      })
+      .finally(() => {
+        if (current) setIsLoading(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [status, reload]);
+
+  const fetchStories = () => {
     setIsLoading(true);
     setLoadError(false);
-    try {
-      const response = await fetch('/api/stories');
-      if (!response.ok) throw new Error(`Stories request failed: ${response.status}`);
-      setStories(await response.json());
-    } catch (error) {
-      console.error('Error fetching stories:', error);
-      setLoadError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (status === 'authenticated') fetchStories();
-  }, [status, fetchStories]);
+    setReload((n) => n + 1);
+  };
 
   /** Stop sharing: every link sent for the story stops working. */
   const confirmUnshare = async () => {

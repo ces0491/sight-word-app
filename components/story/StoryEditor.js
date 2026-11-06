@@ -151,7 +151,7 @@ const StoryEditor = ({ story, onSave, onCancel, notice }) => {
                   onChange={(e) => setSentence(index, e.target.value)}
                   aria-label={`Sentence ${index + 1}`}
                   maxLength={STORY_LIMITS.maxSentenceLength}
-                  className="min-h-[80px] flex-grow rounded-xl border border-ink/25 px-3 py-2"
+                  className="min-h-[80px] grow rounded-xl border border-ink/25 px-3 py-2"
                 />
                 <button
                   type="button"
@@ -207,7 +207,7 @@ const StoryEditor = ({ story, onSave, onCancel, notice }) => {
             }}
             placeholder="e.g. the, see, can"
             autoComplete="off"
-            className="flex-grow rounded-xl border border-ink/25 px-3 py-2"
+            className="grow rounded-xl border border-ink/25 px-3 py-2"
           />
           <button type="button" onClick={addWords} disabled={!newWords.trim()} className="rounded-xl bg-ink px-3 py-2 text-white disabled:opacity-50">
             Add
@@ -241,7 +241,7 @@ const StoryEditor = ({ story, onSave, onCancel, notice }) => {
               type="checkbox"
               checked={draft.includeImages}
               onChange={(e) => update({ includeImages: e.target.checked })}
-              className="h-4 w-4 rounded border-ink/25"
+              className="h-4 w-4 rounded-sm border-ink/25"
             />
             <span className="ml-2 text-sm text-ink">Show a picture on every page</span>
           </label>
@@ -274,7 +274,7 @@ const StoryEditor = ({ story, onSave, onCancel, notice }) => {
                     type="checkbox"
                     checked={draft.learningNeeds[need.key]}
                     onChange={(e) => update({ learningNeeds: { ...draft.learningNeeds, [need.key]: e.target.checked } })}
-                    className="h-4 w-4 rounded border-ink/25"
+                    className="h-4 w-4 rounded-sm border-ink/25"
                   />
                   <span className="ml-2 text-sm text-ink">{need.label}</span>
                 </label>
