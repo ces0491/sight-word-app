@@ -145,6 +145,10 @@ Documentation is available in the [docs](docs/) folder:
 - **[Illustrations](docs/ILLUSTRATIONS.md)** - How story pictures are drawn
 - **[Changelog](docs/CHANGELOG.md)** - Version history and updates
 
+## Privacy
+
+The app's [privacy page](https://sightwords.sheetsolved.com/privacy) says what it keeps, where that goes and how to remove it. It lives in [`pages/privacy.js`](pages/privacy.js): update it, and its date, when the app starts keeping something new or using another service. [`test/pages/privacy.test.js`](test/pages/privacy.test.js) fails if the Content-Security-Policy allows an outside host the page doesn't name.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
