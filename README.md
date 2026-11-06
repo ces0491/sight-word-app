@@ -4,7 +4,7 @@ Short illustrated stories built from the sight words a child is learning, to rea
 
 [Sight Word Stories](https://sightwords.sheetsolved.com/)
 
-**Status**: see the [Production Readiness](docs/PRODUCTION_READY.md) page for what is in place and what remains before a public launch.
+**Status**: not ready for a public launch yet. [SCOPE.md](SCOPE.md) sets what a launch needs, and the [Production Readiness](docs/PRODUCTION_READY.md) page lists what is in place and what remains.
 
 ---
 

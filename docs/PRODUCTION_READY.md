@@ -1,6 +1,6 @@
 # Production Readiness
 
-**Status**: not ready for a public launch. The gaps are listed below.
+**Status**: not ready for a public launch. The gaps are listed below, and [SCOPE.md](../SCOPE.md) sets what a launch needs.
 
 **Last reviewed**: 2026-11-06
 
@@ -24,8 +24,20 @@
 
 ## Gaps before a public launch
 
-- **Error monitoring**: none. Errors reach only the server logs. Adding a service such as Sentry also means adding its host to the Content-Security-Policy's `connect-src`.
+These are the items in [SCOPE.md](../SCOPE.md) that aren't in place yet.
+
+- **Story limits**: saving and editing stories has no rate limit, and an account can hold any number of stories, so one account could fill the database.
+- **Privacy page**: none. Saved stories hold the child's learning needs, and their words can include the child's name.
+- **Password reset**: none, so a grown-up who forgets their password loses the account and its stories.
 - **Email verification**: none, so an account can be registered with someone else's address.
+- **Email in production**: no SMTP settings yet, so sharing by email returns `EMAIL_NOT_CONFIGURED`. Password reset and email verification need them too.
+- **Error monitoring**: none. Errors reach only the server logs. Adding a service such as Sentry also means adding its host to the Content-Security-Policy's `connect-src`.
+- **Backups**: not confirmed for the production database.
+
+## Known limitations
+
+[SCOPE.md](../SCOPE.md) leaves these out of the launch.
+
 - **Sessions can't be revoked**: they're signed JWTs, so a copied session cookie stays valid until it expires (30 days), even after sign-out or account deletion.
 - **Analytics are global**: the word usage dashboard counts words across all users. Only Dolch words are counted, so a child's name typed as a word doesn't appear, but all signed-in teachers see the same totals.
 - **Database tests**: API routes are unit-tested with the database mocked. Nothing runs them against a real MongoDB.
