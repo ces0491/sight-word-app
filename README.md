@@ -4,7 +4,7 @@ Short illustrated stories built from the sight words a child is learning, to rea
 
 [Sight Word Stories](https://sightwords.sheetsolved.com/)
 
-**Status**: see the [Production Readiness](docs/PRODUCTION_READY.md) page for what is in place and what remains before a public launch.
+**Status**: not ready for a public launch yet. [SCOPE.md](SCOPE.md) sets what a launch needs, and the [Production Readiness](docs/PRODUCTION_READY.md) page lists what is in place and what remains.
 
 ---
 
@@ -100,7 +100,7 @@ The styles use Tailwind CSS 4, which needs Safari 16.4, Chrome 111, Firefox 128 
 
 ### Limits
 
-Size limits on stories and AI requests, and the rate limits, are in [`lib/limits.js`](lib/limits.js). Registration is limited per IP address, sign-in per IP address and per email address, and account deletion, share emails and word-usage updates per user. Rate limit counters are kept in MongoDB so they hold across serverless instances.
+Size limits on stories and AI requests, the number of saved stories an account can keep, and the rate limits are in [`lib/limits.js`](lib/limits.js). Registration is limited per IP address, sign-in per IP address and per email address, and story saves and edits, account deletion, share emails and word-usage updates per user. Rate limit counters are kept in MongoDB so they hold across serverless instances.
 
 ## Deploying to Vercel
 

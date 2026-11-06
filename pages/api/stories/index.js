@@ -3,6 +3,8 @@ import Story from '../../../models/Story';
 import { requireSession, methodNotAllowed, sendValidationError, withApiErrors } from '../../../lib/apiHelpers';
 import { storyCreateSchema } from '../../../lib/validation';
 import { findUsedWords } from '../../../lib/sightWords';
+import { enforceRateLimit } from '../../../lib/rateLimit';
+import { RATE_LIMITS, STORY_LIMITS } from '../../../lib/limits';
 
 async function handler(req, res) {
   if (!['GET', 'POST'].includes(req.method)) {
@@ -29,7 +31,24 @@ async function handler(req, res) {
   const parsed = storyCreateSchema.safeParse(req.body);
   if (!parsed.success) return sendValidationError(res, parsed.error);
 
+  // Counted together with edits (pages/api/stories/[id].js)
+  const allowed = await enforceRateLimit(res, {
+    scope: 'storyWrite',
+    key: session.user.id,
+    ...RATE_LIMITS.storyWrite,
+  });
+  if (!allowed) return;
+
   try {
+    // Two saves at once can both pass this check; the rate limit bounds how far over the cap that goes
+    const savedStories = await Story.countDocuments({ userId: session.user.id });
+    if (savedStories >= STORY_LIMITS.maxStoriesPerAccount) {
+      return res.status(403).json({
+        message: `An account can keep up to ${STORY_LIMITS.maxStoriesPerAccount} saved stories. Delete one from the story library to save another.`,
+        code: 'STORY_LIMIT_REACHED',
+      });
+    }
+
     const story = await Story.create({
       ...parsed.data,
       usedWords: findUsedWords(parsed.data.content, parsed.data.words),

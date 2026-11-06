@@ -1,6 +1,6 @@
 # Production Readiness
 
-**Status**: not ready for a public launch. The gaps are listed below.
+**Status**: not ready for a public launch. The gaps are listed below, and [SCOPE.md](../SCOPE.md) sets what a launch needs.
 
 **Last reviewed**: 2026-11-06
 
@@ -16,7 +16,7 @@
 - **Share links**: each shared story gets a random 256-bit token, stored on the story and compared in constant time. A wrong token, a missing story and an unshared story all return the same 404. Sharing can be stopped from the story library, which removes the token, and a shared story leaves out the learning needs.
 - **Share email**: user-supplied text is HTML-escaped and kept off header lines. Recipient addresses are validated.
 - **AI stories**: signed-in grown-ups with their own Anthropic API key. The key is kept in their browser's localStorage under their account and removed on sign-out, and the browser calls Anthropic directly, so this server never receives it. Words are limited to letters, apostrophes and hyphens before they reach the prompt, and the response shape is enforced with structured outputs.
-- **Rate limits**: registration per IP address, sign-in per IP address and per email address, and account deletion, share emails and word-usage updates per user. Counters are in MongoDB so the limits hold across serverless instances. Values are in [`lib/limits.js`](../lib/limits.js). Someone who knows an email address can use up its sign-in attempts and keep its owner out for up to 15 minutes.
+- **Rate limits**: registration per IP address, sign-in per IP address and per email address, and story saves and edits, account deletion, share emails and word-usage updates per user. An account can keep up to 200 saved stories, so one account can't fill the database. Counters are in MongoDB so the limits hold across serverless instances. Values are in [`lib/limits.js`](../lib/limits.js). Someone who knows an email address can use up its sign-in attempts and keep its owner out for up to 15 minutes.
 - **Security headers**: a Content-Security-Policy in [`next.config.js`](../next.config.js) limits scripts to this site and the OCR engine's exact jsDelivr paths, and requests to this site, the Anthropic API and the OCR language data. An injected inline script doesn't run. The policy doesn't stop a script navigating the page to another site, which could carry a saved Anthropic API key in the URL. Also `nosniff`, a strict referrer policy and `X-Frame-Options: DENY`.
 - **Missing configuration**: if a required setting such as `MONGODB_URI` is missing, API routes that need it return a JSON 503 (`SERVICE_NOT_CONFIGURED`) and log which setting is missing. Other routes keep working.
 - **Children's area**: the grown-ups area (settings, sign-in, saved stories) sits behind a sum, asked once per browser tab. It keeps a young child out; it is not security.
@@ -24,8 +24,19 @@
 
 ## Gaps before a public launch
 
-- **Error monitoring**: none. Errors reach only the server logs. Adding a service such as Sentry also means adding its host to the Content-Security-Policy's `connect-src`.
+These are the items in [SCOPE.md](../SCOPE.md) that aren't in place yet.
+
+- **Privacy page**: none. Saved stories hold the child's learning needs, and their words can include the child's name.
+- **Password reset**: none, so a grown-up who forgets their password loses the account and its stories.
 - **Email verification**: none, so an account can be registered with someone else's address.
+- **Email in production**: no SMTP settings yet, so sharing by email returns `EMAIL_NOT_CONFIGURED`. Password reset and email verification need them too.
+- **Error monitoring**: none. Errors reach only the server logs. Adding a service such as Sentry also means adding its host to the Content-Security-Policy's `connect-src`.
+- **Backups**: not confirmed for the production database.
+
+## Known limitations
+
+[SCOPE.md](../SCOPE.md) leaves these out of the launch.
+
 - **Sessions can't be revoked**: they're signed JWTs, so a copied session cookie stays valid until it expires (30 days), even after sign-out or account deletion.
 - **Analytics are global**: the word usage dashboard counts words across all users. Only Dolch words are counted, so a child's name typed as a word doesn't appear, but all signed-in teachers see the same totals.
 - **Database tests**: API routes are unit-tested with the database mocked. Nothing runs them against a real MongoDB.

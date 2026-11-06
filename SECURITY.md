@@ -105,7 +105,8 @@ Reports are confirmed, checked and fixed, and the fix is released before anythin
 7. **Rate limiting**, counted in MongoDB ([`lib/limits.js`](lib/limits.js)):
    - Registration, per IP address
    - Sign-in, per IP address and per email address (stored hashed). Someone who knows an address can use up its attempts and hold its owner off for up to 15 minutes
-   - Share emails, word-usage updates and account deletion, per account
+   - Story saves and edits (counted together), share emails, word-usage updates and account deletion, per account
+   - Saved stories, capped per account so one account can't fill the database
 8. **Word usage** is shared by every signed-in teacher, so it counts Dolch words only: other words, such as a child's name, never reach it.
 9. **Sign-in redirects**: after sign-in, the `callbackUrl` is followed only if it resolves to a page on this site ([`lib/safeRedirect.js`](lib/safeRedirect.js)). A prefix check isn't enough, because URL parsing drops tabs and turns `/<tab>/evil.example` into another site.
 10. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
