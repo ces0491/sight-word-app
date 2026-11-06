@@ -14,9 +14,7 @@ const WordAnalyticsSchema = new mongoose.Schema({
     0: { type: Number, default: 0 }, // Kindergarten
     1: { type: Number, default: 0 }, // Grade 1
     2: { type: Number, default: 0 }, // etc.
-    3: { type: Number, default: 0 },
-    4: { type: Number, default: 0 },
-    5: { type: Number, default: 0 }
+    3: { type: Number, default: 0 }
   },
   lastUsed: { 
     type: Date, 

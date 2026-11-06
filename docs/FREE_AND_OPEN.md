@@ -33,7 +33,7 @@ Many educational apps lock essential features behind paywalls. We believe sight 
 
 ### Optional AI Stories
 
-The Classic story engine runs in the browser and costs nothing. AI mode is an optional extra: it writes stories with Claude Haiku 4.5, and each story is billed to whoever's `ANTHROPIC_API_KEY` the deployment uses. A deployment without that key has no AI mode and no API costs. Each signed-in user gets a capped number of AI stories per hour (see [`lib/limits.js`](../lib/limits.js)), which bounds what a deployment can spend.
+The Classic story engine runs in the browser and costs nothing. AI stories are an optional extra, written by Claude Haiku 4.5. Each grown-up signs in and adds their own Anthropic API key, and Anthropic bills their account for the stories they make, so AI stories cost whoever runs the site nothing. Output is capped at 1,024 tokens a story.
 
 ### Free Infrastructure
 

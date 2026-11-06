@@ -11,7 +11,7 @@ This document describes all API endpoints available in the Sight Word Story Gene
 - [Authentication](#authentication)
 - [Stories](#stories)
 - [Shared Stories](#shared-stories)
-- [AI Story Generation](#ai-story-generation)
+- [AI Stories](#ai-stories)
 - [Analytics](#analytics)
 - [Error Handling](#error-handling)
 - [Rate Limiting](#rate-limiting)
@@ -153,7 +153,7 @@ Create a new story.
 }
 ```
 
-`title`, `content`, `words` and `grade` (integer 0-5) are required. `format` defaults to `highlighted`, `includeImages` to `true`, `learningNeeds` to `{}` and `scenes` to `[]`. `scenes` holds the scene id behind each sentence (or `null`) for Classic stories; the illustrations use it. A `PUT` that changes `content` without sending `scenes` clears them. The server sets `userId` and computes `usedWords` (the sight words that appear in `content`); values for those, or for `sharedWith`, in the body are ignored.
+`title`, `content`, `words` and `grade` (integer 0-3) are required. `format` defaults to `highlighted`, `includeImages` to `true`, `learningNeeds` to `{}` and `scenes` to `[]`. `scenes` holds the scene id behind each sentence (or `null`) for Classic stories; the illustrations use it. A `PUT` that changes `content` without sending `scenes` clears them. The server sets `userId` and computes `usedWords` (the sight words that appear in `content`); values for those, or for `sharedWith`, in the body are ignored.
 
 **Response** (201 Created):
 
@@ -360,47 +360,11 @@ Read a story through a share link.
 
 ---
 
-## AI Story Generation
+## AI Stories
 
-### Generate AI Story
+AI stories don't go through this API. The browser calls the Anthropic Messages API directly with the signed-in grown-up's own API key, using Claude Haiku 4.5 (`claude-haiku-4-5-20251001`), so the key never reaches this server. See [`lib/aiStory.js`](../lib/aiStory.js).
 
-Write a story with Claude Haiku 4.5 (`claude-haiku-4-5-20251001`). Needs `ANTHROPIC_API_KEY`.
-
-**Endpoint**: `POST /stories/generate-ai`
-
-**Authentication**: Required
-
-**Request Body**:
-
-```json
-{
-  "words": ["the", "dog", "can", "run"],
-  "grade": 1,
-  "learningNeeds": { "adhd": true }
-}
-```
-
-Words are trimmed and lower-cased, and may contain only letters, with apostrophes or hyphens inside a word. At most `STORY_LIMITS.maxAiWords` words.
-
-**Response** (200 OK):
-
-```json
-{
-  "title": "The Fast Dog",
-  "content": ["The dog can run.", "See the dog go!"],
-  "usedWords": ["the", "dog", "can", "run"]
-}
-```
-
-`usedWords` is computed by the server from `content`, so a word the model left out is not listed. The story is not saved; save it with Create Story.
-
-**Errors**:
-
-- `400` - Invalid words, grade or learning needs
-- `401` - Unauthorized
-- `429` - AI generation limit reached (see [Rate Limiting](#rate-limiting))
-- `502` - The model's reply was cut off, refused or outside the size limits
-- `503` - No API key configured, or the AI service is busy or unreachable
+Words are trimmed and lower-cased, and may contain only letters, with apostrophes or hyphens inside a word. At most `STORY_LIMITS.maxAiWords` words. `usedWords` is computed from the story text, so a word the model left out is not listed. The story is not saved; save it with Create Story.
 
 ---
 
@@ -434,7 +398,7 @@ Track sight words used in stories (called automatically by story generation).
 
 **Errors**:
 
-- `400` - Missing or invalid `words`, or `grade` not an integer 0-5
+- `400` - Missing or invalid `words`, or `grade` not an integer 0-3
 - `401` - Unauthorized
 - `500` - Server error
 
@@ -467,9 +431,7 @@ Get analytics on word usage. `topWords`, `byGrade` and `totalUniqueWords` count 
     "0": 10,
     "1": 25,
     "2": 15,
-    "3": 8,
-    "4": 5,
-    "5": 2
+    "3": 8
   },
   "totalStories": 42,
   "totalUniqueWords": 156
@@ -478,39 +440,6 @@ Get analytics on word usage. `topWords`, `byGrade` and `totalUniqueWords` count 
 
 **Errors**:
 
-- `401` - Unauthorized
-- `500` - Server error
-
----
-
-### Get Suggested Words
-
-Get suggested sight words for a specific grade level.
-
-**Endpoint**: `GET /analytics/suggestedWords?grade=1`
-
-**Authentication**: Required
-
-**Query Parameters**:
-
-- `grade` (optional) - Grade level (0-5), defaults to 1
-
-**Response** (200 OK):
-
-```json
-{
-  "grade": 1,
-  "suggestedWords": [
-    "he", "she", "we", "they", "was",
-    "for", "are", "you", "have", "with",
-    "the", "a", "and", "I", "to"
-  ]
-}
-```
-
-**Errors**:
-
-- `400` - Invalid grade level
 - `401` - Unauthorized
 - `500` - Server error
 
@@ -532,7 +461,7 @@ All endpoints return errors in a consistent format:
 ```json
 {
   "message": "Invalid request",
-  "issues": [{ "path": "grade", "message": "Too big: expected number to be <=5" }]
+  "issues": [{ "path": "grade", "message": "Too big: expected number to be <=3" }]
 }
 ```
 
@@ -546,7 +475,6 @@ All endpoints return errors in a consistent format:
 - `405` - Method Not Allowed (the `Allow` header lists the accepted methods)
 - `429` - Too Many Requests
 - `500` - Internal Server Error
-- `502` - Bad Gateway (AI reply unusable)
 - `503` - Service Unavailable
 
 ### Special Error Codes
@@ -560,7 +488,7 @@ Uncaught server errors return `{ "message": "Internal server error" }` with stat
 
 ## Rate Limiting
 
-AI story generation and share emails are limited per signed-in user, in fixed windows. The limits are `RATE_LIMITS` in [`lib/limits.js`](../lib/limits.js). Counters are stored in the `ratelimits` MongoDB collection and removed by a TTL index when their window ends.
+Share emails are limited per signed-in user, in fixed windows. The limits are `RATE_LIMITS` in [`lib/limits.js`](../lib/limits.js). Counters are stored in the `ratelimits` MongoDB collection and removed by a TTL index when their window ends.
 
 Limited responses include `X-RateLimit-Limit` and `X-RateLimit-Remaining`. When the limit is reached the response is `429` with a `Retry-After` header and body:
 
@@ -600,7 +528,7 @@ Other endpoints are not rate limited.
   scenes: (string | null)[], // Scene id behind each sentence, for the illustrations
   format: 'highlighted' | 'bold' | 'underlined' | 'normal',
   includeImages: boolean,
-  grade: number, // 0-5 (0 = Kindergarten)
+  grade: number, // 0-3 (0 = Kindergarten)
   learningNeeds: {
     adhd: boolean,
     dyslexia: boolean,
@@ -703,9 +631,9 @@ console.log(`Total stories: ${analytics.totalStories}`);
 
 ## Security Considerations
 
-1. **Authentication**: story, AI and analytics endpoints require a session. Shared stories need the share token instead.
+1. **Authentication**: story and analytics endpoints require a session. Shared stories need the share token instead.
 2. **Authorization**: users can only read, change or share their own stories.
-3. **Input validation**: Zod schemas on story, share, AI and analytics bodies; unknown fields are dropped.
+3. **Input validation**: Zod schemas on story, share and analytics bodies; unknown fields are dropped.
 4. **Password hashing**: bcrypt with 10 salt rounds.
 5. **Story text**: rendered as React text in the UI, never as HTML.
 

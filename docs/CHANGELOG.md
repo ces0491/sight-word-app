@@ -22,15 +22,17 @@ All notable changes to the Sight Word Story Generator project.
 - **Indoor rooms**: bedroom, bathroom, kitchen and classroom, with poses for lying in bed and sitting at the table (`lib/illustrationRooms.js`).
 - **One cast per story**: each character keeps the same skin tone, hair and clothes on every page, fixed by a seed from the story's title and first sentence. Illustrations no longer use `Math.random`, so a story renders the same way every time.
 - Pages with no named place keep the previous page's setting, for AI stories too.
-- **AI story mode**: `POST /api/stories/generate-ai` writes a story with Claude Haiku 4.5 using structured outputs. Signed-in users only; the app falls back to Classic mode if it fails. Needs `ANTHROPIC_API_KEY`.
-- **Rate limiting** on AI generation and share emails, per user, with counters in MongoDB (`lib/rateLimit.js`, limits in `lib/limits.js`). The 1.0.0 in-memory limiter was never applied to any route and has been replaced.
-- **Request validation** with Zod for the story, share, AI and analytics routes (`lib/validation.js`).
+- **AI story mode**: Claude Haiku 4.5 writes a story with structured outputs, billed to the signed-in grown-up's own Anthropic API key. The key is saved in their browser under their account (`lib/anthropicKey.js`), removed on sign-out, and sent from the browser straight to Anthropic (`lib/aiStory.js`), so the server never receives it. The Anthropic SDK loads only when an AI story is made. The app falls back to Classic mode if AI fails, with a message saying why (key rejected, out of credit, rate limit, Anthropic busy or unreachable).
+- **Rate limiting** on share emails, per user, with counters in MongoDB (`lib/rateLimit.js`, limits in `lib/limits.js`). The 1.0.0 in-memory limiter was never applied to any route and has been replaced.
+- **Request validation** with Zod for the story, share and analytics routes and for AI story input (`lib/validation.js`).
 - `usedWords` on saved stories, computed by the server from the story text.
-- Tests for sight word matching, story rendering, validation, share email, rate limiting, the AI and shared-story routes, and the main generator screen.
+- Tests for sight word matching, story rendering, validation, share email, rate limiting, AI stories and saved keys, scanned-word matching, the shared-story route, and the main generator screen.
 - `.env.example` is now committed (it was caught by the `.env*` ignore rule).
 
 ### Changed
 
+- **Reading levels run from Kindergarten to Grade 3**, the span of the Dolch lists; Grades 4 and 5 are gone from the settings, the story editor, the API and the word usage dashboard. The setting says that Classic stories are the same at every level and save it as a label.
+- **Scanning a page adds only Dolch words, read exactly.** The scanner used its own word lists by grade, which left out 27 Dolch words and dropped "a" and "I", and its closest-match step turned other words into wrong ones ("red" into "read", "please" into "place"). Apostrophes are kept, so "don't" is found.
 - Grown-ups settings describe what each one changes, in place of the old "Learn more" learning-needs dialog. The old screen components (`StoryPreview`, `StoryViewer`, `StoryGenerator`, `LearningConsiderationsPanel`, `LearningNeedsInfo`) are removed.
 - Story text renders as React elements through `components/story/StoryText.js` instead of `dangerouslySetInnerHTML`.
 - Share links use a random token stored on the story. **Links sent before this release no longer open**, because their tokens were never stored.
@@ -40,6 +42,11 @@ All notable changes to the Sight Word Story Generator project.
 - Dependencies: `next` 15.5.29, `nodemailer` 10.3.1, `@anthropic-ai/sdk` 1.5.0 (Apache 2.0 licence), plus `npm audit fix`. An npm `overrides` entry lets `next-auth` use the root `nodemailer`.
 - CI runs on Node 24.
 - README and docs updated to match; `docs/PRODUCTION_READY.md` now lists what is in place and the remaining gaps.
+
+### Removed
+
+- `GET /api/analytics/suggestedWords` and `getSuggestedWords`, which nothing called.
+- `POST /api/stories/generate-ai` and the server-side `ANTHROPIC_API_KEY`. A deployment that set the variable can delete it.
 
 ### Fixed
 

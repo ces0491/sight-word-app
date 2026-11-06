@@ -149,19 +149,20 @@ We follow coordinated disclosure:
 
 1. **Password storage**: bcrypt with 10 salt rounds.
 2. **Sessions**: JWT-based with NextAuth. API routes read the session with `getServerSession`.
-3. **Input validation**: Zod schemas on the story, share, AI and analytics routes ([`lib/validation.js`](lib/validation.js)). Unknown fields are dropped, so clients can't set `userId`, `shareToken` or `sharedWith`.
+3. **Input validation**: Zod schemas on the story, share and analytics routes and on AI story input ([`lib/validation.js`](lib/validation.js)). Unknown fields are dropped, so clients can't set `userId`, `shareToken` or `sharedWith`.
 4. **Story rendering**: story text is rendered as React text, never as HTML, wherever it came from (scene generator, AI, database).
 5. **Share links**: a random 256-bit token per story, compared in constant time. Wrong tokens and missing stories get the same 404.
 6. **Share email**: user text is HTML-escaped, and line breaks are removed from the subject.
-7. **Rate limiting**: AI generation and share emails, per user, counted in MongoDB ([`lib/limits.js`](lib/limits.js)).
+7. **Rate limiting**: share emails, per user, counted in MongoDB ([`lib/limits.js`](lib/limits.js)).
 8. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
-9. **CSRF**: NextAuth protects its own auth routes.
+9. **Anthropic API keys**: AI stories use each grown-up's own key. It is kept in their browser's localStorage under their account id, removed on sign-out, and sent from the browser straight to Anthropic; the app's server never receives it ([`lib/anthropicKey.js`](lib/anthropicKey.js), [`lib/aiStory.js`](lib/aiStory.js)).
+10. **CSRF**: NextAuth protects its own auth routes.
 
 ### Areas for Improvement
 
 - [ ] Rate limit registration and sign-in attempts
 - [ ] Password length rule and email normalisation at registration
-- [ ] Add Content Security Policy headers
+- [ ] Add Content Security Policy headers. A saved Anthropic API key sits in localStorage, where any script running on the page could read it
 - [ ] Implement audit logging
 - [ ] Implement account lockout after failed attempts
 - [ ] Wire up error monitoring (the Sentry config files are not loaded)

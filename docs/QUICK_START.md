@@ -66,11 +66,9 @@ EMAIL_SERVER_PORT=587
 EMAIL_SERVER_USER=your-email@gmail.com
 EMAIL_SERVER_PASSWORD=your-app-password
 EMAIL_FROM="Sight Word Stories <your-email@gmail.com>"
-
-# 4. AI mode (OPTIONAL - billed per story by Anthropic)
-# Without it, AI mode is unavailable and Classic mode still works
-ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
+
+AI stories need no variable. A signed-in grown-up adds their own Anthropic API key under Grown-ups → Account, and Anthropic bills their account.
 
 ---
 
@@ -232,7 +230,7 @@ sight-word-story-generator/
 ### ✅ Working Features
 
 - **User Authentication** - Sign up, login, logout
-- **Story Generation** - AI-powered story creation
+- **Story Generation** - Classic stories in the browser, or AI stories with the grown-up's own Anthropic API key
 - **SVG Illustrations** - Automatic scene generation
 - **Learning Accommodations** - ADHD, Dyslexia, Autism, ESL, Visual Processing
 - **Word Formats** - Highlighted, Bold, Underlined, Normal

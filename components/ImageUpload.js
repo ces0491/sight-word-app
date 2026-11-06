@@ -13,7 +13,7 @@ import { performEnhancedOCR } from '../lib/ocr';
  * - Clear feedback during processing
  * - Better error handling with user-friendly messages
  */
-const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
+const ImageUpload = ({ onWordsDetected }) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -41,7 +41,7 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
       setPreviewImage(imageUrl);
 
       // Process with enhanced OCR
-      const result = await performEnhancedOCR(file, grade);
+      const result = await performEnhancedOCR(file);
 
       if (result.success && result.words.length > 0) {
         setDetectedWords(result.words);
@@ -49,7 +49,7 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
       } else {
         setErrorMessage(
           result.words.length === 0
-            ? "No sight words detected. Try a clearer image, different angle, or better lighting."
+            ? "No words from the Dolch lists were found. Try a clearer image, a different angle or better lighting, or type the words instead."
             : result.error || "Processing failed. Please try again."
         );
       }
@@ -116,7 +116,7 @@ const ImageUpload = ({ onWordsDetected, grade = 2 }) => {
   return (
     <div className="space-y-4">
       <div className="text-sm font-medium text-ink mb-1">
-        Take a picture or upload an image of sight words
+        Take a picture or upload an image of sight words. Words from the Dolch lists below are picked out; type any others.
       </div>
 
       {/* Image Preview Area */}
