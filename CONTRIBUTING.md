@@ -145,7 +145,7 @@ This project adheres to a code of conduct that all contributors are expected to 
 /**
  * Generate a story using provided sight words
  * @param {Array<string>} words - Sight words to include
- * @param {number} grade - Grade level (0-5)
+ * @param {number} grade - Reading level (0-3)
  * @param {Object} learningNeeds - Learning accommodation flags
  * @returns {Object} - Generated story object
  */

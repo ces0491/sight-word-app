@@ -15,6 +15,13 @@ import { ToastContainer } from './Toast';
 import { generateStory } from '../lib/storyGeneration';
 import { trackWordUsage } from '../lib/WordAnalytics';
 import { STARTER_WORDS } from '../lib/wordLists';
+import {
+  loadAnthropicKey,
+  storeAnthropicKey,
+  forgetAnthropicKey,
+  cleanAnthropicKey,
+  anthropicKeyHint,
+} from '../lib/anthropicKey';
 import { useToast } from '../hooks/useToast';
 import { useSpeech } from '../hooks/useSpeech';
 
@@ -31,20 +38,12 @@ const toSavePayload = (story) => ({
 });
 
 /**
- * Request an AI-written story from the server.
- * @returns {Promise<{ title: string, content: string[], usedWords: string[] }>}
+ * Write an AI story with the grown-up's own key. The Anthropic SDK loads
+ * only when an AI story is asked for.
  */
-const requestAiStory = async ({ words, grade, learningNeeds }) => {
-  const response = await fetch('/api/stories/generate-ai', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ words, grade, learningNeeds }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.message || 'AI generation failed.');
-  }
-  return data;
+const requestAiStory = async (params) => {
+  const { writeAiStory } = await import('../lib/aiStory');
+  return writeAiStory(params);
 };
 
 /** Classes on <body> that styles/learningAdaptations.css reads. */
@@ -65,6 +64,7 @@ const LARGE_CARD_LIMIT = 12;
 const SightWordStoryGenerator = () => {
   const { data: session } = useSession();
   const isSignedIn = !!session?.user;
+  const userId = session?.user?.id;
   const toast = useToast();
   const speech = useSpeech();
 
@@ -79,6 +79,8 @@ const SightWordStoryGenerator = () => {
     visualProcessing: false,
   });
   const [useAI, setUseAI] = useState(false);
+  // The signed-in grown-up's own Anthropic API key, for AI stories
+  const [anthropicKey, setAnthropicKey] = useState(null);
   const [includeImages, setIncludeImages] = useState(true);
   const [storyFormat, setStoryFormat] = useState('highlighted');
 
@@ -125,10 +127,15 @@ const SightWordStoryGenerator = () => {
     }
   }, [isSignedIn]);
 
-  // AI mode needs an account; switch back to Classic if the user signs out
+  // Each account keeps its own key in this browser
   useEffect(() => {
-    if (!isSignedIn) setUseAI(false);
-  }, [isSignedIn]);
+    setAnthropicKey(loadAnthropicKey(userId));
+  }, [userId]);
+
+  // AI stories need an account and a key; switch back to Classic without them
+  useEffect(() => {
+    if (!isSignedIn || !anthropicKey) setUseAI(false);
+  }, [isSignedIn, anthropicKey]);
 
   // Learning needs change how the reader looks (styles/learningAdaptations.css)
   useEffect(() => {
@@ -143,6 +150,34 @@ const SightWordStoryGenerator = () => {
     setWords((current) => [...new Set([...current, ...newWords.map((w) => w.toLowerCase())])]);
   };
   const removeWord = (word) => setWords((current) => current.filter((w) => w !== word.toLowerCase()));
+
+  /** Save a pasted API key. Returns false if it was rejected. */
+  const saveAnthropicKey = (input) => {
+    const key = cleanAnthropicKey(input);
+    if (!key) {
+      toast.error("That doesn't look like an API key. Paste it again without spaces.");
+      return false;
+    }
+    setAnthropicKey(key);
+    if (storeAnthropicKey(userId, key)) {
+      toast.success('API key saved in this browser.');
+    } else {
+      toast.warning("This browser won't keep the key, so you'll need to add it again next visit.");
+    }
+    return true;
+  };
+
+  const removeAnthropicKey = () => {
+    forgetAnthropicKey(userId);
+    setAnthropicKey(null);
+    toast.success('API key removed from this browser.');
+  };
+
+  const handleSignOut = () => {
+    forgetAnthropicKey(userId);
+    setAnthropicKey(null);
+    signOut({ redirect: false });
+  };
 
   const openGrownUps = () => {
     if (grownUpChecked()) {
@@ -166,12 +201,14 @@ const SightWordStoryGenerator = () => {
 
     try {
       let storyData;
-      if (useAI && isSignedIn) {
+      if (useAI && isSignedIn && anthropicKey) {
         try {
-          storyData = await requestAiStory({ words, grade, learningNeeds });
+          storyData = await requestAiStory({ apiKey: anthropicKey, words, grade, learningNeeds });
         } catch (aiError) {
           console.error('AI story generation failed:', aiError);
-          toast.warning(`${aiError.message} Using Classic mode instead.`);
+          // AiStoryError messages are written for the grown-up; anything else (a failed import) isn't
+          const message = aiError?.name === 'AiStoryError' ? aiError.message : "The AI story didn't work.";
+          toast.warning(`${message} Using Classic mode instead.`);
         }
       }
       storyData ??= generateStory(words, grade, learningNeeds);
@@ -390,11 +427,14 @@ const SightWordStoryGenerator = () => {
             onLearningNeedsChange={setLearningNeeds}
             isSignedIn={isSignedIn}
             userName={session?.user?.name}
+            anthropicKeyHint={anthropicKey ? anthropicKeyHint(anthropicKey) : null}
+            onSaveAnthropicKey={saveAnthropicKey}
+            onRemoveAnthropicKey={removeAnthropicKey}
             savedStories={savedStories}
             isLoadingStories={isLoadingStories}
             onOpenStory={openStory}
             onSignIn={() => setShowAuthDialog(true)}
-            onSignOut={() => signOut({ redirect: false })}
+            onSignOut={handleSignOut}
             onBack={() => setView('home')}
           />
         </main>

@@ -12,7 +12,7 @@ Welcome to the Sight Word Story Generator documentation!
 
 ### About the Project
 
-- **[Why It's Free](FREE_AND_OPEN.md)** - How the app runs on free tiers, and what the optional AI mode costs
+- **[Why It's Free](FREE_AND_OPEN.md)** - How the app runs on free tiers, and who pays for AI stories
 - **[Changelog](CHANGELOG.md)** - Version history and recent updates
 - **[Illustrations](ILLUSTRATIONS.md)** - How story pictures are drawn
 
@@ -53,7 +53,7 @@ Explains the free-to-run design:
 
 - Why it's free (our mission)
 - How we keep it free (SVG illustrations, free hosting tiers)
-- What the optional AI mode costs
+- Who pays for the optional AI stories
 - Cost comparison to paid alternatives
 - Privacy and data practices
 - Sustainability model
@@ -90,7 +90,7 @@ Version history including:
 See [PRODUCTION_READY.md](PRODUCTION_READY.md) for the current status and the gaps before a public launch, and [CHANGELOG.md](CHANGELOG.md) for versions.
 
 - **License**: MIT
-- **Cost**: free to run without AI mode; AI mode is billed per story by Anthropic
+- **Cost**: free to run; AI stories are billed to each grown-up's own Anthropic account
 
 ---
 

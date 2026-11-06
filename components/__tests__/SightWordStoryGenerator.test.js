@@ -1,19 +1,24 @@
 import React from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import SightWordStoryGenerator from '../SightWordStoryGenerator';
 import { answerGate } from '../../test/gateHelpers';
 import { STARTER_WORDS } from '../../lib/wordLists';
+import { loadAnthropicKey, storeAnthropicKey } from '../../lib/anthropicKey';
+import { writeAiStory } from '../../lib/aiStory';
 
 jest.mock('next-auth/react', () => ({ useSession: jest.fn(), signIn: jest.fn(), signOut: jest.fn() }));
 // OCR pulls in tesseract.js, which isn't needed here
 jest.mock('../ImageUpload', () => () => null);
 // The usage dashboard fetches on mount; it has its own concerns
 jest.mock('../analytics/WordUsageDashboard', () => () => null);
+// AI stories call Anthropic; lib/__tests__/aiStory.test.js covers that module
+jest.mock('../../lib/aiStory', () => ({ writeAiStory: jest.fn() }));
 
 const signedIn = { data: { user: { id: 'user-1', name: 'Ms Smith' } }, status: 'authenticated' };
 const signedOut = { data: null, status: 'unauthenticated' };
+const testKey = 'test-key-abcd';
 
 const aiStory = { title: 'The AI Dog', content: ['The dog can run.'], usedWords: ['the', 'can'] };
 const savedStory = {
@@ -61,6 +66,9 @@ const readToTheEnd = async (user) => {
 
 beforeEach(() => {
   window.sessionStorage.clear();
+  window.localStorage.clear();
+  writeAiStory.mockReset();
+  signOut.mockReset();
   jest.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -93,7 +101,7 @@ describe('story time', () => {
     await user.click(screen.getByRole('button', { name: 'Make my story' }));
 
     expect(await screen.findByRole('article', { name: /Page 1 of/ })).toBeInTheDocument();
-    expect(fetchCalls('POST', '/api/stories/generate-ai')).toHaveLength(0);
+    expect(writeAiStory).not.toHaveBeenCalled();
   });
 
   it('puts the story on the "Read again" shelf after closing the reader', async () => {
@@ -167,9 +175,63 @@ describe('grown-ups', () => {
     expect(screen.getByRole('button', { name: 'AI' })).toBeDisabled();
     expect(screen.getByText('Sign in to use AI stories.')).toBeInTheDocument();
   });
+
+  it('offers reading levels from Kindergarten to Grade 3', async () => {
+    useSession.mockReturnValue(signedOut);
+    mockFetch({});
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+    await openGrownUps(user);
+
+    const options = within(screen.getByLabelText('Reading level')).getAllByRole('option');
+    expect(options.map((option) => option.textContent)).toEqual(['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3']);
+  });
+});
+
+describe('Anthropic API key', () => {
+  it('turns on AI stories once a signed-in grown-up saves a key, and off when it is removed', async () => {
+    useSession.mockReturnValue(signedIn);
+    mockFetch({ 'GET /api/stories': [200, []] });
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+    await openGrownUps(user);
+
+    expect(screen.getByRole('button', { name: 'AI' })).toBeDisabled();
+    expect(screen.getByText('Add your Anthropic API key under Account to use AI stories.')).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Anthropic API key'), `  ${testKey} `);
+    await user.click(screen.getByRole('button', { name: 'Save key' }));
+
+    expect(screen.getByRole('button', { name: 'AI' })).toBeEnabled();
+    expect(screen.getByText('A key ending in abcd is saved in this browser.')).toBeInTheDocument();
+    expect(loadAnthropicKey('user-1')).toBe(testKey);
+
+    await user.click(screen.getByRole('button', { name: 'Remove key' }));
+
+    expect(screen.getByRole('button', { name: 'AI' })).toBeDisabled();
+    expect(loadAnthropicKey('user-1')).toBeNull();
+  });
+
+  it('removes the key from this browser on sign-out', async () => {
+    useSession.mockReturnValue(signedIn);
+    storeAnthropicKey('user-1', testKey);
+    mockFetch({ 'GET /api/stories': [200, []] });
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+    await openGrownUps(user);
+
+    await user.click(screen.getByRole('button', { name: 'Sign out' }));
+
+    expect(signOut).toHaveBeenCalled();
+    expect(loadAnthropicKey('user-1')).toBeNull();
+  });
 });
 
 describe('AI stories', () => {
+  beforeEach(() => {
+    storeAnthropicKey('user-1', testKey);
+  });
+
   const chooseAi = async (user) => {
     await openGrownUps(user);
     await user.click(screen.getByRole('button', { name: 'AI' }));
@@ -178,9 +240,10 @@ describe('AI stories', () => {
     await user.click(screen.getByRole('button', { name: 'Make my story' }));
   };
 
-  it('reads the AI story when the route succeeds', async () => {
+  it("writes the story with the grown-up's key and reads it", async () => {
     useSession.mockReturnValue(signedIn);
-    mockFetch({ 'GET /api/stories': [200, []], 'POST /api/stories/generate-ai': [200, aiStory] });
+    mockFetch({ 'GET /api/stories': [200, []] });
+    writeAiStory.mockResolvedValue(aiStory);
     const user = userEvent.setup();
     render(<SightWordStoryGenerator />);
 
@@ -188,28 +251,46 @@ describe('AI stories', () => {
 
     expect(await screen.findByRole('article', { name: 'Page 1 of 1' })).toHaveTextContent('The dog can run.');
     expect(screen.getAllByText('The AI Dog').length).toBeGreaterThan(0);
+    expect(writeAiStory).toHaveBeenCalledWith(expect.objectContaining({ apiKey: testKey, words: STARTER_WORDS, grade: 1 }));
   });
 
-  it('falls back to Classic and shows the server message when AI fails', async () => {
+  it('falls back to Classic and shows the AI error message', async () => {
     useSession.mockReturnValue(signedIn);
-    mockFetch({
-      'GET /api/stories': [200, []],
-      'POST /api/stories/generate-ai': [429, { message: 'Too many requests. Please try again later.' }],
-    });
+    mockFetch({ 'GET /api/stories': [200, []] });
+    writeAiStory.mockRejectedValue(
+      Object.assign(new Error("Anthropic didn't accept your API key. Check it under Account in Grown-ups."), {
+        name: 'AiStoryError',
+        code: 'KEY_REJECTED',
+      })
+    );
     const user = userEvent.setup();
     render(<SightWordStoryGenerator />);
 
     await chooseAi(user);
 
-    expect(await screen.findByText('Too many requests. Please try again later. Using Classic mode instead.')).toBeInTheDocument();
+    expect(
+      await screen.findByText("Anthropic didn't accept your API key. Check it under Account in Grown-ups. Using Classic mode instead.")
+    ).toBeInTheDocument();
     expect(screen.getByRole('article', { name: /Page 1 of/ })).toBeInTheDocument();
+  });
+
+  it("doesn't show the text of an unexpected error", async () => {
+    useSession.mockReturnValue(signedIn);
+    mockFetch({ 'GET /api/stories': [200, []] });
+    writeAiStory.mockRejectedValue(Object.assign(new Error('Loading chunk 42 failed'), { code: 18 }));
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+
+    await chooseAi(user);
+
+    expect(await screen.findByText("The AI story didn't work. Using Classic mode instead.")).toBeInTheDocument();
   });
 
   it('saves an unsaved story before sharing it by its database id', async () => {
     useSession.mockReturnValue(signedIn);
+    writeAiStory.mockResolvedValue(aiStory);
     mockFetch({
       'GET /api/stories': [200, []],
-      'POST /api/stories/generate-ai': [200, aiStory],
       'POST /api/stories': [201, savedStory],
       [`POST /api/stories/${savedStory._id}/share`]: [200, { success: true }],
     });

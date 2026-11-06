@@ -26,8 +26,6 @@ async function handler(req, res) {
           grade1: { $sum: '$gradeLevel.1' },
           grade2: { $sum: '$gradeLevel.2' },
           grade3: { $sum: '$gradeLevel.3' },
-          grade4: { $sum: '$gradeLevel.4' },
-          grade5: { $sum: '$gradeLevel.5' },
         }
       }
     ]);
@@ -41,8 +39,6 @@ async function handler(req, res) {
       '1': wordsByGrade[0].grade1 || 0,
       '2': wordsByGrade[0].grade2 || 0,
       '3': wordsByGrade[0].grade3 || 0,
-      '4': wordsByGrade[0].grade4 || 0,
-      '5': wordsByGrade[0].grade5 || 0,
     } : {};
     
     return res.status(200).json({

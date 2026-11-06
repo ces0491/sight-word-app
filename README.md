@@ -20,17 +20,18 @@ Short illustrated stories built from the sight words a child is learning, to rea
 
 **Grown-ups, behind a simple sum**
 
-- **Words to practise**: type them, upload a list, scan a page (OCR), or pick from the Dolch sight word lists by level
+- **Words to practise**: type them, upload a list, scan a page (OCR picks out the words that are on the Dolch lists), or pick from the Dolch sight word lists by level
 - **Two story makers**:
   - **Classic** builds a day-in-the-life story from written scenes, in the browser. Free, and no account needed.
-  - **AI** writes a story with Claude Haiku 4.5. It needs a signed-in account and `ANTHROPIC_API_KEY`, and each story is billed by Anthropic. If AI generation fails, the app falls back to Classic.
-- **Reading level, sight word style** (highlighted, bold, underlined or plain) and pictures on or off
+  - **AI** writes a story with Claude Haiku 4.5, using the grown-up's own Anthropic API key. They sign in and add the key under Account, and Anthropic bills their account for each story. The key is kept in that browser, removed on sign-out, and sent from the browser straight to Anthropic, so this app's server never receives it. If AI generation fails, the app falls back to Classic.
+- **Reading level** from Kindergarten to Grade 3, the span of the Dolch lists. AI stories are written for it; Classic stories are the same at every level and save it as a label for sorting the library.
+- **Sight word style** (highlighted, bold, underlined or plain) and pictures on or off
 - **Learning needs**: settings that change how a story reads (below)
 - **Save, share and print**: save stories to an account, email a link (needs SMTP settings), print every page, and manage saved stories in the story library
 
 ## Cost
 
-Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's free tier have no running cost. Email sharing works with a free Gmail account and an app password. AI mode is optional and billed per request at Anthropic's Claude Haiku 4.5 rates; leave `ANTHROPIC_API_KEY` unset to turn it off.
+Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's free tier have no running cost. Email sharing works with a free Gmail account and an app password. AI stories are billed to each grown-up's own Anthropic account at Claude Haiku 4.5 rates, with output capped at 1,024 tokens a story, so they cost whoever runs the site nothing.
 
 👉 **[Read why & how we keep it free →](docs/FREE_AND_OPEN.md)**
 
@@ -72,7 +73,6 @@ Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's fr
    | `NEXTAUTH_URL` | Yes | Base URL, e.g. `http://localhost:3000`. Also used in share links |
    | `NEXTAUTH_SECRET` | Yes | Session signing secret. Generate with `openssl rand -base64 32` |
    | `EMAIL_SERVER_HOST`, `EMAIL_SERVER_PORT`, `EMAIL_SERVER_USER`, `EMAIL_SERVER_PASSWORD`, `EMAIL_FROM` | For sharing | SMTP settings. Port 465 uses implicit TLS; other ports use STARTTLS |
-   | `ANTHROPIC_API_KEY` | For AI mode | Anthropic API key. Without it, AI mode is unavailable and Classic mode still works |
 
 4. Run the development server:
 
@@ -95,7 +95,7 @@ Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's fr
 
 ### Limits
 
-Size limits on stories and AI requests, and the per-user rate limits on AI generation and share emails, are in [`lib/limits.js`](lib/limits.js). Rate limit counters are kept in MongoDB so they hold across serverless instances.
+Size limits on stories and AI requests, and the per-user rate limit on share emails, are in [`lib/limits.js`](lib/limits.js). Rate limit counters are kept in MongoDB so they hold across serverless instances.
 
 ## Deploying to Vercel
 
@@ -104,7 +104,7 @@ Size limits on stories and AI requests, and the per-user rate limits on AI gener
    - Visit [Vercel New Project](https://vercel.com/new)
    - Connect to your Git repository
    - Select the repository
-   - Add the environment variables from the table above (`MONGODB_URI`, `MONGODB_DB`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET` at least; `EMAIL_*` for sharing; `ANTHROPIC_API_KEY` for AI mode) for both Production and Preview
+   - Add the environment variables from the table above (`MONGODB_URI`, `MONGODB_DB`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET` at least; `EMAIL_*` for sharing) for both Production and Preview
    - Click "Deploy"
 
    Vercel applies variable changes only to new deployments, so redeploy after adding or changing them. Without `MONGODB_URI`, API routes that need the database return a 503 with code `SERVICE_NOT_CONFIGURED`.

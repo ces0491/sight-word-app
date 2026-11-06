@@ -7,14 +7,15 @@ import WordUsageDashboard from '../analytics/WordUsageDashboard';
 import { DOLCH_LISTS } from '../../lib/wordLists';
 import { normalizeWordInput } from '../../lib/sightWords';
 
+/** Kindergarten to Grade 3, the span of the Dolch lists. */
 const GRADES = [
   { value: 0, label: 'Kindergarten' },
   { value: 1, label: 'Grade 1' },
   { value: 2, label: 'Grade 2' },
   { value: 3, label: 'Grade 3' },
-  { value: 4, label: 'Grade 4' },
-  { value: 5, label: 'Grade 5' },
 ];
+
+const ANTHROPIC_KEYS_URL = 'https://platform.claude.com/settings/keys';
 
 const FORMATS = [
   { value: 'highlighted', label: 'Highlighted', sample: <span className="highlighted-text"><span className="highlight">see</span></span> },
@@ -101,6 +102,59 @@ const WordListPicker = ({ words, onAddWords, onRemoveWord }) => {
   );
 };
 
+/** Add or remove the grown-up's own Anthropic API key, used for AI stories. */
+const AnthropicKeySettings = ({ keyHint, onSave, onRemove }) => {
+  const [draft, setDraft] = useState('');
+
+  const save = (event) => {
+    event.preventDefault();
+    if (onSave(draft)) setDraft('');
+  };
+
+  return (
+    <div className="space-y-3 border-t-2 border-ink/10 pt-4">
+      <h3 className="font-display text-xl font-semibold text-ink">Anthropic API key</h3>
+      <p className="font-display text-base text-ink/70">
+        AI stories use your own Anthropic API key, and Anthropic bills your account for each one. The key is saved in this
+        browser and goes straight to Anthropic when a story is made. Signing out removes it.
+      </p>
+      {keyHint ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="font-display text-base text-ink">A key ending in {keyHint} is saved in this browser.</p>
+          <button type="button" onClick={onRemove} className="btn-quiet">
+            <Trash2 size={18} aria-hidden="true" /> Remove key
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={save} className="flex gap-2">
+          <label htmlFor="anthropic-key" className="sr-only">
+            Anthropic API key
+          </label>
+          <input
+            id="anthropic-key"
+            type="password"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="field"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <button type="submit" disabled={!draft.trim()} className="btn btn-sun shrink-0">
+            Save key
+          </button>
+        </form>
+      )}
+      <p className="font-display text-sm text-ink/70">
+        Create a key in the{' '}
+        <a href={ANTHROPIC_KEYS_URL} target="_blank" rel="noopener noreferrer" className="underline">
+          Anthropic Console
+        </a>
+        .
+      </p>
+    </div>
+  );
+};
+
 /**
  * Everything a parent or teacher sets up: the words, the story options,
  * learning needs, saved stories and the account.
@@ -122,6 +176,9 @@ const GrownUps = ({
   onLearningNeedsChange,
   isSignedIn,
   userName,
+  anthropicKeyHint,
+  onSaveAnthropicKey,
+  onRemoveAnthropicKey,
   savedStories,
   isLoadingStories,
   onOpenStory,
@@ -131,6 +188,7 @@ const GrownUps = ({
 }) => {
   const [typed, setTyped] = useState('');
   const [addMode, setAddMode] = useState('type'); // type | upload | photo
+  const canUseAI = isSignedIn && !!anthropicKeyHint;
 
   const addTyped = (event) => {
     event.preventDefault();
@@ -220,7 +278,7 @@ const GrownUps = ({
               <input id="upload-words" type="file" accept=".txt,.csv" onChange={uploadList} className="font-display text-base text-ink" />
             </div>
           )}
-          {addMode === 'photo' && <ImageUpload onWordsDetected={onAddWords} grade={grade} />}
+          {addMode === 'photo' && <ImageUpload onWordsDetected={onAddWords} />}
 
           <div className="border-t-2 border-ink/10 pt-4">
             <h3 className="mb-3 font-display text-xl font-semibold text-ink">Sight word lists</h3>
@@ -234,13 +292,24 @@ const GrownUps = ({
               <label htmlFor="grade" className="mb-2 block font-display text-base font-medium text-ink">
                 Reading level
               </label>
-              <select id="grade" value={grade} onChange={(e) => onGradeChange(Number(e.target.value))} className="field">
+              <select
+                id="grade"
+                value={grade}
+                onChange={(e) => onGradeChange(Number(e.target.value))}
+                aria-describedby="grade-help"
+                className="field"
+              >
                 {GRADES.map((g) => (
                   <option key={g.value} value={g.value}>
                     {g.label}
                   </option>
                 ))}
               </select>
+              <p id="grade-help" className="mt-2 font-display text-sm text-ink/70">
+                {useAI
+                  ? 'Claude writes the story for this level.'
+                  : 'Classic stories are the same at every level. The level is saved with the story, so you can sort your library by it.'}
+              </p>
             </div>
             <fieldset>
               <legend className="mb-2 block font-display text-base font-medium text-ink">Story maker</legend>
@@ -256,7 +325,7 @@ const GrownUps = ({
                 <button
                   type="button"
                   aria-pressed={useAI}
-                  disabled={!isSignedIn}
+                  disabled={!canUseAI}
                   onClick={() => onUseAIChange(true)}
                   className={`rounded-xl border-2 px-3 py-3 font-display text-base disabled:cursor-not-allowed disabled:opacity-50 ${useAI ? 'border-ink bg-card-sun' : 'border-ink/20 bg-paper'}`}
                 >
@@ -266,9 +335,11 @@ const GrownUps = ({
               <p className="mt-2 font-display text-sm text-ink/70">
                 {!isSignedIn
                   ? 'Sign in to use AI stories.'
-                  : useAI
-                    ? 'Claude writes a new story around the words.'
-                    : 'Builds a day-in-the-life story from written scenes, in this browser.'}
+                  : !canUseAI
+                    ? 'Add your Anthropic API key under Account to use AI stories.'
+                    : useAI
+                      ? 'Claude writes a new story around the words, billed to your Anthropic account.'
+                      : 'Builds a day-in-the-life story from written scenes, in this browser.'}
               </p>
             </fieldset>
           </div>
@@ -378,15 +449,20 @@ const GrownUps = ({
 
         <Section id="account-title" title="Account">
           {isSignedIn ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="font-display text-base text-ink">Signed in{userName ? ` as ${userName}` : ''}.</p>
-              <button type="button" onClick={onSignOut} className="btn-quiet">
-                <LogOut size={18} aria-hidden="true" /> Sign out
-              </button>
-            </div>
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="font-display text-base text-ink">Signed in{userName ? ` as ${userName}` : ''}.</p>
+                <button type="button" onClick={onSignOut} className="btn-quiet">
+                  <LogOut size={18} aria-hidden="true" /> Sign out
+                </button>
+              </div>
+              <AnthropicKeySettings keyHint={anthropicKeyHint} onSave={onSaveAnthropicKey} onRemove={onRemoveAnthropicKey} />
+            </>
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="font-display text-base text-ink/70">An account lets you save and share stories and use AI stories.</p>
+              <p className="font-display text-base text-ink/70">
+                An account lets you save and share stories, and make AI stories with your own Anthropic API key.
+              </p>
               <button type="button" onClick={onSignIn} className="btn btn-sun">
                 <LogIn size={20} strokeWidth={2.5} aria-hidden="true" /> Sign in
               </button>
