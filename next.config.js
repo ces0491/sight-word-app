@@ -57,6 +57,21 @@ const nextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
+  /**
+   * Vercel goes on serving a project's generated alias after a custom domain
+   * is attached, which would leave the app on two hostnames. Preview
+   * deployments get their own hostnames and are untouched.
+   */
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'sight-word-app.vercel.app' }],
+        destination: 'https://sightwords.sheetsolved.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
