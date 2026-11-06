@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { findWords, matchSightWords } from '../../lib/sightWords';
 
 const FORMAT_CLASS = {
   highlighted: 'mark-highlighted',
@@ -7,22 +8,25 @@ const FORMAT_CLASS = {
 };
 
 /**
- * Split a sentence into words and the spaces between them, keeping each
- * word's position so the word being spoken can be lit up.
+ * Split a sentence into its words and the text between them (spaces and
+ * punctuation), keeping positions so the word being spoken can be lit up.
+ * Words are found with the same rule as sight word counting (lib/sightWords.js).
  * @param {string} sentence
- * @returns {{ text: string, start: number, end: number, core: string, isWord: boolean }[]}
+ * @returns {{ text: string, start: number, end: number, core: string, isWord: boolean, wordIndex?: number }[]}
  */
 export const tokenizeSentence = (sentence) => {
-  const tokens = [];
   const text = typeof sentence === 'string' ? sentence : '';
-  const pattern = /\S+|\s+/g;
-  let match;
-  while ((match = pattern.exec(text)) !== null) {
-    const value = match[0];
-    const isWord = /\S/.test(value);
-    // The word without surrounding punctuation, for speaking and matching
-    const core = isWord ? value.replace(/^[^\p{L}\p{N}']+|[^\p{L}\p{N}']+$/gu, '') : '';
-    tokens.push({ text: value, start: match.index, end: match.index + value.length, core, isWord: isWord && core.length > 0 });
+  const tokens = [];
+  let lastIndex = 0;
+  findWords(text).forEach((word, wordIndex) => {
+    if (word.start > lastIndex) {
+      tokens.push({ text: text.slice(lastIndex, word.start), start: lastIndex, end: word.start, core: '', isWord: false });
+    }
+    tokens.push({ text: word.text, start: word.start, end: word.end, core: word.text, isWord: true, wordIndex });
+    lastIndex = word.end;
+  });
+  if (lastIndex < text.length) {
+    tokens.push({ text: text.slice(lastIndex), start: lastIndex, end: text.length, core: '', isWord: false });
   }
   return tokens;
 };
@@ -33,16 +37,28 @@ export const tokenizeSentence = (sentence) => {
  * "Read to me" is lit up.
  */
 const ReaderText = ({ sentence, words = [], format = 'highlighted', onWordTap, spokenIndex = null }) => {
-  const sightWords = useMemo(() => new Set(words.map((w) => w.toLowerCase())), [words]);
   const tokens = useMemo(() => tokenizeSentence(sentence), [sentence]);
+  // Word indexes that are part of a sight word (or phrase)
+  const sightIndexes = useMemo(() => {
+    const indexes = new Set();
+    for (const { first, last } of matchSightWords(findWords(sentence), words)) {
+      for (let i = first; i <= last; i++) indexes.add(i);
+    }
+    return indexes;
+  }, [sentence, words]);
+  // Speech boundary events can land on punctuation before a word, so light the next word
+  const spokenWord = useMemo(
+    () => (spokenIndex === null ? null : tokens.find((t) => t.isWord && t.end > spokenIndex)?.wordIndex ?? null),
+    [tokens, spokenIndex]
+  );
   const markClass = FORMAT_CLASS[format] ?? '';
 
   return (
     <p className="reader-text text-ink">
       {tokens.map((token) => {
         if (!token.isWord) return <React.Fragment key={token.start}>{token.text}</React.Fragment>;
-        const isSight = sightWords.has(token.core.toLowerCase());
-        const isSpoken = spokenIndex !== null && spokenIndex >= token.start && spokenIndex < token.end;
+        const isSight = sightIndexes.has(token.wordIndex);
+        const isSpoken = token.wordIndex === spokenWord;
         const className = ['reader-word', isSight ? `is-sight ${markClass}` : '', isSpoken ? 'is-spoken' : '']
           .filter(Boolean)
           .join(' ');

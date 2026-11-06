@@ -93,7 +93,7 @@ describe('StoryReader', () => {
     it('says a word when it is tapped', async () => {
       render(<StoryReader story={story} onClose={() => {}} />);
 
-      await userEvent.click(screen.getByRole('button', { name: 'run.' }));
+      await userEvent.click(screen.getByRole('button', { name: 'run' }));
 
       expect(speech.spoken.at(-1).text).toBe('run');
     });
@@ -107,5 +107,30 @@ describe('StoryReader', () => {
 
       expect(speech.synth.cancel).toHaveBeenCalled();
     });
+  });
+});
+
+describe('StoryReader, learning needs and focus', () => {
+  it("reads the story with its own learning needs, and removes them when it closes", () => {
+    const { unmount } = render(
+      <StoryReader story={{ ...story, learningNeeds: { dyslexia: true, adhd: false } }} onClose={() => {}} />
+    );
+
+    expect(document.body).toHaveClass('dyslexia-enabled');
+    expect(document.body).not.toHaveClass('adhd-enabled');
+
+    unmount();
+    expect(document.body).not.toHaveClass('dyslexia-enabled');
+  });
+
+  it('moves focus to "The end!" after the last page, where the Next button was', async () => {
+    const user = userEvent.setup();
+    render(<StoryReader story={story} onClose={() => {}} />);
+
+    for (let i = 0; i < story.content.length; i++) {
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+    }
+
+    expect(screen.getByRole('heading', { name: 'The end!' })).toHaveFocus();
   });
 });

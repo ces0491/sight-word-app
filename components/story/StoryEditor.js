@@ -1,374 +1,289 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Save, X, ArrowLeft } from 'lucide-react';
+import { normalizeWordInput } from '../../lib/sightWords';
+import { addWordsWithinLimit, checkStoryForSave } from '../../lib/storyChecks';
+import { STORY_LIMITS } from '../../lib/limits';
+import { useLeaveWarning, LEAVE_MESSAGE } from '../../hooks/useLeaveWarning';
 
-const StoryEditor = ({ story, onSave, onCancel }) => {
-  const [title, setTitle] = useState(story ? story.title : '');
-  const [content, setContent] = useState(story ? story.content : []);
-  const [words, setWords] = useState(story ? story.words : []);
-  const [format, setFormat] = useState(story ? story.format : 'highlighted');
-  const [includeImages, setIncludeImages] = useState(story ? story.includeImages : true);
-  const [grade, setGrade] = useState(story ? story.grade : 1);
-  const [learningNeeds, setLearningNeeds] = useState(
-    story 
-      ? story.learningNeeds 
-      : {
-          adhd: false,
-          dyslexia: false,
-          autism: false,
-          esl: false,
-          visualProcessing: false,
-        }
+const NO_NEEDS = { adhd: false, dyslexia: false, autism: false, esl: false, visualProcessing: false };
+
+const FORMATS = [
+  { value: 'highlighted', label: 'Highlighted words' },
+  { value: 'bold', label: 'Bold words' },
+  { value: 'underlined', label: 'Underlined words' },
+  { value: 'normal', label: 'Plain text (no marking)' },
+];
+
+const NEEDS = [
+  { key: 'adhd', label: 'ADHD' },
+  { key: 'dyslexia', label: 'Dyslexia' },
+  { key: 'autism', label: 'Autism' },
+  { key: 'esl', label: 'Learning English' },
+  { key: 'visualProcessing', label: 'Visual processing' },
+];
+
+/**
+ * Edit a story's title, sentences, sight words and settings, or write a new
+ * one. `onSave` receives the tidied story and may throw an Error whose
+ * message is shown. Leaving with unsaved changes asks first.
+ *
+ * @param {object} props
+ * @param {object} [props.story] - The story to edit; none for a new story
+ * @param {(story: object) => Promise<void>} props.onSave
+ * @param {() => void} props.onCancel
+ * @param {string} [props.notice] - Shown above the form, e.g. that the session ended
+ */
+const StoryEditor = ({ story, onSave, onCancel, notice }) => {
+  const initial = useMemo(
+    () => ({
+      title: story?.title ?? '',
+      content: story?.content ?? [],
+      words: story?.words ?? [],
+      format: story?.format ?? 'highlighted',
+      includeImages: story?.includeImages ?? true,
+      grade: story?.grade ?? 1,
+      learningNeeds: { ...NO_NEEDS, ...story?.learningNeeds },
+    }),
+    [story]
   );
+  const [draft, setDraft] = useState(initial);
+  const [saved, setSaved] = useState(initial);
+  const [newWords, setNewWords] = useState('');
+  const [problem, setProblem] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleAddSentence = () => {
-    setContent([...content, '']);
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  useLeaveWarning(isDirty && !isSaving);
+
+  const update = (changes) => setDraft((current) => ({ ...current, ...changes }));
+  const setSentence = (index, value) => update({ content: draft.content.map((s, i) => (i === index ? value : s)) });
+
+  const addWords = () => {
+    const { words, skipped } = addWordsWithinLimit(draft.words, normalizeWordInput(newWords));
+    update({ words });
+    setNewWords('');
+    setProblem(skipped ? `Stories can use up to ${STORY_LIMITS.maxWords} sight words, so ${skipped} weren't added.` : null);
   };
 
-  const handleUpdateSentence = (index, value) => {
-    const newContent = [...content];
-    newContent[index] = value;
-    setContent(newContent);
+  const cancel = () => {
+    if (isDirty && !window.confirm(LEAVE_MESSAGE)) return;
+    onCancel();
   };
 
-  const handleRemoveSentence = (index) => {
-    const newContent = [...content];
-    newContent.splice(index, 1);
-    setContent(newContent);
-  };
-
-  const handleAddWord = (word) => {
-    if (!word.trim()) return;
-    setWords([...words, word.trim().toLowerCase()]);
-  };
-
-  const handleRemoveWord = (index) => {
-    const newWords = [...words];
-    newWords.splice(index, 1);
-    setWords(newWords);
-  };
-
-  const handleWordInputKeyDown = (e) => {
-    if (e.key === 'Enter' && e.target.value.trim()) {
-      handleAddWord(e.target.value);
-      e.target.value = '';
-      e.preventDefault();
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!title || content.length === 0 || words.length === 0) {
-      alert('Please fill in all required fields: title, content, and words.');
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const { story: tidy, problem: reason } = checkStoryForSave(draft);
+    if (reason) {
+      setProblem(reason);
       return;
     }
 
+    setProblem(null);
     setIsSaving(true);
-    
-    const updatedStory = {
-      ...(story || {}),
-      title,
-      content,
-      words,
-      format,
-      includeImages,
-      grade,
-      learningNeeds,
-    };
-
+    const toSave = { ...draft, ...tidy };
     try {
-      await onSave(updatedStory);
+      await onSave(toSave);
+      setDraft(toSave);
+      setSaved(toSave);
     } catch (error) {
       console.error('Error saving story:', error);
-      alert('Failed to save story. Please try again.');
+      setProblem(error.message || 'The story could not be saved. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
+    <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border-2 border-ink/15 bg-paper p-6" noValidate>
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center">
-          <button 
-            onClick={onCancel}
-            className="mr-3 p-2 rounded-full hover:bg-ink/10"
-          >
-            <ArrowLeft size={20} className="text-ink/70" />
+          <button type="button" onClick={cancel} className="mr-3 rounded-full p-2 hover:bg-ink/10" aria-label="Back to the library">
+            <ArrowLeft size={20} className="text-ink/70" aria-hidden="true" />
           </button>
-          <h2 className="text-2xl font-bold text-ink">
-            {story ? 'Edit Story' : 'Create New Story'}
-          </h2>
+          <h2 className="text-2xl font-bold text-ink">{story ? 'Edit story' : 'New story'}</h2>
         </div>
-        <button
-          onClick={handleSubmit}
-          disabled={isSaving}
-          className="flex items-center gap-2 px-4 py-2 bg-leaf text-white rounded-xl disabled:opacity-50"
-        >
-          {isSaving ? (
-            <>
-              <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save size={18} />
-              Save Story
-            </>
-          )}
+        <button type="submit" disabled={isSaving} className="flex items-center gap-2 rounded-xl bg-leaf px-4 py-2 text-white disabled:opacity-50">
+          <Save size={18} aria-hidden="true" />
+          {isSaving ? 'Saving…' : 'Save story'}
         </button>
       </div>
 
-      <div className="space-y-6">
-        {/* Title */}
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-ink mb-1">
-            Story Title
-          </label>
-          <input
-            type="text"
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full border border-ink/25 rounded-xl px-3 py-2"
-            placeholder="Enter story title"
-            required
-          />
-        </div>
+      {notice && (
+        <p role="status" className="rounded-xl bg-sun/40 p-3 text-ink">
+          {notice}
+        </p>
+      )}
+      {problem && (
+        <p role="alert" className="rounded-xl bg-berry/15 p-3 text-ink">
+          {problem}
+        </p>
+      )}
 
-        {/* Content */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-ink">
-              Story Content
-            </label>
-            <button
-              type="button"
-              onClick={handleAddSentence}
-              className="text-sm text-ink hover:text-ink/70"
-            >
-              + Add Sentence
-            </button>
-          </div>
-          {content.length === 0 ? (
-            <p className="text-ink/70 italic mb-2">No content yet. Add your first sentence.</p>
-          ) : (
-            <div className="space-y-3">
-              {content.map((sentence, index) => (
-                <div key={index} className="flex items-start gap-2">
-                  <textarea
-                    value={sentence}
-                    onChange={(e) => handleUpdateSentence(index, e.target.value)}
-                    className="flex-grow border border-ink/25 rounded-xl px-3 py-2 min-h-[80px]"
-                    placeholder={`Sentence ${index + 1}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSentence(index)}
-                    className="p-2 text-berry hover:bg-berry/10 rounded-xl"
-                    title="Remove sentence"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      <div>
+        <label htmlFor="story-title" className="mb-1 block text-sm font-medium text-ink">
+          Title
+        </label>
+        <input
+          type="text"
+          id="story-title"
+          value={draft.title}
+          onChange={(e) => update({ title: e.target.value })}
+          maxLength={STORY_LIMITS.maxTitleLength}
+          className="w-full rounded-xl border border-ink/25 px-3 py-2"
+        />
+      </div>
 
-        {/* Words */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-ink">
-              Sight Words
-            </label>
-            <span className="text-sm text-ink/70">{words.length} words</span>
-          </div>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {words.map((word, index) => (
-              <div key={index} className="bg-mist px-3 py-1 rounded-full flex items-center">
-                <span className="mr-2 text-ink">{word}</span>
-                <button 
-                  onClick={() => handleRemoveWord(index)}
-                  className="text-ink hover:text-ink/70"
+      <fieldset>
+        <div className="mb-2 flex items-center justify-between">
+          <legend className="text-sm font-medium text-ink">Sentences</legend>
+          <button type="button" onClick={() => update({ content: [...draft.content, ''] })} className="text-sm text-ink hover:text-ink/70">
+            + Add sentence
+          </button>
+        </div>
+        {draft.content.length === 0 ? (
+          <p className="mb-2 italic text-ink/70">No sentences yet. Add the first one.</p>
+        ) : (
+          <div className="space-y-3">
+            {draft.content.map((sentence, index) => (
+              <div key={index} className="flex items-start gap-2">
+                <textarea
+                  value={sentence}
+                  onChange={(e) => setSentence(index, e.target.value)}
+                  aria-label={`Sentence ${index + 1}`}
+                  maxLength={STORY_LIMITS.maxSentenceLength}
+                  className="min-h-[80px] grow rounded-xl border border-ink/25 px-3 py-2"
+                />
+                <button
+                  type="button"
+                  onClick={() => update({ content: draft.content.filter((_, i) => i !== index) })}
+                  className="rounded-xl p-2 text-berry hover:bg-berry/10"
+                  aria-label={`Remove sentence ${index + 1}`}
                 >
-                  &times;
+                  <X size={18} aria-hidden="true" />
                 </button>
               </div>
             ))}
-            {words.length === 0 && (
-              <p className="text-ink/70 italic">No words added yet.</p>
-            )}
           </div>
-          <div className="flex gap-2">
+        )}
+      </fieldset>
+
+      <fieldset>
+        <div className="mb-2 flex items-center justify-between">
+          <legend className="text-sm font-medium text-ink">Sight words</legend>
+          <span className="text-sm text-ink/70">
+            {draft.words.length} of up to {STORY_LIMITS.maxWords}
+          </span>
+        </div>
+        <ul className="mb-3 flex flex-wrap gap-2" aria-label="Sight words in this story">
+          {draft.words.map((word) => (
+            <li key={word} className="flex items-center rounded-full bg-mist px-3 py-1">
+              <span className="mr-2 text-ink">{word}</span>
+              <button
+                type="button"
+                onClick={() => update({ words: draft.words.filter((w) => w !== word) })}
+                className="text-ink hover:text-ink/70"
+                aria-label={`Remove ${word}`}
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+          {draft.words.length === 0 && <li className="italic text-ink/70">No words yet.</li>}
+        </ul>
+        <div className="flex gap-2">
+          <label htmlFor="story-new-words" className="sr-only">
+            Words to add, separated by spaces or commas
+          </label>
+          <input
+            id="story-new-words"
+            type="text"
+            value={newWords}
+            onChange={(e) => setNewWords(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addWords();
+              }
+            }}
+            placeholder="e.g. the, see, can"
+            autoComplete="off"
+            className="grow rounded-xl border border-ink/25 px-3 py-2"
+          />
+          <button type="button" onClick={addWords} disabled={!newWords.trim()} className="rounded-xl bg-ink px-3 py-2 text-white disabled:opacity-50">
+            Add
+          </button>
+        </div>
+      </fieldset>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="space-y-4">
+          <fieldset>
+            <legend className="mb-2 block text-sm font-medium text-ink">How sight words look</legend>
+            <div className="space-y-2">
+              {FORMATS.map((f) => (
+                <label key={f.value} className="flex items-center">
+                  <input
+                    type="radio"
+                    name="story-format"
+                    value={f.value}
+                    checked={draft.format === f.value}
+                    onChange={() => update({ format: f.value })}
+                    className="h-4 w-4"
+                  />
+                  <span className="ml-2 text-sm text-ink">{f.label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <label className="flex items-center">
             <input
-              type="text"
-              placeholder="Add a new word"
-              className="flex-grow border border-ink/25 rounded-xl px-3 py-2"
-              onKeyDown={handleWordInputKeyDown}
+              type="checkbox"
+              checked={draft.includeImages}
+              onChange={(e) => update({ includeImages: e.target.checked })}
+              className="h-4 w-4 rounded-sm border-ink/25"
             />
-            <button
-              type="button"
-              onClick={(e) => {
-                const input = e.target.previousSibling;
-                handleAddWord(input.value);
-                input.value = '';
-              }}
-              className="px-3 py-2 bg-ink text-white rounded-xl"
-            >
-              Add
-            </button>
-          </div>
+            <span className="ml-2 text-sm text-ink">Show a picture on every page</span>
+          </label>
         </div>
 
-        {/* Settings: Two Columns on larger screens */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
           <div>
-            {/* Format */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-ink mb-2">
-                Word Format
-              </label>
-              <div className="space-y-2">
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    value="highlighted"
-                    checked={format === 'highlighted'}
-                    onChange={() => setFormat('highlighted')}
-                    className="h-4 w-4 text-ink"
-                  />
-                  <span className="ml-2 text-sm text-ink">Highlighted Words</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    value="bold"
-                    checked={format === 'bold'}
-                    onChange={() => setFormat('bold')}
-                    className="h-4 w-4 text-ink"
-                  />
-                  <span className="ml-2 text-sm text-ink">Bold Words</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    value="underlined"
-                    checked={format === 'underlined'}
-                    onChange={() => setFormat('underlined')}
-                    className="h-4 w-4 text-ink"
-                  />
-                  <span className="ml-2 text-sm text-ink">Underlined Words</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    value="normal"
-                    checked={format === 'normal'}
-                    onChange={() => setFormat('normal')}
-                    className="h-4 w-4 text-ink"
-                  />
-                  <span className="ml-2 text-sm text-ink">Normal Text (No Formatting)</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Include Images */}
-            <div className="mb-4">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="includeImages"
-                  checked={includeImages}
-                  onChange={(e) => setIncludeImages(e.target.checked)}
-                  className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
-                />
-                <label htmlFor="includeImages" className="ml-2 text-sm text-ink">
-                  Include Illustrations
-                </label>
-              </div>
-            </div>
+            <label htmlFor="story-grade" className="mb-2 block text-sm font-medium text-ink">
+              Reading level
+            </label>
+            <select
+              id="story-grade"
+              value={draft.grade}
+              onChange={(e) => update({ grade: Number(e.target.value) })}
+              className="w-full rounded-xl border border-ink/25 px-3 py-2 text-ink"
+            >
+              <option value={0}>Kindergarten</option>
+              <option value={1}>Grade 1</option>
+              <option value={2}>Grade 2</option>
+              <option value={3}>Grade 3</option>
+            </select>
           </div>
 
-          <div>
-            {/* Grade Level */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-ink mb-2">
-                Grade Level
-              </label>
-              <select
-                value={grade}
-                onChange={(e) => setGrade(parseInt(e.target.value))}
-                className="w-full border border-ink/25 rounded-xl px-3 py-2 text-ink"
-              >
-                <option value={0}>Kindergarten</option>
-                <option value={1}>Grade 1</option>
-                <option value={2}>Grade 2</option>
-                <option value={3}>Grade 3</option>
-              </select>
+          <fieldset>
+            <legend className="mb-2 block text-sm font-medium text-ink">Learning needs, used when this story is read</legend>
+            <div className="space-y-2">
+              {NEEDS.map((need) => (
+                <label key={need.key} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={draft.learningNeeds[need.key]}
+                    onChange={(e) => update({ learningNeeds: { ...draft.learningNeeds, [need.key]: e.target.checked } })}
+                    className="h-4 w-4 rounded-sm border-ink/25"
+                  />
+                  <span className="ml-2 text-sm text-ink">{need.label}</span>
+                </label>
+              ))}
             </div>
-
-            {/* Learning Needs */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-2">
-                Learning Considerations
-              </label>
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="adhd"
-                    checked={learningNeeds.adhd}
-                    onChange={(e) => setLearningNeeds({...learningNeeds, adhd: e.target.checked})}
-                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
-                  />
-                  <label htmlFor="adhd" className="ml-2 text-sm text-ink">ADHD</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="dyslexia"
-                    checked={learningNeeds.dyslexia}
-                    onChange={(e) => setLearningNeeds({...learningNeeds, dyslexia: e.target.checked})}
-                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
-                  />
-                  <label htmlFor="dyslexia" className="ml-2 text-sm text-ink">Dyslexia</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="autism"
-                    checked={learningNeeds.autism}
-                    onChange={(e) => setLearningNeeds({...learningNeeds, autism: e.target.checked})}
-                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
-                  />
-                  <label htmlFor="autism" className="ml-2 text-sm text-ink">Autism Spectrum</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="esl"
-                    checked={learningNeeds.esl}
-                    onChange={(e) => setLearningNeeds({...learningNeeds, esl: e.target.checked})}
-                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
-                  />
-                  <label htmlFor="esl" className="ml-2 text-sm text-ink">English as Second Language</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="visualProcessing"
-                    checked={learningNeeds.visualProcessing}
-                    onChange={(e) => setLearningNeeds({...learningNeeds, visualProcessing: e.target.checked})}
-                    className="h-4 w-4 text-ink border-ink/25 rounded focus:ring-sun"
-                  />
-                  <label htmlFor="visualProcessing" className="ml-2 text-sm text-ink">Visual Processing</label>
-                </div>
-              </div>
-            </div>
-          </div>
+          </fieldset>
         </div>
       </div>
-    </div>
+    </form>
   );
 };
 

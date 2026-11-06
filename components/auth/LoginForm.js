@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { Mail, Lock, LogIn } from 'lucide-react';
+import { signInErrorMessage } from '../../lib/authErrors';
 
 const LoginForm = ({ onSuccess, onToggleMode }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const id = useId();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,7 +23,7 @@ const LoginForm = ({ onSuccess, onToggleMode }) => {
       });
 
       if (result.error) {
-        setError('Invalid email or password');
+        setError(signInErrorMessage(result.error));
         setIsSubmitting(false);
       } else {
         onSuccess && onSuccess();
@@ -36,13 +38,13 @@ const LoginForm = ({ onSuccess, onToggleMode }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 bg-berry/15 text-ink rounded-xl text-sm">
+        <div className="p-3 bg-berry/15 text-ink rounded-xl text-sm" role="alert">
           {error}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${id}-email`} className="block text-sm font-medium text-ink mb-1">
           Email address
         </label>
         <div className="relative">
@@ -50,10 +52,12 @@ const LoginForm = ({ onSuccess, onToggleMode }) => {
             <Mail size={18} className="text-ink/40" />
           </div>
           <input
+            id={`${id}-email`}
+            autoComplete="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-hidden focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="you@example.com"
             required
           />
@@ -61,7 +65,7 @@ const LoginForm = ({ onSuccess, onToggleMode }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${id}-password`} className="block text-sm font-medium text-ink mb-1">
           Password
         </label>
         <div className="relative">
@@ -69,10 +73,12 @@ const LoginForm = ({ onSuccess, onToggleMode }) => {
             <Lock size={18} className="text-ink/40" />
           </div>
           <input
+            id={`${id}-password`}
+            autoComplete="current-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-sun focus:border-transparent"
+            className="pl-10 w-full border border-ink/25 rounded-xl py-2 px-3 focus:outline-hidden focus:ring-2 focus:ring-sun focus:border-transparent"
             placeholder="••••••••"
             required
           />

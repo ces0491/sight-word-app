@@ -14,7 +14,7 @@ const BookCover = ({ story, onOpen }) => {
       onClick={() => onOpen(story)}
       className="cutout group flex w-full flex-col overflow-hidden text-left transition-transform duration-100 active:translate-x-1 active:translate-y-1 active:shadow-none"
     >
-      <div className="aspect-[2/1] w-full border-b-3 border-ink bg-mist">
+      <div className="aspect-2/1 w-full border-b-3 border-ink bg-mist">
         {firstPage && <StoryIllustration sentence={firstPage} options={plan[0]} width="100%" height="100%" alt="" />}
       </div>
       <span className="block px-4 py-3 font-display text-lg font-semibold leading-snug text-ink">{story.title}</span>

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { Settings, Sparkles, Send } from 'lucide-react';
 
@@ -22,6 +22,8 @@ import {
   cleanAnthropicKey,
   anthropicKeyHint,
 } from '../lib/anthropicKey';
+import { addWordsWithinLimit, responseProblem } from '../lib/storyChecks';
+import { STORY_LIMITS } from '../lib/limits';
 import { useToast } from '../hooks/useToast';
 import { useSpeech } from '../hooks/useSpeech';
 
@@ -46,17 +48,33 @@ const requestAiStory = async (params) => {
   return writeAiStory(params);
 };
 
-/** Classes on <body> that styles/learningAdaptations.css reads. */
-const NEED_CLASSES = {
-  adhd: 'adhd-enabled',
-  dyslexia: 'dyslexia-enabled',
-  autism: 'autism-enabled',
-  esl: 'esl-enabled',
-  visualProcessing: 'visual-processing-enabled',
+/** The signed-in account's saved stories. */
+const requestSavedStories = async () => {
+  const response = await fetch('/api/stories');
+  if (!response.ok) throw new Error(`Stories request failed: ${response.status}`);
+  return response.json();
 };
+
+const NO_STORIES = [];
 
 /** Many words on the home screen get smaller cards. */
 const LARGE_CARD_LIMIT = 12;
+
+/** This tab's words, settings and newest unsaved story, kept across a reload or a trip to the library. */
+const HOME_STATE_KEY = 'sightwords:home';
+
+const isStory = (value) =>
+  !!value && typeof value.title === 'string' && Array.isArray(value.content) && value.content.every((s) => typeof s === 'string');
+
+/** What was kept for this tab, or null. */
+const loadHomeState = () => {
+  try {
+    const state = JSON.parse(window.sessionStorage.getItem(HOME_STATE_KEY) ?? 'null');
+    return state && typeof state === 'object' ? state : null;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * The app: story time for the child, the reader, and the grown-ups area.
@@ -78,9 +96,15 @@ const SightWordStoryGenerator = () => {
     esl: false,
     visualProcessing: false,
   });
-  const [useAI, setUseAI] = useState(false);
-  // The signed-in grown-up's own Anthropic API key, for AI stories
-  const [anthropicKey, setAnthropicKey] = useState(null);
+  // The signed-in grown-up's own Anthropic API key, for AI stories, read from
+  // this browser when the account changes (during render, as React suggests
+  // for state that follows a prop)
+  const [keyState, setKeyState] = useState({ userId: undefined, key: null });
+  if (keyState.userId !== userId) setKeyState({ userId, key: loadAnthropicKey(userId) });
+  const anthropicKey = keyState.userId === userId ? keyState.key : null;
+  // AI stories need an account and a key; without them the choice falls back to Classic
+  const [aiChosen, setUseAI] = useState(false);
+  const useAI = aiChosen && isSignedIn && !!anthropicKey;
   const [includeImages, setIncludeImages] = useState(true);
   const [storyFormat, setStoryFormat] = useState('highlighted');
 
@@ -88,66 +112,106 @@ const SightWordStoryGenerator = () => {
   const [generatedStory, setGeneratedStory] = useState(null);
   const [readingStory, setReadingStory] = useState(null);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
-  const [savedStories, setSavedStories] = useState([]);
-  const [isLoadingStories, setIsLoadingStories] = useState(false);
+  // Saved stories belong to the account that loaded them, so a different account, or none, sees none
+  const [storiesState, setStoriesState] = useState({ userId: null, list: [], error: false });
+  const storiesLoaded = !!userId && storiesState.userId === userId;
+  const savedStories = storiesLoaded ? storiesState.list : NO_STORIES;
+  const [storiesReload, setStoriesReload] = useState(0);
+  const storiesError = storiesLoaded && storiesState.error;
+  const isLoadingStories = !!userId && !storiesLoaded;
   const [isSavingStory, setIsSavingStory] = useState(false);
+  // False until this tab's kept state has been read, so defaults don't overwrite it
+  const [restored, setRestored] = useState(false);
 
   // Screens and dialogs
   const [view, setView] = useState('home'); // home | reader | grownups
   const [showGate, setShowGate] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
-  // Set when sign-in starts from Save, so the save runs once the session arrives
-  const [saveAfterSignIn, setSaveAfterSignIn] = useState(false);
+  // What to carry on with once sign-in succeeds: 'save' or 'share'
+  const afterSignIn = useRef(null);
+  // Set when sign-in succeeds here, before the session reaches this component
+  const signedInHere = useRef(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [isSharing, setIsSharing] = useState(false);
 
-  const fetchSavedStories = async () => {
-    try {
-      setIsLoadingStories(true);
-      const response = await fetch('/api/stories');
-      if (response.ok) {
-        setSavedStories(await response.json());
-      } else {
-        console.error('Failed to fetch stories');
-      }
-    } catch (error) {
-      console.error('Error fetching stories:', error);
-    } finally {
-      setIsLoadingStories(false);
-    }
+  // Load saved stories when someone signs in, and again on "Try again"
+  useEffect(() => {
+    if (!userId) return undefined;
+    let current = true;
+    requestSavedStories()
+      .then((fetched) => {
+        if (!current) return;
+        setStoriesState((state) => {
+          // Keep stories this account saved while the list was loading, which it may not include
+          const fetchedIds = new Set(fetched.map((story) => story._id));
+          const savedMeanwhile = state.list.filter((story) => story.userId === userId && !fetchedIds.has(story._id));
+          return { userId, list: [...savedMeanwhile, ...fetched], error: false };
+        });
+      })
+      .catch((error) => {
+        console.error('Error fetching stories:', error);
+        if (current) setStoriesState({ userId, list: [], error: true });
+      });
+    return () => {
+      current = false;
+    };
+  }, [userId, storiesReload]);
+
+  const retrySavedStories = () => {
+    setStoriesState((state) => ({ ...state, userId: null }));
+    setStoriesReload((n) => n + 1);
   };
 
-  // Load saved stories when a user signs in
+  // Bring back this tab's words, settings and unsaved story after a reload or a trip to the library.
+  // This has to wait until after hydration: the server's render has no sessionStorage, and
+  // the first browser render must match it.
   useEffect(() => {
-    if (isSignedIn) {
-      fetchSavedStories();
-    } else {
-      setSavedStories([]);
+    const kept = loadHomeState();
+    if (kept) {
+      if (Array.isArray(kept.words)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- runs once, after hydration (see above)
+        setWords(addWordsWithinLimit([], kept.words.filter((w) => typeof w === 'string')).words);
+      }
+      if (Number.isInteger(kept.grade) && kept.grade >= 0 && kept.grade <= 3) setGrade(kept.grade);
+      if (kept.learningNeeds && typeof kept.learningNeeds === 'object') {
+        setLearningNeeds((current) =>
+          Object.fromEntries(Object.keys(current).map((need) => [need, !!kept.learningNeeds[need]]))
+        );
+      }
+      if (typeof kept.includeImages === 'boolean') setIncludeImages(kept.includeImages);
+      if (['highlighted', 'bold', 'underlined', 'normal'].includes(kept.storyFormat)) setStoryFormat(kept.storyFormat);
+      if (isStory(kept.generatedStory)) setGeneratedStory(kept.generatedStory);
     }
-  }, [isSignedIn]);
+    setRestored(true);
+  }, []);
 
-  // Each account keeps its own key in this browser
   useEffect(() => {
-    setAnthropicKey(loadAnthropicKey(userId));
-  }, [userId]);
-
-  // AI stories need an account and a key; switch back to Classic without them
-  useEffect(() => {
-    if (!isSignedIn || !anthropicKey) setUseAI(false);
-  }, [isSignedIn, anthropicKey]);
-
-  // Learning needs change how the reader looks (styles/learningAdaptations.css)
-  useEffect(() => {
-    const { classList } = document.body;
-    Object.entries(NEED_CLASSES).forEach(([need, className]) => {
-      classList.toggle(className, !!learningNeeds[need]);
-    });
-    return () => Object.values(NEED_CLASSES).forEach((className) => classList.remove(className));
-  }, [learningNeeds]);
+    if (!restored) return;
+    try {
+      window.sessionStorage.setItem(
+        HOME_STATE_KEY,
+        JSON.stringify({
+          words,
+          grade,
+          learningNeeds,
+          includeImages,
+          storyFormat,
+          // Saved stories are in the account already
+          generatedStory: generatedStory && !generatedStory._id ? generatedStory : null,
+        })
+      );
+    } catch {
+      // Storage full or blocked: the state just isn't kept
+    }
+  }, [restored, words, grade, learningNeeds, includeImages, storyFormat, generatedStory]);
 
   const addWords = (newWords) => {
-    setWords((current) => [...new Set([...current, ...newWords.map((w) => w.toLowerCase())])]);
+    const { words: next, skipped } = addWordsWithinLimit(words, newWords);
+    setWords(next);
+    if (skipped > 0) {
+      toast.warning(`Stories can use up to ${STORY_LIMITS.maxWords} words, so ${skipped} weren't added.`);
+    }
   };
   const removeWord = (word) => setWords((current) => current.filter((w) => w !== word.toLowerCase()));
 
@@ -158,7 +222,7 @@ const SightWordStoryGenerator = () => {
       toast.error("That doesn't look like an API key. Paste it again without spaces.");
       return false;
     }
-    setAnthropicKey(key);
+    setKeyState({ userId, key });
     if (storeAnthropicKey(userId, key)) {
       toast.success('API key saved in this browser.');
     } else {
@@ -169,14 +233,41 @@ const SightWordStoryGenerator = () => {
 
   const removeAnthropicKey = () => {
     forgetAnthropicKey(userId);
-    setAnthropicKey(null);
+    setKeyState({ userId, key: null });
     toast.success('API key removed from this browser.');
   };
 
   const handleSignOut = () => {
     forgetAnthropicKey(userId);
-    setAnthropicKey(null);
+    setKeyState({ userId, key: null });
+    signedInHere.current = false;
     signOut({ redirect: false });
+  };
+
+  /** Delete the account and its saved stories. Returns null when done, or what went wrong. */
+  const deleteAccount = async (password) => {
+    const failed = "The account couldn't be deleted. Please try again.";
+    try {
+      const response = await fetch('/api/account', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (!response.ok) return await responseProblem(response, failed);
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      return failed;
+    }
+
+    forgetAnthropicKey(userId);
+    setKeyState({ userId, key: null });
+    signedInHere.current = false;
+    setStoriesState({ userId: null, list: [], error: false });
+    // The saved copy is gone with the account; an unsaved story stays in this tab
+    setGeneratedStory((current) => (current?._id ? null : current));
+    await signOut({ redirect: false });
+    toast.success('Your account and saved stories were deleted.');
+    return null;
   };
 
   const openGrownUps = () => {
@@ -247,8 +338,8 @@ const SightWordStoryGenerator = () => {
     if (!readingStory) return null;
     if (readingStory._id) return readingStory;
 
-    if (!isSignedIn) {
-      setSaveAfterSignIn(true);
+    if (!isSignedIn && !signedInHere.current) {
+      afterSignIn.current = 'save';
       setShowAuthDialog(true);
       return null;
     }
@@ -263,14 +354,13 @@ const SightWordStoryGenerator = () => {
 
       if (response.ok) {
         const savedStory = await response.json();
-        setSavedStories((current) => [savedStory, ...current]);
+        setStoriesState((current) => ({ ...current, list: [savedStory, ...current.list] }));
         setReadingStory(savedStory);
         setGeneratedStory((current) => (current === readingStory ? savedStory : current));
         toast.success('Story saved.');
         return savedStory;
       }
-      console.error('Failed to save story');
-      toast.error('The story could not be saved. Please try again.');
+      toast.error(await responseProblem(response, 'The story could not be saved. Please try again.'));
       return null;
     } catch (error) {
       console.error('Error saving story:', error);
@@ -281,14 +371,25 @@ const SightWordStoryGenerator = () => {
     }
   }, [readingStory, isSignedIn, toast]);
 
-  // Finish a save that was interrupted by the sign-in dialog. The flag is
-  // cleared before saving, so re-running when saveStory changes is harmless.
-  useEffect(() => {
-    if (saveAfterSignIn && isSignedIn) {
-      setSaveAfterSignIn(false);
-      saveStory();
+  /** Share asks for an account first, then opens the share form once signed in. */
+  const openShare = () => {
+    if (isSignedIn || signedInHere.current) {
+      setShowShareDialog(true);
+    } else {
+      afterSignIn.current = 'share';
+      setShowAuthDialog(true);
     }
-  }, [saveAfterSignIn, isSignedIn, saveStory]);
+  };
+
+  /** Carry on with the save or share that asked for sign-in. The session cookie is set by now. */
+  const handleSignedIn = () => {
+    signedInHere.current = true;
+    setShowAuthDialog(false);
+    const next = afterSignIn.current;
+    afterSignIn.current = null;
+    if (next === 'save') saveStory();
+    if (next === 'share') setShowShareDialog(true);
+  };
 
   /** Share by email. Unsaved stories are saved first: the link points at the stored copy. */
   const shareStory = async (event) => {
@@ -315,7 +416,11 @@ const SightWordStoryGenerator = () => {
         if (errorData.code === 'EMAIL_NOT_CONFIGURED') {
           toast.warning('Email sharing is not set up on this site yet.');
         } else {
-          toast.error(errorData.message || 'The story could not be shared. Please try again.');
+          toast.error(
+            response.status === 401
+              ? "You've been signed out. Sign in again, then share."
+              : errorData.message || 'The story could not be shared. Please try again.'
+          );
         }
       }
     } catch (error) {
@@ -347,10 +452,9 @@ const SightWordStoryGenerator = () => {
         <AuthDialog
           onClose={() => {
             setShowAuthDialog(false);
-            setSaveAfterSignIn(false);
+            afterSignIn.current = null;
           }}
-          // A save interrupted by sign-in resumes from the saveAfterSignIn effect
-          onSuccess={() => setShowAuthDialog(false)}
+          onSuccess={handleSignedIn}
         />
       )}
       {showShareDialog && (
@@ -388,7 +492,7 @@ const SightWordStoryGenerator = () => {
           actions={{
             onSave: saveStory,
             onPrint: () => window.print(),
-            onShare: () => setShowShareDialog(true),
+            onShare: openShare,
             isSaving: isSavingStory,
             isSaved: !!readingStory._id,
           }}
@@ -430,8 +534,11 @@ const SightWordStoryGenerator = () => {
             anthropicKeyHint={anthropicKey ? anthropicKeyHint(anthropicKey) : null}
             onSaveAnthropicKey={saveAnthropicKey}
             onRemoveAnthropicKey={removeAnthropicKey}
+            onDeleteAccount={deleteAccount}
             savedStories={savedStories}
             isLoadingStories={isLoadingStories}
+            storiesError={storiesError}
+            onRetryStories={retrySavedStories}
             onOpenStory={openStory}
             onSignIn={() => setShowAuthDialog(true)}
             onSignOut={handleSignOut}

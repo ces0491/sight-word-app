@@ -1,36 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, TrendingUp, BookOpen, Target } from 'lucide-react';
 
-/**
- * Word Usage Analytics Dashboard
- * Displays word usage statistics and trends for teachers
- */
+/** Word usage counts across everyone who uses the app, and the signed-in user's story total. */
 const WordUsageDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [reload, setReload] = useState(0);
+
+  // Load on open and on "Try Again". State is set only when the request returns.
   useEffect(() => {
-    fetchAnalytics();
-  }, []);
+    let current = true;
+    fetch('/api/analytics/wordUsage')
+      .then((response) => {
+        if (!response.ok) throw new Error('Failed to fetch analytics');
+        return response.json();
+      })
+      .then((data) => {
+        if (!current) return;
+        setAnalytics(data);
+        setError(null);
+      })
+      .catch((err) => {
+        console.error('Error fetching analytics:', err);
+        if (current) setError(err.message);
+      })
+      .finally(() => {
+        if (current) setIsLoading(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [reload]);
 
-  const fetchAnalytics = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch('/api/analytics/wordUsage');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics');
-      }
-
-      const data = await response.json();
-      setAnalytics(data);
-    } catch (err) {
-      console.error('Error fetching analytics:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+  const fetchAnalytics = () => {
+    setIsLoading(true);
+    setError(null);
+    setReload((n) => n + 1);
   };
 
   if (isLoading) {
@@ -47,7 +54,7 @@ const WordUsageDashboard = () => {
   if (error) {
     return (
       <div className="bg-berry/10 border border-berry/30 rounded-lg p-6 text-center">
-        <p className="text-ink">Error loading analytics: {error}</p>
+        <p className="text-ink">The word usage figures couldn&apos;t be loaded.</p>
         <button
           onClick={fetchAnalytics}
           className="mt-4 px-4 py-2 bg-berry text-white rounded-xl hover:bg-berry/90"
@@ -108,7 +115,7 @@ const WordUsageDashboard = () => {
             </div>
           </div>
           <p className="text-xs text-ink/70 mt-4">
-            Different sight words used
+            Different Dolch words used
           </p>
         </div>
 
@@ -116,7 +123,7 @@ const WordUsageDashboard = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-ink/70">Most Used Grade</p>
+              <p className="text-sm font-medium text-ink/70">Most used reading level</p>
               <p className="text-3xl font-bold text-ink mt-2">
                 {(() => {
                   const maxGrade = Object.entries(analytics.byGrade || {})
@@ -130,10 +137,7 @@ const WordUsageDashboard = () => {
               <TrendingUp className="w-8 h-8 text-ink" />
             </div>
           </div>
-          <p className="text-xs text-ink/70 mt-4">
-            Your most common grade level
-          </p>
-        </div>
+</div>
       </div>
 
       {/* Top Words Used */}
@@ -148,7 +152,7 @@ const WordUsageDashboard = () => {
             {analytics.topWords.map((wordData, index) => (
               <div
                 key={wordData._id || index}
-                className="bg-gradient-to-br from-mist to-sky rounded-lg p-4 border border-ink/20"
+                className="bg-linear-to-br from-mist to-sky rounded-lg p-4 border border-ink/20"
               >
                 <div className="flex items-baseline justify-between">
                   <span className="text-2xl font-bold text-ink">
@@ -166,7 +170,7 @@ const WordUsageDashboard = () => {
           </div>
         ) : (
           <p className="text-ink/70 italic text-center py-8">
-            No word usage data yet. Create some stories to see your most used words!
+            No word usage yet. Dolch words are counted as stories are made.
           </p>
         )}
       </div>
@@ -174,7 +178,7 @@ const WordUsageDashboard = () => {
       {/* Words by Grade Level */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-semibold text-ink mb-4">
-          Word Usage by Grade Level
+          Word usage by reading level
         </h3>
 
         <div className="space-y-4">
@@ -193,7 +197,7 @@ const WordUsageDashboard = () => {
                 </div>
                 <div className="w-full bg-ink/10 rounded-full h-3">
                   <div
-                    className="bg-gradient-to-r from-ink to-ink h-3 rounded-full transition-all duration-300"
+                    className="bg-linear-to-r from-ink to-ink h-3 rounded-full transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -204,32 +208,11 @@ const WordUsageDashboard = () => {
 
         {Object.keys(analytics.byGrade || {}).length === 0 && (
           <p className="text-ink/70 italic text-center py-8">
-            No grade-level data yet. Start creating stories to see distribution!
+            No reading-level data yet.
           </p>
         )}
       </div>
-
-      {/* Tips Section */}
-      <div className="bg-gradient-to-r from-mist to-mist border border-ink/20 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-ink mb-3">
-          📊 Understanding Your Analytics
-        </h3>
-        <ul className="space-y-2 text-sm text-ink">
-          <li className="flex items-start gap-2">
-            <span className="text-ink font-bold">•</span>
-            <span><strong>Top Words:</strong> These are your most frequently used sight words. Consider introducing variety for comprehensive learning.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-ink font-bold">•</span>
-            <span><strong>Grade Distribution:</strong> Shows which grade levels you focus on most. Try to maintain consistency within each student&apos;s level.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-ink font-bold">•</span>
-            <span><strong>Unique Words:</strong> Higher numbers indicate more diverse vocabulary practice across your stories.</span>
-          </li>
-        </ul>
-      </div>
-    </div>
+</div>
   );
 };
 

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Sight Word Story Generator project.
+Changes to Sight Word Stories, newest first.
 
 ---
 
@@ -23,11 +23,15 @@ All notable changes to the Sight Word Story Generator project.
 - **One cast per story**: each character keeps the same skin tone, hair and clothes on every page, fixed by a seed from the story's title and first sentence. Illustrations no longer use `Math.random`, so a story renders the same way every time.
 - Pages with no named place keep the previous page's setting, for AI stories too.
 - **AI story mode**: Claude Haiku 4.5 writes a story with structured outputs, billed to the signed-in grown-up's own Anthropic API key. The key is saved in their browser under their account (`lib/anthropicKey.js`), removed on sign-out, and sent from the browser straight to Anthropic (`lib/aiStory.js`), so the server never receives it. The Anthropic SDK loads only when an AI story is made. The app falls back to Classic mode if AI fails, with a message saying why (key rejected, out of credit, rate limit, Anthropic busy or unreachable).
-- **Rate limiting** on share emails, per user, with counters in MongoDB (`lib/rateLimit.js`, limits in `lib/limits.js`). The 1.0.0 in-memory limiter was never applied to any route and has been replaced.
+- **Rate limiting** with counters in MongoDB (`lib/rateLimit.js`, limits in `lib/limits.js`): registration per IP address, sign-in per IP address and per email address, and account deletion, share emails and word-usage updates per user. Past a sign-in limit the form says to wait instead of "Invalid email or password". The 1.0.0 in-memory limiter was never applied to any route and has been replaced.
+- **Account deletion** under Grown-ups → Account (`DELETE /api/account`), with the password. The account's saved stories are deleted with it, and the app signs out.
+- **Stop sharing** a story from the story library (`DELETE /api/stories/[id]/share`): the share token is removed and every link sent for the story stops working.
+- **Work kept across a reload**: the words, settings and newest unsaved story stay for the browser tab. The story editor asks before leaving with unsaved changes, and stays open with a notice if the session ends in another tab.
+- **Extra sentences for 130 Dolch words** (`lib/extraSentences.js`), so each of the 220 words appears in a Classic story when it's the only word chosen; 85 couldn't before. A story for the whole pre-primer list now uses 31 of its 40 words, up from 20.
 - **Security headers** on every page (`next.config.js`): a Content-Security-Policy that limits scripts to this site and the OCR engine's exact jsDelivr paths, and requests to this site, the Anthropic API and the OCR language data, plus `X-Content-Type-Options`, `Referrer-Policy` and `X-Frame-Options`.
-- **Request validation** with Zod for the story, share and analytics routes and for AI story input (`lib/validation.js`).
+- **Request validation** with Zod for registration, account deletion, the story, share and analytics routes, and AI story input (`lib/validation.js`), before any query. Registration takes names of up to 60 letters, spaces, apostrophes, hyphens and full stops, and passwords of 8 to 72 bytes.
 - `usedWords` on saved stories, computed by the server from the story text.
-- Tests for sight word matching, story rendering, validation, share email, rate limiting, AI stories and saved keys, scanned-word matching, the shared-story route, and the main generator screen.
+- Tests for sight word matching, story composition, story rendering, validation, registration, sign-in limits, account deletion, client IP lookup, sharing and stopping sharing, word tracking, share email, rate limiting, sign-in redirects, AI stories and saved keys, scanned-word matching, security headers, dialogs, the story editor, and the main generator screen.
 - `.env.example` is now committed (it was caught by the `.env*` ignore rule).
 
 ### Changed
@@ -40,15 +44,31 @@ All notable changes to the Sight Word Story Generator project.
 - Share links use a random token stored on the story. **Links sent before this release no longer open**, because their tokens were never stored.
 - The shared-story endpoint returns the same 404 for a missing story, an unshared story and a wrong token.
 - API routes read the session with `getServerSession`; NextAuth options moved to `lib/authOptions.js`.
-- Typed and uploaded words are cleaned of punctuation before use.
-- Dependencies: `next` 15.5.29, `nodemailer` 10.3.1, `@anthropic-ai/sdk` 1.5.0 (Apache 2.0 licence), plus `npm audit fix`. An npm `overrides` entry lets `next-auth` use the root `nodemailer`.
-- CI runs on Node 24.
-- README and docs updated to match; `docs/PRODUCTION_READY.md` now lists what is in place and the remaining gaps.
+- **One rule for what a word is** (`findWords` in `lib/sightWords.js`), used for counting a story's sight words, marking them in print and in the reader, cleaning typed and uploaded words, and scanning. "can't" no longer counts as "can", curly apostrophes match straight ones, and accented letters are kept ("café" used to become "caf").
+- **A story's used words come from its text.** Classic stories took them from scene metadata, so the highlights and the word hunt could name words that weren't on the page ("sing" when the text said "singing").
+- **Classic stories hang together**: a scene's words are read from its sentences, a scene that mentions a friend or Mom comes after one that introduces them, and two scenes on the same topic aren't used together (the "why" question was asked twice). Extra sentences make sense on their own in the middle of the day.
+- **Learning needs are read from the story**: the reader applies the needs saved with the story it opens, so a saved story keeps them in the library, and the editor's checkboxes change how it reads.
+- **Emails are stored lower-cased** and matched case-insensitively at sign-up and sign-in, so accounts created with capitals still sign in.
+- **Word usage counts Dolch words only**, so a child's name typed as a word never reaches the dashboard all teachers see. The dashboard says its figures are across everyone.
+- A story takes up to 100 words. Adding more says how many weren't added, and the story editor explains what stops a save instead of saying "please try again".
+- Dependencies: `next` 16.4.5 with React 19.3, `next-auth` 4.24.15, `nodemailer` 10.3.1, `@anthropic-ai/sdk` 1.5.0 (Apache 2.0 licence), plus `npm audit fix`. `npm audit --omit=dev` reports no advisories. An npm `overrides` entry lets `next-auth` use the root `nodemailer`.
+- Node 24 everywhere: `engines` in `package.json` sets it for Vercel, and CI reads it from there. CI lints the whole project with the ESLint CLI (`next lint` skipped `hooks/`, `models/` and `test/`), runs the tests once with coverage, and fails on critical production advisories. The Codecov upload (no token) and the Dependency-Check step (its report went nowhere) are gone.
+- The photo scanner reads a picture once instead of three times with the same settings, and releases the image memory it uses.
+- **Next.js 16**: the build and dev server use webpack (`--webpack`). The Turbopack build puts an inline script in each page, which the Content-Security-Policy blocks, so the page never started.
+- **Tailwind CSS 4**: the theme moved from `tailwind.config.js` to an `@theme` block in `styles/globals.css`, PostCSS uses `@tailwindcss/postcss` in place of `tailwindcss` and `autoprefixer`, and renamed utilities were updated (`outline-none` to `outline-hidden`, `rounded` to `rounded-sm`, `bg-opacity-*` to `bg-white/75`). Buttons keep the pointer cursor. The next/font variables are now `--font-andika` and `--font-fredoka`, so they don't clash with the `font-read` and `font-display` theme names. Tailwind 4 needs Safari 16.4, Chrome 111, Firefox 128 or newer.
+- `mongoose` 9: the password hook is a plain async function (Mongoose 9 no longer passes `next`), and updates ask for the new document with `returnDocument: 'after'`.
+- `eslint-config-next` 16, a native flat config, replaces the `FlatCompat` bridge. Its React hook rules found state set directly in effects and refs read during render; those components now derive the state, load data from a promise chain inside the effect, or read the ref in the event handler.
+- Illustrations give their places only to things that can be drawn, draw at most two vehicles, and no longer draw snow for "cold" or "ice".
+- README and docs updated to match; `docs/PRODUCTION_READY.md` now lists what is in place and the remaining gaps. `docs/FREE_AND_OPEN.md` now describes only what the app does and stores; the testimonials, prices and competitor comparisons it had were unsourced.
+- `package.json` version set to 1.1.0, to match this changelog.
 
 ### Removed
 
 - `GET /api/analytics/suggestedWords` and `getSuggestedWords`, which nothing called.
 - `POST /api/stories/generate-ai` and the server-side `ANTHROPIC_API_KEY`. A deployment that set the variable can delete it.
+- `@sentry/nextjs` and the `sentry.*.config.js` files, which were never loaded, and `@geist-ui/core` and the direct `mongodb` dependency, which nothing imported. Production advisories went from seven to two.
+- Unused code and files: `lib/grammarCheck.js`, `components/analytics/wordUsageStats.js`, `fetchWordAnalytics`, the scene library's `SETTINGS` and per-scene `setting` and `words` fields, the `@/` path alias, `.eslintrc.js` (ESLint 9 ignored it) and five create-next-app SVGs.
+- `.claude/settings.local.json` from the repository; it is per-machine and now ignored.
 
 ### Fixed
 
@@ -56,8 +76,21 @@ All notable changes to the Sight Word Story Generator project.
 - A failed MongoDB connection was cached for the life of the server instance; the next request now retries.
 - **Learning-needs settings had no visible effect**: `pages/index.js` imported their stylesheet from a URL that doesn't exist (`/styles/learningAdaptations.css`). The styles now load from `_app`, and each setting changes the reader.
 - Pages under `/stories` called `useSession` without a `SessionProvider` around them; the provider is now in `_app`.
-- Sign-in redirected to any `callbackUrl`, including other sites; it now only returns to pages on this site.
-- The sign-in forms' labels weren't linked to their fields.
+- Sign-in redirected to any `callbackUrl`, including other sites; it now follows only one that resolves to a page on this site (`lib/safeRedirect.js`). A prefix check let `/<tab>/evil.example` through.
+- The sign-in forms' labels weren't linked to their fields, and their errors weren't announced.
+- **Email enumeration through registration**: the email from the request went straight into the database query, so `{ "$regex": "^a" }` answered "already exists" or a 500 depending on whether any address matched, with no account needed.
+- The shared-story response included the story's learning needs, which describe the child.
+- Two first shares of a story at the same moment could each create a token, breaking the first link sent.
+- A partial `learningNeeds` update reset the flags it left out; updates now carry all five.
+- A missing `NEXTAUTH_SECRET` gave a 500 instead of the 503 for missing configuration. Registration's 405 had no `Allow` header.
+- Sharing while signed out put the sign-in dialog under the share dialog; Share now asks for sign-in first and opens the share form afterwards.
+- Dialogs moved focus on every keystroke when their parent re-rendered, didn't keep Tab inside, and all closed on one Escape.
+- The reader and the word hunt left focus on the page body when the button pressed went away; page turns weren't announced, and the star count had no role.
+- A failed load of saved stories said "No saved stories yet"; the usage dashboard's "Try again" couldn't clear its error.
+- Saving after signing in could lose the new story from the list if the list loaded at the same moment.
+- Toasts restarted their timer on every re-render; a late end event from cancelled speech could reset the reader's state; a scan result arrived after its image was cleared; the photo scanner area couldn't be reached by keyboard.
+- With several learning needs on, ADHD or visual processing shrank dyslexia's line spacing.
+- Highlighted sight words could print without their mark, because browsers drop backgrounds when printing; they are also underlined in print.
 - **XSS**: HTML in story content, including stories opened through a share link, ran in the viewer's browser.
 - **Share token bypass**: any story could be read with `?token=<story id>`.
 - **Share email injection**: the message, story title and sender name were inserted into the email HTML unescaped.
@@ -71,6 +104,7 @@ All notable changes to the Sight Word Story Generator project.
 - The shared-story page spun forever when the link had no token.
 - Lint errors that failed `next build`.
 - Image generation tests updated for the 1.1.0 rewrite of `lib/imageGeneration.js`.
+- Headings and pages the app moves focus to, such as "The end!", showed the keyboard focus ring.
 
 ---
 

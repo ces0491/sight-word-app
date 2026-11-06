@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 /** A slightly slow, clear pace for children learning to read. */
 const CHILD_RATE = 0.85;
@@ -7,6 +7,9 @@ const isSpeechAvailable = () =>
   typeof window !== 'undefined' &&
   'speechSynthesis' in window &&
   typeof window.SpeechSynthesisUtterance === 'function';
+
+// Speech support doesn't change while the page is open, so there is nothing to subscribe to
+const noSubscription = () => () => {};
 
 /** Prefer an English voice that runs on the device, then any English voice. */
 const pickVoice = (voices) =>
@@ -22,7 +25,8 @@ const pickVoice = (voices) =>
  * report word boundaries still speak; they just don't highlight.
  */
 export function useSpeech() {
-  const [supported, setSupported] = useState(false);
+  // False on the server and while hydrating, then the browser's answer
+  const supported = useSyncExternalStore(noSubscription, isSpeechAvailable, () => false);
   const [speaking, setSpeaking] = useState(false);
   const [charIndex, setCharIndex] = useState(null);
   const voiceRef = useRef(null);
@@ -30,7 +34,6 @@ export function useSpeech() {
   useEffect(() => {
     if (!isSpeechAvailable()) return undefined;
     const synth = window.speechSynthesis;
-    setSupported(true);
 
     const updateVoice = () => {
       voiceRef.current = pickVoice(synth.getVoices());
@@ -44,8 +47,12 @@ export function useSpeech() {
     };
   }, []);
 
+  // The utterance being spoken; events from one that was cancelled are ignored
+  const currentRef = useRef(null);
+
   const stop = useCallback(() => {
     if (!isSpeechAvailable()) return;
+    currentRef.current = null;
     window.speechSynthesis.cancel();
     setSpeaking(false);
     setCharIndex(null);
@@ -57,6 +64,8 @@ export function useSpeech() {
     synth.cancel();
 
     const utterance = new window.SpeechSynthesisUtterance(text);
+    currentRef.current = utterance;
+    const isCurrent = () => currentRef.current === utterance;
     utterance.rate = CHILD_RATE;
     if (voiceRef.current) {
       utterance.voice = voiceRef.current;
@@ -66,11 +75,16 @@ export function useSpeech() {
     }
     if (trackWords) {
       utterance.onboundary = (event) => {
-        if (!event.name || event.name === 'word') setCharIndex(event.charIndex);
+        if (isCurrent() && (!event.name || event.name === 'word')) setCharIndex(event.charIndex);
       };
     }
-    utterance.onstart = () => setSpeaking(true);
+    utterance.onstart = () => {
+      if (isCurrent()) setSpeaking(true);
+    };
+    // Cancelling one utterance to start the next can deliver its end event late
     utterance.onend = () => {
+      if (!isCurrent()) return;
+      currentRef.current = null;
       setSpeaking(false);
       setCharIndex(null);
     };

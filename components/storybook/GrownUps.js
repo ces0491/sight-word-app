@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Upload, Camera, Plus, Trash2, LogIn, LogOut, BookOpen, BarChart } from 'lucide-react';
 import WordCard from './WordCard';
+import Modal from './Modal';
 import ImageUpload from '../ImageUpload';
 import WordUsageDashboard from '../analytics/WordUsageDashboard';
 import { DOLCH_LISTS } from '../../lib/wordLists';
@@ -155,6 +156,76 @@ const AnthropicKeySettings = ({ keyHint, onSave, onRemove }) => {
   );
 };
 
+/** Delete the account and its saved stories, after asking for the password again. */
+const DeleteAccount = ({ onDelete }) => {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [problem, setProblem] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const close = () => {
+    setOpen(false);
+    setPassword('');
+    setProblem('');
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setIsDeleting(true);
+    // null when the account is gone (this closes with the signed-in view); otherwise what went wrong
+    const result = await onDelete(password);
+    setIsDeleting(false);
+    if (result) setProblem(result);
+  };
+
+  return (
+    <div className="space-y-3 border-t-2 border-ink/10 pt-4">
+      <h3 className="font-display text-xl font-semibold text-ink">Delete account</h3>
+      <p className="font-display text-base text-ink/70">
+        Deletes your account and your saved stories, and links you&apos;ve shared stop working. It can&apos;t be undone.
+      </p>
+      <button type="button" onClick={() => setOpen(true)} className="btn-quiet">
+        <Trash2 size={18} aria-hidden="true" /> Delete account
+      </button>
+      {open && (
+        <Modal title="Delete your account?" onClose={close} labelledBy="delete-account-title">
+          <form onSubmit={submit} className="space-y-4">
+            <p className="font-display text-base text-ink">
+              Your account and saved stories will be deleted. Enter your password to confirm.
+            </p>
+            <div>
+              <label htmlFor="delete-account-password" className="mb-1 block font-display text-base text-ink">
+                Password
+              </label>
+              <input
+                id="delete-account-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                className="field"
+              />
+            </div>
+            {problem && (
+              <p role="alert" className="rounded-xl bg-berry/10 p-3 font-display text-base text-ink">
+                {problem}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={close} className="btn-quiet">
+                Keep my account
+              </button>
+              <button type="submit" disabled={!password || isDeleting} className="btn btn-berry">
+                <Trash2 size={18} aria-hidden="true" /> {isDeleting ? 'Deleting…' : 'Delete account'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+};
+
 /**
  * Everything a parent or teacher sets up: the words, the story options,
  * learning needs, saved stories and the account.
@@ -179,8 +250,11 @@ const GrownUps = ({
   anthropicKeyHint,
   onSaveAnthropicKey,
   onRemoveAnthropicKey,
+  onDeleteAccount,
   savedStories,
   isLoadingStories,
+  storiesError,
+  onRetryStories,
   onOpenStory,
   onSignIn,
   onSignOut,
@@ -350,7 +424,7 @@ const GrownUps = ({
               {FORMATS.map((f) => (
                 <label
                   key={f.value}
-                  className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 text-center ${
+                  className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 text-center focus-within:ring-4 focus-within:ring-sun ${
                     storyFormat === f.value ? 'border-ink bg-mist' : 'border-ink/20 bg-paper'
                   }`}
                 >
@@ -374,13 +448,17 @@ const GrownUps = ({
               type="checkbox"
               checked={includeImages}
               onChange={(e) => onIncludeImagesChange(e.target.checked)}
-              className="h-6 w-6 accent-[#233059]"
+              className="h-6 w-6 accent-ink"
             />
             <span className="font-display text-base text-ink">Show a picture on every page</span>
           </label>
         </Section>
 
-        <Section id="needs-title" title="Learning needs" description="These change how a story looks while it's read.">
+        <Section
+          id="needs-title"
+          title="Learning needs"
+          description="These change how a story looks while it's read. Each story keeps the needs it was made with; change a saved story's in the story library."
+        >
           <div className="space-y-2">
             {LEARNING_NEEDS.map((need) => (
               <label key={need.key} className="flex cursor-pointer items-start gap-3 rounded-xl border-2 border-ink/10 p-3 hover:border-ink/30">
@@ -388,7 +466,7 @@ const GrownUps = ({
                   type="checkbox"
                   checked={!!learningNeeds[need.key]}
                   onChange={() => onLearningNeedsChange({ ...learningNeeds, [need.key]: !learningNeeds[need.key] })}
-                  className="mt-1 h-6 w-6 shrink-0 accent-[#233059]"
+                  className="mt-1 h-6 w-6 shrink-0 accent-ink"
                 />
                 <span>
                   <span className="block font-display text-lg font-medium text-ink">{need.label}</span>
@@ -404,6 +482,15 @@ const GrownUps = ({
             <p className="font-display text-base text-ink/70">Sign in to save stories and read them again on any device.</p>
           ) : isLoadingStories ? (
             <p className="font-display text-base text-ink/70">Loading your stories…</p>
+          ) : storiesError ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p role="alert" className="font-display text-base text-ink">
+                Your saved stories couldn&apos;t be loaded.
+              </p>
+              <button type="button" onClick={onRetryStories} className="btn-quiet">
+                Try again
+              </button>
+            </div>
           ) : savedStories.length === 0 ? (
             <p className="font-display text-base text-ink/70">No saved stories yet. Save one from the last page of a story.</p>
           ) : (
@@ -434,7 +521,7 @@ const GrownUps = ({
           <Section
             id="usage-title"
             title="Word usage"
-            description="Counted across everyone who uses this app, not only your account."
+            description="Dolch words, counted across everyone who uses this app. Other words, such as names, aren't counted."
           >
             <details className="group">
               <summary className="inline-flex cursor-pointer items-center gap-2 font-display text-base text-ink">
@@ -457,6 +544,7 @@ const GrownUps = ({
                 </button>
               </div>
               <AnthropicKeySettings keyHint={anthropicKeyHint} onSave={onSaveAnthropicKey} onRemove={onRemoveAnthropicKey} />
+              <DeleteAccount onDelete={onDeleteAccount} />
             </>
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-3">

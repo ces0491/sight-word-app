@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Volume2, Square, X, Star, Search, RotateCcw, Save, Printer, Share2, Check } from 'lucide-react';
 import StoryIllustration from '../EnhancedIllustration';
 import StoryText from '../story/StoryText';
@@ -8,6 +8,15 @@ import { useSpeech } from '../../hooks/useSpeech';
 import { planIllustrations } from '../../lib/imageGeneration';
 
 const isTyping = (target) => ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName);
+
+/** Classes on <body> that styles/learningAdaptations.css reads. */
+const NEED_CLASSES = {
+  adhd: 'adhd-enabled',
+  dyslexia: 'dyslexia-enabled',
+  autism: 'autism-enabled',
+  esl: 'esl-enabled',
+  visualProcessing: 'visual-processing-enabled',
+};
 
 /**
  * Read a story like a picture book: one page at a time, tap any word to
@@ -61,6 +70,24 @@ const StoryReader = ({ story, onClose, closeLabel = 'Done', actions = {} }) => {
   // Stop reading aloud when the reader closes
   useEffect(() => stop, [stop]);
 
+  // The story is read with the learning needs saved with it
+  useEffect(() => {
+    const { classList } = document.body;
+    Object.entries(NEED_CLASSES).forEach(([need, className]) => {
+      classList.toggle(className, !!story?.learningNeeds?.[need]);
+    });
+    return () => Object.values(NEED_CLASSES).forEach((className) => classList.remove(className));
+  }, [story]);
+
+  // The button that was pressed goes away when the stage changes, so move
+  // focus to what replaced it: the page, or "The end!" (the word hunt focuses itself)
+  const pageRef = useRef(null);
+  const endRef = useRef(null);
+  useEffect(() => {
+    if (stage === 'pages') pageRef.current?.focus();
+    if (stage === 'end') endRef.current?.focus();
+  }, [stage]);
+
   if (pages.length === 0) return null;
 
   const sentence = pages[pageIndex];
@@ -93,14 +120,19 @@ const StoryReader = ({ story, onClose, closeLabel = 'Done', actions = {} }) => {
       <main className="no-print mx-auto max-w-5xl px-4 sm:px-6">
         {stage === 'pages' && (
           <>
+            <p className="sr-only" aria-live="polite">
+              Page {pageIndex + 1} of {pages.length}
+            </p>
             <article
               key={pageIndex}
-              className="reader-page cutout animate-page-in mx-auto max-w-3xl overflow-hidden"
+              ref={pageRef}
+              tabIndex={-1}
+              className="reader-page cutout animate-page-in mx-auto max-w-3xl overflow-hidden focus:outline-hidden"
               style={{ '--page-from': `${direction * 32}px` }}
               aria-label={`Page ${pageIndex + 1} of ${pages.length}`}
             >
               {story.includeImages !== false && (
-                <div className="aspect-[2/1] w-full border-b-3 border-ink bg-mist">
+                <div className="aspect-2/1 w-full border-b-3 border-ink bg-mist">
                   <StoryIllustration
                     sentence={sentence}
                     options={plan[pageIndex]}
@@ -165,7 +197,7 @@ const StoryReader = ({ story, onClose, closeLabel = 'Done', actions = {} }) => {
                 />
               ))}
             </div>
-            <h2 id="the-end" className="font-display text-5xl font-bold text-ink sm:text-6xl">
+            <h2 id="the-end" ref={endRef} tabIndex={-1} className="font-display text-5xl font-bold text-ink focus:outline-hidden sm:text-6xl">
               The end!
             </h2>
             <p className="font-display text-xl text-ink/80">You read &ldquo;{story.title}&rdquo;.</p>

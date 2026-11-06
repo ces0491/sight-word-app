@@ -1,34 +1,41 @@
 import dbConnect from '../../../lib/dbConnect';
-import { withApiErrors } from '../../../lib/apiHelpers';
-import User from '../../../models/User';
+import { methodNotAllowed, sendValidationError, withApiErrors } from '../../../lib/apiHelpers';
+import { registerSchema } from '../../../lib/validation';
+import User, { EMAIL_COLLATION } from '../../../models/User';
+import { enforceRateLimit } from '../../../lib/rateLimit';
+import { RATE_LIMITS } from '../../../lib/limits';
+import { clientIp } from '../../../lib/clientIp';
+
+const DUPLICATE_KEY = 11000;
+const ALREADY_REGISTERED = 'An account with this email already exists.';
 
 async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
+
+  // Validated before any query, so the body can't put query operators into the email
+  const parsed = registerSchema.safeParse(req.body);
+  if (!parsed.success) return sendValidationError(res, parsed.error, parsed.error.issues[0].message);
+  const { name, email, password } = parsed.data;
 
   await dbConnect();
 
-  const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
+  // Counted per IP address, as there's no account yet
+  const allowed = await enforceRateLimit(res, {
+    scope: 'register',
+    key: clientIp(req.headers, req.socket),
+    ...RATE_LIMITS.register,
+  });
+  if (!allowed) return;
 
   try {
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // Case-insensitive, so ana@example.com can't sign up beside an existing Ana@example.com
+    const existingUser = await User.findOne({ email }).collation(EMAIL_COLLATION);
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+      return res.status(400).json({ message: ALREADY_REGISTERED });
     }
 
-    // Create new user (password hashing is handled in the User model)
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: 'teacher'
-    });
+    // Password hashing is handled in the User model
+    const user = await User.create({ name, email, password, role: 'teacher' });
 
     return res.status(201).json({
       message: 'User created successfully',
@@ -36,10 +43,14 @@ async function handler(req, res) {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
   } catch (error) {
+    // Two sign-ups with the same email at once: the unique index stops the second
+    if (error?.code === DUPLICATE_KEY) {
+      return res.status(400).json({ message: ALREADY_REGISTERED });
+    }
     console.error('Registration error:', error);
     return res.status(500).json({ message: 'Error creating user' });
   }
