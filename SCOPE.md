@@ -11,7 +11,7 @@ The app is ready for a public launch when each of these holds on [sightwords.she
 - [ ] Story writes are limited: `POST` and `PUT /api/stories` are rate-limited per account, and an account can hold only a set number of stories. Both values are in [`lib/limits.js`](lib/limits.js) and covered by tests.
 - [ ] A privacy page says what the app stores (name, email, hashed password, saved stories with their learning needs), where it's kept, how to delete it and who to contact. The sign-up page links to it.
 - [ ] Ces has checked the privacy page against POPIA's rules on children's and health information, and the app does what the page says.
-- [ ] SMTP is set up in production, sharing a story by email works on the live site, and the privacy page names the email provider.
+- [ ] Email through Resend is set up in production (a verified sending domain, and `RESEND_API_KEY` and `EMAIL_FROM` in Vercel), and sharing a story by email works on the live site.
 - [ ] Password reset by email, with a single-use link that expires and a rate limit on requests.
 - [ ] Email verification: signing in needs a verified address. Ces's existing account is marked verified.
 - [ ] Server and browser errors reach an error-monitoring service that alerts Ces. Events carry no story text, email addresses or Anthropic API keys, the Content-Security-Policy allows the service, and the privacy page names it.
@@ -42,3 +42,4 @@ Ces decides when each item holds. Once they all do, the status in [`docs/PRODUCT
 
 - 2026-11-06: initial scope, from that day's production-readiness review
 - 2026-11-06: the email, error-monitoring and backup items also bring the privacy page up to date
+- 2026-11-06: email goes through Resend, as in Sheet Solved's other apps

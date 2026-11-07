@@ -28,13 +28,13 @@ Short illustrated stories built from the sight words a child is learning, to rea
 - **Reading level** from Kindergarten to Grade 3, the span of the Dolch lists. AI stories are written for it; Classic stories are the same at every level and save it as a label for sorting the library.
 - **Sight word style** (highlighted, bold, underlined or plain) and pictures on or off
 - **Learning needs**: settings that change how a story reads (below)
-- **Save, share and print**: save stories to an account, email a link (needs SMTP settings), print every page, and manage saved stories in the story library, where sharing can also be stopped
+- **Save, share and print**: save stories to an account, email a link (needs a Resend account), print every page, and manage saved stories in the story library, where sharing can also be stopped
 - **Deleting an account**: under Account, with the password; it removes the account and its saved stories
 - **Kept on a reload**: the words, settings and newest unsaved story stay for the browser tab; the story editor asks before leaving with unsaved changes
 
 ## Cost
 
-Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's free tier have no running cost. Email sharing works with a free Gmail account and an app password. AI stories are billed to each grown-up's own Anthropic account at Claude Haiku 4.5 rates, with output capped at 1,024 tokens a story, so they cost whoever runs the site nothing. More in [Why It's Free](docs/FREE_AND_OPEN.md).
+Classic mode, the SVG illustrations, the MongoDB Atlas free tier and Vercel's free tier have no running cost. Share emails go through [Resend](https://resend.com/pricing), whose free plan sends up to 100 emails a day. AI stories are billed to each grown-up's own Anthropic account at Claude Haiku 4.5 rates, with output capped at 1,024 tokens a story, so they cost whoever runs the site nothing. More in [Why It's Free](docs/FREE_AND_OPEN.md).
 
 ## Browser support
 
@@ -77,7 +77,8 @@ The styles use Tailwind CSS 4, which needs Safari 16.4, Chrome 111, Firefox 128 
    | `MONGODB_DB` | Recommended | Database name inside the cluster, e.g. `sight-word-stories`. Without it the name comes from the connection string, and the driver falls back to `test` |
    | `NEXTAUTH_URL` | Yes | Base URL, e.g. `http://localhost:3000`. Also used in share links |
    | `NEXTAUTH_SECRET` | Yes | Session signing secret. Generate with `openssl rand -base64 32` |
-   | `EMAIL_SERVER_HOST`, `EMAIL_SERVER_PORT`, `EMAIL_SERVER_USER`, `EMAIL_SERVER_PASSWORD`, `EMAIL_FROM` | For sharing | SMTP settings. Port 465 uses implicit TLS; other ports use STARTTLS |
+   | `RESEND_API_KEY` | For sharing | [Resend](https://resend.com) API key, restricted to the sending domain |
+   | `EMAIL_FROM` | For sharing | The "From" address, at a domain verified in Resend, e.g. `Sight Word Stories <stories@sightwords.sheetsolved.com>` |
 
 4. Run the development server:
 
@@ -109,7 +110,7 @@ Size limits on stories and AI requests, the number of saved stories an account c
    - Visit [Vercel New Project](https://vercel.com/new)
    - Connect to your Git repository
    - Select the repository
-   - Add the environment variables from the table above (`MONGODB_URI`, `MONGODB_DB`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET` at least; `EMAIL_*` for sharing) for both Production and Preview
+   - Add the environment variables from the table above (`MONGODB_URI`, `MONGODB_DB`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET` at least; `RESEND_API_KEY` and `EMAIL_FROM` for sharing) for both Production and Preview
    - Click "Deploy"
 
    Vercel applies variable changes only to new deployments, so redeploy after adding or changing them. Without `MONGODB_URI`, API routes that need the database return a 503 with code `SERVICE_NOT_CONFIGURED`.

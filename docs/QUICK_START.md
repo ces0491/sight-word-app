@@ -48,13 +48,13 @@ NEXTAUTH_SECRET=<generated-secret>
 ### Optional variables
 
 ```bash
-# Email, only needed for sharing stories by email
-EMAIL_SERVER_HOST=smtp.gmail.com
-EMAIL_SERVER_PORT=587
-EMAIL_SERVER_USER=your-email@gmail.com
-EMAIL_SERVER_PASSWORD=your-app-password
-EMAIL_FROM="Sight Word Stories <your-email@gmail.com>"
+# Email through Resend, only needed for sharing stories by email.
+# EMAIL_FROM must be at a domain verified in Resend.
+RESEND_API_KEY=<your-resend-api-key>
+EMAIL_FROM="Sight Word Stories <stories@your-verified-domain>"
 ```
+
+To try sharing without sending real email, set `RESEND_BASE_URL` to a local server: the Resend SDK reads it, so the request arrives there instead.
 
 AI stories need no variable. A signed-in grown-up adds their own Anthropic API key under Grown-ups → Account, and Anthropic bills their account.
 
@@ -87,7 +87,7 @@ Make sure `NEXTAUTH_SECRET` is set. Generate one with `openssl rand -base64 32`.
 
 ### Email sharing not working
 
-Expected until SMTP is configured. Without the `EMAIL_*` variables the app says email sharing isn't set up; see [.env.example](../.env.example).
+Expected until email is set up. Without `RESEND_API_KEY` and `EMAIL_FROM` the app says email sharing isn't set up; see [.env.example](../.env.example). If they're set and sharing fails, the server log has Resend's reason, such as a sending domain that isn't verified.
 
 ### Port 3000 already in use
 

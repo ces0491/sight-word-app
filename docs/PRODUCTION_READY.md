@@ -30,7 +30,7 @@ These are the items in [SCOPE.md](../SCOPE.md) that aren't in place yet.
 - **POPIA check**: the privacy page hasn't yet been checked against POPIA's rules on children's and health information.
 - **Password reset**: none, so a grown-up who forgets their password loses the account and its stories.
 - **Email verification**: none, so an account can be registered with someone else's address.
-- **Email in production**: no SMTP settings yet, so sharing by email returns `EMAIL_NOT_CONFIGURED`. Password reset and email verification need them too.
+- **Email in production**: `RESEND_API_KEY` and `EMAIL_FROM` aren't set yet, so sharing by email returns `EMAIL_NOT_CONFIGURED`. Password reset and email verification need them too.
 - **Error monitoring**: none. Errors reach only the server logs. Adding a service such as Sentry also means adding its host to the Content-Security-Policy's `connect-src` and naming it on the privacy page.
 - **Backups**: not confirmed for the production database.
 
@@ -53,7 +53,8 @@ These are the items in [SCOPE.md](../SCOPE.md) that aren't in place yet.
 | `MONGODB_DB` | Recommended | Database name inside the cluster. Without it the name comes from the connection string, and the driver falls back to `test` |
 | `NEXTAUTH_URL` | Yes | Public base URL; also used to build share links |
 | `NEXTAUTH_SECRET` | Yes | Signs session tokens. Generate with `openssl rand -base64 32` |
-| `EMAIL_SERVER_HOST`, `EMAIL_SERVER_PORT`, `EMAIL_SERVER_USER`, `EMAIL_SERVER_PASSWORD`, `EMAIL_FROM` | For sharing | SMTP settings. Port 465 uses implicit TLS; other ports use STARTTLS |
+| `RESEND_API_KEY` | For sharing | [Resend](https://resend.com) API key, restricted to the sending domain |
+| `EMAIL_FROM` | For sharing | The "From" address, at a domain verified in Resend |
 
 Set the variables for both Production and Preview. Vercel applies variable changes only to new deployments, so redeploy after adding or changing them.
 

@@ -134,8 +134,9 @@ export default function PrivacyPage() {
               .
             </li>
             <li>
-              <strong>An email provider</strong> sends share emails. It receives the recipient&apos;s address, your name,
-              the story&apos;s title and reading level, your message and the link.
+              <strong>Resend</strong> sends share emails. It receives the recipient&apos;s address, your name, the
+              story&apos;s title and reading level, your message and the link, and keeps its records of each email in the
+              United States. See <ExternalLink href="https://resend.com/legal/privacy-policy">Resend&apos;s privacy policy</ExternalLink>.
             </li>
             <li>
               <strong>Anthropic</strong>, only when you make an AI story. Your browser sends the words, reading level and
