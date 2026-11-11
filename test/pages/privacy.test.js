@@ -38,13 +38,6 @@ describe('Privacy page', () => {
     expect(screen.getByRole('link', { name: 'Information Regulator' })).toHaveAttribute('href', 'https://inforegulator.org.za/');
   });
 
-  it('says how long misuse counts last, from the longest rate-limit window', () => {
-    render(<PrivacyPage />);
-    const retention = screen.getByRole('region', { name: "How long it's kept" });
-
-    expect(within(retention).getByText('Misuse counts, for at most an hour.')).toBeInTheDocument();
-  });
-
   it('names each outside service the browser is allowed to reach', async () => {
     render(<PrivacyPage />);
     const services = screen.getByRole('region', { name: 'Other services' });

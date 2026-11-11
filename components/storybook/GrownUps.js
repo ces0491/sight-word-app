@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Upload, Camera, Plus, Trash2, LogIn, LogOut, BookOpen, BarChart } from 'lucide-react';
+import { ArrowLeft, Upload, Camera, Plus, Trash2, BookOpen, KeyRound } from 'lucide-react';
 import WordCard from './WordCard';
-import Modal from './Modal';
 import ImageUpload from '../ImageUpload';
-import WordUsageDashboard from '../analytics/WordUsageDashboard';
 import { DOLCH_LISTS } from '../../lib/wordLists';
 import { normalizeWordInput } from '../../lib/sightWords';
 
@@ -17,6 +15,7 @@ const GRADES = [
 ];
 
 const ANTHROPIC_KEYS_URL = 'https://platform.claude.com/settings/keys';
+const ANTHROPIC_WORKSPACES_URL = 'https://platform.claude.com/settings/workspaces';
 
 const FORMATS = [
   { value: 'highlighted', label: 'Highlighted', sample: <span className="highlighted-text"><span className="highlight">see</span></span> },
@@ -103,6 +102,50 @@ const WordListPicker = ({ words, onAddWords, onRemoveWord }) => {
   );
 };
 
+const ConsoleLink = ({ href, children }) => (
+  <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+    {children}
+  </a>
+);
+
+/**
+ * Where the key is kept, who else could use it, and how to limit what it
+ * could cost. Shown above the key field, so it's read before a key is saved.
+ */
+const KeyNotice = () => (
+  <div className="space-y-3 rounded-xl border-2 border-ink/20 bg-mist p-4 font-display text-base text-ink">
+    <h3 className="flex items-center gap-2 text-lg font-semibold">
+      <KeyRound size={20} aria-hidden="true" /> Where your key is kept
+    </h3>
+    <p id="key-notice-where">
+      The key is saved in this browser, on this device, until you press Remove key. The browser sends it only to
+      Anthropic, when it asks for a story. This site never receives it.
+    </p>
+    <p id="key-notice-who">
+      While it&apos;s saved, anyone using this browser can make stories billed to you, and a browser extension that
+      can read this site could copy the key. On a computer other people use, remove the key when you&apos;re done.
+    </p>
+    <p>
+      To limit what a key could cost you, set it up in the{' '}
+      <ConsoleLink href={ANTHROPIC_KEYS_URL}>Anthropic Console</ConsoleLink>:
+    </p>
+    <ul className="list-disc space-y-1 pl-6">
+      <li>
+        Make a key just for this app, and choose an expiry when you create it, such as 7 or 30 days. The expiry
+        can&apos;t be changed later, so make a new key when it runs out.
+      </li>
+      <li>
+        Create the key in a <ConsoleLink href={ANTHROPIC_WORKSPACES_URL}>workspace</ConsoleLink> of its own, and
+        give that workspace a low monthly spend limit.
+      </li>
+      <li>
+        If you think someone else has the key, delete it in the Console. Remove key here only takes it out of this
+        browser.
+      </li>
+    </ul>
+  </div>
+);
+
 /** Add or remove the grown-up's own Anthropic API key, used for AI stories. */
 const AnthropicKeySettings = ({ keyHint, onSave, onRemove }) => {
   const [draft, setDraft] = useState('');
@@ -112,123 +155,48 @@ const AnthropicKeySettings = ({ keyHint, onSave, onRemove }) => {
     if (onSave(draft)) setDraft('');
   };
 
-  return (
-    <div className="space-y-3 border-t-2 border-ink/10 pt-4">
-      <h3 className="font-display text-xl font-semibold text-ink">Anthropic API key</h3>
-      <p className="font-display text-base text-ink/70">
-        AI stories use your own Anthropic API key, and Anthropic bills your account for each one. The key is saved in this
-        browser and goes straight to Anthropic when a story is made. Signing out removes it.
-      </p>
-      {keyHint ? (
+  if (keyHint) {
+    return (
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="font-display text-base text-ink">A key ending in {keyHint} is saved in this browser.</p>
           <button type="button" onClick={onRemove} className="btn-quiet">
             <Trash2 size={18} aria-hidden="true" /> Remove key
           </button>
         </div>
-      ) : (
-        <form onSubmit={save} className="flex gap-2">
-          <label htmlFor="anthropic-key" className="sr-only">
-            Anthropic API key
-          </label>
-          <input
-            id="anthropic-key"
-            type="password"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="field"
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <button type="submit" disabled={!draft.trim()} className="btn btn-sun shrink-0">
-            Save key
-          </button>
-        </form>
-      )}
-      <p className="font-display text-sm text-ink/70">
-        Create a key in the{' '}
-        <a href={ANTHROPIC_KEYS_URL} target="_blank" rel="noopener noreferrer" className="underline">
-          Anthropic Console
-        </a>
-        .
-      </p>
-    </div>
-  );
-};
-
-/** Delete the account and its saved stories, after asking for the password again. */
-const DeleteAccount = ({ onDelete }) => {
-  const [open, setOpen] = useState(false);
-  const [password, setPassword] = useState('');
-  const [problem, setProblem] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const close = () => {
-    setOpen(false);
-    setPassword('');
-    setProblem('');
-  };
-
-  const submit = async (event) => {
-    event.preventDefault();
-    setIsDeleting(true);
-    // null when the account is gone (this closes with the signed-in view); otherwise what went wrong
-    const result = await onDelete(password);
-    setIsDeleting(false);
-    if (result) setProblem(result);
-  };
+        <KeyNotice />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-3 border-t-2 border-ink/10 pt-4">
-      <h3 className="font-display text-xl font-semibold text-ink">Delete account</h3>
-      <p className="font-display text-base text-ink/70">
-        Deletes your account and your saved stories, and links you&apos;ve shared stop working. It can&apos;t be undone.
-      </p>
-      <button type="button" onClick={() => setOpen(true)} className="btn-quiet">
-        <Trash2 size={18} aria-hidden="true" /> Delete account
-      </button>
-      {open && (
-        <Modal title="Delete your account?" onClose={close} labelledBy="delete-account-title">
-          <form onSubmit={submit} className="space-y-4">
-            <p className="font-display text-base text-ink">
-              Your account and saved stories will be deleted. Enter your password to confirm.
-            </p>
-            <div>
-              <label htmlFor="delete-account-password" className="mb-1 block font-display text-base text-ink">
-                Password
-              </label>
-              <input
-                id="delete-account-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                className="field"
-              />
-            </div>
-            {problem && (
-              <p role="alert" className="rounded-xl bg-berry/10 p-3 font-display text-base text-ink">
-                {problem}
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={close} className="btn-quiet">
-                Keep my account
-              </button>
-              <button type="submit" disabled={!password || isDeleting} className="btn btn-berry">
-                <Trash2 size={18} aria-hidden="true" /> {isDeleting ? 'Deleting…' : 'Delete account'}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+    <div className="space-y-3">
+      <KeyNotice />
+      <form onSubmit={save} className="flex flex-wrap gap-2">
+        <label htmlFor="anthropic-key" className="sr-only">
+          Anthropic API key
+        </label>
+        <input
+          id="anthropic-key"
+          type="password"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          aria-describedby="key-notice-where key-notice-who"
+          className="field min-w-0 flex-1 basis-56"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <button type="submit" disabled={!draft.trim()} className="btn btn-sun shrink-0">
+          Save key in this browser
+        </button>
+      </form>
     </div>
   );
 };
 
 /**
  * Everything a parent or teacher sets up: the words, the story options,
- * learning needs, saved stories and the account.
+ * learning needs, saved stories and the API key for AI stories.
  */
 const GrownUps = ({
   words,
@@ -245,24 +213,16 @@ const GrownUps = ({
   onStoryFormatChange,
   learningNeeds,
   onLearningNeedsChange,
-  isSignedIn,
-  userName,
   anthropicKeyHint,
   onSaveAnthropicKey,
   onRemoveAnthropicKey,
-  onDeleteAccount,
   savedStories,
-  isLoadingStories,
-  storiesError,
-  onRetryStories,
   onOpenStory,
-  onSignIn,
-  onSignOut,
   onBack,
 }) => {
   const [typed, setTyped] = useState('');
   const [addMode, setAddMode] = useState('type'); // type | upload | photo
-  const canUseAI = isSignedIn && !!anthropicKeyHint;
+  const canUseAI = !!anthropicKeyHint;
 
   const addTyped = (event) => {
     event.preventDefault();
@@ -407,13 +367,11 @@ const GrownUps = ({
                 </button>
               </div>
               <p className="mt-2 font-display text-sm text-ink/70">
-                {!isSignedIn
-                  ? 'Sign in to use AI stories.'
-                  : !canUseAI
-                    ? 'Add your Anthropic API key under Account to use AI stories.'
-                    : useAI
-                      ? 'Claude writes a new story around the words, billed to your Anthropic account.'
-                      : 'Builds a day-in-the-life story from written scenes, in this browser.'}
+                {!canUseAI
+                  ? 'Add your Anthropic API key under AI stories to use them.'
+                  : useAI
+                    ? 'Claude writes a new story around the words, billed to your Anthropic account.'
+                    : 'Builds a day-in-the-life story from written scenes, in this browser.'}
               </p>
             </fieldset>
           </div>
@@ -477,30 +435,21 @@ const GrownUps = ({
           </div>
         </Section>
 
-        <Section id="saved-title" title="Saved stories">
-          {!isSignedIn ? (
-            <p className="font-display text-base text-ink/70">Sign in to save stories and read them again on any device.</p>
-          ) : isLoadingStories ? (
-            <p className="font-display text-base text-ink/70">Loading your stories…</p>
-          ) : storiesError ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p role="alert" className="font-display text-base text-ink">
-                Your saved stories couldn&apos;t be loaded.
-              </p>
-              <button type="button" onClick={onRetryStories} className="btn-quiet">
-                Try again
-              </button>
-            </div>
-          ) : savedStories.length === 0 ? (
+        <Section
+          id="saved-title"
+          title="Saved stories"
+          description="Saved in this browser only. To move a story to another device, share it and save it from the link there."
+        >
+          {savedStories.length === 0 ? (
             <p className="font-display text-base text-ink/70">No saved stories yet. Save one from the last page of a story.</p>
           ) : (
             <ul className="divide-y-2 divide-ink/10">
               {savedStories.slice(0, 8).map((story) => (
-                <li key={story._id} className="flex items-center justify-between gap-3 py-3">
+                <li key={story.id} className="flex items-center justify-between gap-3 py-3">
                   <span className="min-w-0">
                     <span className="block truncate font-display text-lg text-ink">{story.title}</span>
                     <span className="block font-display text-sm text-ink/60">
-                      {new Date(story.createdAt).toLocaleDateString()} · {story.words?.length ?? 0} words
+                      {new Date(story.createdAt).toLocaleDateString()} · {story.words.length} words
                     </span>
                   </span>
                   <button type="button" onClick={() => onOpenStory(story)} className="btn-quiet shrink-0">
@@ -510,52 +459,17 @@ const GrownUps = ({
               ))}
             </ul>
           )}
-          {isSignedIn && (
-            <Link href="/stories" className="btn-quiet">
-              Open the story library
-            </Link>
-          )}
+          <Link href="/stories" className="btn-quiet">
+            Open the story library
+          </Link>
         </Section>
 
-        {isSignedIn && (
-          <Section
-            id="usage-title"
-            title="Word usage"
-            description="Dolch words, counted across everyone who uses this app. Other words, such as names, aren't counted."
-          >
-            <details className="group">
-              <summary className="inline-flex cursor-pointer items-center gap-2 font-display text-base text-ink">
-                <BarChart size={18} aria-hidden="true" /> Show which words come up most
-              </summary>
-              <div className="mt-4">
-                <WordUsageDashboard />
-              </div>
-            </details>
-          </Section>
-        )}
-
-        <Section id="account-title" title="Account">
-          {isSignedIn ? (
-            <>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="font-display text-base text-ink">Signed in{userName ? ` as ${userName}` : ''}.</p>
-                <button type="button" onClick={onSignOut} className="btn-quiet">
-                  <LogOut size={18} aria-hidden="true" /> Sign out
-                </button>
-              </div>
-              <AnthropicKeySettings keyHint={anthropicKeyHint} onSave={onSaveAnthropicKey} onRemove={onRemoveAnthropicKey} />
-              <DeleteAccount onDelete={onDeleteAccount} />
-            </>
-          ) : (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="font-display text-base text-ink/70">
-                An account lets you save and share stories, and make AI stories with your own Anthropic API key.
-              </p>
-              <button type="button" onClick={onSignIn} className="btn btn-sun">
-                <LogIn size={20} strokeWidth={2.5} aria-hidden="true" /> Sign in
-              </button>
-            </div>
-          )}
+        <Section
+          id="ai-title"
+          title="AI stories"
+          description="AI stories use your own Anthropic API key, and Anthropic bills your account for each one."
+        >
+          <AnthropicKeySettings keyHint={anthropicKeyHint} onSave={onSaveAnthropicKey} onRemove={onRemoveAnthropicKey} />
         </Section>
 
         {/* Behind the parent gate, so a child can't follow it out of the app. */}

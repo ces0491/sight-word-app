@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSession, signOut } from 'next-auth/react';
-import { Settings, Sparkles, Send } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Settings, Sparkles } from 'lucide-react';
 
 import AppHeader from './storybook/AppHeader';
 import WordCard from './storybook/WordCard';
@@ -8,26 +7,27 @@ import StoryReader from './storybook/StoryReader';
 import StoryShelf from './storybook/StoryShelf';
 import GrownUps from './storybook/GrownUps';
 import ParentGate, { grownUpChecked } from './storybook/ParentGate';
-import Modal from './storybook/Modal';
-import AuthDialog from './auth/AuthDialog';
+import StorySharing from './story/StorySharing';
 import { ToastContainer } from './Toast';
 
 import { generateStory } from '../lib/storyGeneration';
-import { trackWordUsage } from '../lib/WordAnalytics';
 import { STARTER_WORDS } from '../lib/wordLists';
 import {
   loadAnthropicKey,
   storeAnthropicKey,
   forgetAnthropicKey,
+  forgetAccountKeys,
   cleanAnthropicKey,
   anthropicKeyHint,
 } from '../lib/anthropicKey';
-import { addWordsWithinLimit, responseProblem } from '../lib/storyChecks';
+import { addWordsWithinLimit } from '../lib/storyChecks';
+import { addStory } from '../lib/storyLibrary';
 import { STORY_LIMITS } from '../lib/limits';
 import { useToast } from '../hooks/useToast';
 import { useSpeech } from '../hooks/useSpeech';
+import { useSavedStories } from '../hooks/useSavedStories';
 
-/** Fields the stories API accepts when saving. */
+/** The fields the story library keeps. */
 const toSavePayload = (story) => ({
   title: story.title,
   content: story.content,
@@ -47,15 +47,6 @@ const requestAiStory = async (params) => {
   const { writeAiStory } = await import('../lib/aiStory');
   return writeAiStory(params);
 };
-
-/** The signed-in account's saved stories. */
-const requestSavedStories = async () => {
-  const response = await fetch('/api/stories');
-  if (!response.ok) throw new Error(`Stories request failed: ${response.status}`);
-  return response.json();
-};
-
-const NO_STORIES = [];
 
 /** Many words on the home screen get smaller cards. */
 const LARGE_CARD_LIMIT = 12;
@@ -80,9 +71,6 @@ const loadHomeState = () => {
  * The app: story time for the child, the reader, and the grown-ups area.
  */
 const SightWordStoryGenerator = () => {
-  const { data: session } = useSession();
-  const isSignedIn = !!session?.user;
-  const userId = session?.user?.id;
   const toast = useToast();
   const speech = useSpeech();
 
@@ -96,15 +84,11 @@ const SightWordStoryGenerator = () => {
     esl: false,
     visualProcessing: false,
   });
-  // The signed-in grown-up's own Anthropic API key, for AI stories, read from
-  // this browser when the account changes (during render, as React suggests
-  // for state that follows a prop)
-  const [keyState, setKeyState] = useState({ userId: undefined, key: null });
-  if (keyState.userId !== userId) setKeyState({ userId, key: loadAnthropicKey(userId) });
-  const anthropicKey = keyState.userId === userId ? keyState.key : null;
-  // AI stories need an account and a key; without them the choice falls back to Classic
+  // The grown-up's own Anthropic API key, for AI stories, read from this browser after hydration
+  const [anthropicKey, setAnthropicKey] = useState(null);
+  // AI stories need a key; without one the choice falls back to Classic
   const [aiChosen, setUseAI] = useState(false);
-  const useAI = aiChosen && isSignedIn && !!anthropicKey;
+  const useAI = aiChosen && !!anthropicKey;
   const [includeImages, setIncludeImages] = useState(true);
   const [storyFormat, setStoryFormat] = useState('highlighted');
 
@@ -112,65 +96,25 @@ const SightWordStoryGenerator = () => {
   const [generatedStory, setGeneratedStory] = useState(null);
   const [readingStory, setReadingStory] = useState(null);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
-  // Saved stories belong to the account that loaded them, so a different account, or none, sees none
-  const [storiesState, setStoriesState] = useState({ userId: null, list: [], error: false });
-  const storiesLoaded = !!userId && storiesState.userId === userId;
-  const savedStories = storiesLoaded ? storiesState.list : NO_STORIES;
-  const [storiesReload, setStoriesReload] = useState(0);
-  const storiesError = storiesLoaded && storiesState.error;
-  const isLoadingStories = !!userId && !storiesLoaded;
-  const [isSavingStory, setIsSavingStory] = useState(false);
+  const savedStories = useSavedStories();
   // False until this tab's kept state has been read, so defaults don't overwrite it
   const [restored, setRestored] = useState(false);
 
   // Screens and dialogs
   const [view, setView] = useState('home'); // home | reader | grownups
   const [showGate, setShowGate] = useState(false);
-  const [showAuthDialog, setShowAuthDialog] = useState(false);
-  // What to carry on with once sign-in succeeds: 'save' or 'share'
-  const afterSignIn = useRef(null);
-  // Set when sign-in succeeds here, before the session reaches this component
-  const signedInHere = useRef(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [shareEmail, setShareEmail] = useState('');
-  const [isSharing, setIsSharing] = useState(false);
 
-  // Load saved stories when someone signs in, and again on "Try again"
+  // Bring back this tab's words, settings and unsaved story after a reload or a trip to the library,
+  // and the saved API key. This has to wait until after hydration: the server's render has no
+  // browser storage, and the first browser render must match it.
   useEffect(() => {
-    if (!userId) return undefined;
-    let current = true;
-    requestSavedStories()
-      .then((fetched) => {
-        if (!current) return;
-        setStoriesState((state) => {
-          // Keep stories this account saved while the list was loading, which it may not include
-          const fetchedIds = new Set(fetched.map((story) => story._id));
-          const savedMeanwhile = state.list.filter((story) => story.userId === userId && !fetchedIds.has(story._id));
-          return { userId, list: [...savedMeanwhile, ...fetched], error: false };
-        });
-      })
-      .catch((error) => {
-        console.error('Error fetching stories:', error);
-        if (current) setStoriesState({ userId, list: [], error: true });
-      });
-    return () => {
-      current = false;
-    };
-  }, [userId, storiesReload]);
-
-  const retrySavedStories = () => {
-    setStoriesState((state) => ({ ...state, userId: null }));
-    setStoriesReload((n) => n + 1);
-  };
-
-  // Bring back this tab's words, settings and unsaved story after a reload or a trip to the library.
-  // This has to wait until after hydration: the server's render has no sessionStorage, and
-  // the first browser render must match it.
-  useEffect(() => {
+    forgetAccountKeys();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- runs once, after hydration (see above)
+    setAnthropicKey(loadAnthropicKey());
     const kept = loadHomeState();
     if (kept) {
       if (Array.isArray(kept.words)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- runs once, after hydration (see above)
         setWords(addWordsWithinLimit([], kept.words.filter((w) => typeof w === 'string')).words);
       }
       if (Number.isInteger(kept.grade) && kept.grade >= 0 && kept.grade <= 3) setGrade(kept.grade);
@@ -197,8 +141,8 @@ const SightWordStoryGenerator = () => {
           learningNeeds,
           includeImages,
           storyFormat,
-          // Saved stories are in the account already
-          generatedStory: generatedStory && !generatedStory._id ? generatedStory : null,
+          // Saved stories are in the library already
+          generatedStory: generatedStory && !generatedStory.id ? generatedStory : null,
         })
       );
     } catch {
@@ -222,8 +166,8 @@ const SightWordStoryGenerator = () => {
       toast.error("That doesn't look like an API key. Paste it again without spaces.");
       return false;
     }
-    setKeyState({ userId, key });
-    if (storeAnthropicKey(userId, key)) {
+    setAnthropicKey(key);
+    if (storeAnthropicKey(key)) {
       toast.success('API key saved in this browser.');
     } else {
       toast.warning("This browser won't keep the key, so you'll need to add it again next visit.");
@@ -232,42 +176,10 @@ const SightWordStoryGenerator = () => {
   };
 
   const removeAnthropicKey = () => {
-    forgetAnthropicKey(userId);
-    setKeyState({ userId, key: null });
+    forgetAnthropicKey();
+    setAnthropicKey(null);
+    setUseAI(false);
     toast.success('API key removed from this browser.');
-  };
-
-  const handleSignOut = () => {
-    forgetAnthropicKey(userId);
-    setKeyState({ userId, key: null });
-    signedInHere.current = false;
-    signOut({ redirect: false });
-  };
-
-  /** Delete the account and its saved stories. Returns null when done, or what went wrong. */
-  const deleteAccount = async (password) => {
-    const failed = "The account couldn't be deleted. Please try again.";
-    try {
-      const response = await fetch('/api/account', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-      if (!response.ok) return await responseProblem(response, failed);
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      return failed;
-    }
-
-    forgetAnthropicKey(userId);
-    setKeyState({ userId, key: null });
-    signedInHere.current = false;
-    setStoriesState({ userId: null, list: [], error: false });
-    // The saved copy is gone with the account; an unsaved story stays in this tab
-    setGeneratedStory((current) => (current?._id ? null : current));
-    await signOut({ redirect: false });
-    toast.success('Your account and saved stories were deleted.');
-    return null;
   };
 
   const openGrownUps = () => {
@@ -292,7 +204,7 @@ const SightWordStoryGenerator = () => {
 
     try {
       let storyData;
-      if (useAI && isSignedIn && anthropicKey) {
+      if (useAI) {
         try {
           storyData = await requestAiStory({ apiKey: anthropicKey, words, grade, learningNeeds });
         } catch (aiError) {
@@ -304,7 +216,7 @@ const SightWordStoryGenerator = () => {
       }
       storyData ??= generateStory(words, grade, learningNeeds);
 
-      // Unsaved story: no _id until the stories API returns one
+      // Unsaved story: no id until it's saved to the story library
       const story = {
         title: storyData.title,
         content: storyData.content,
@@ -321,10 +233,6 @@ const SightWordStoryGenerator = () => {
 
       setGeneratedStory(story);
       openStory(story);
-
-      if (isSignedIn) {
-        await trackWordUsage(words, grade);
-      }
     } catch (error) {
       console.error('Error generating story:', error);
       toast.error('The story could not be made. Please try again.');
@@ -333,107 +241,22 @@ const SightWordStoryGenerator = () => {
     }
   };
 
-  /** Save the story being read. Returns the saved story, or null. */
-  const saveStory = useCallback(async () => {
-    if (!readingStory) return null;
-    if (readingStory._id) return readingStory;
-
-    if (!isSignedIn && !signedInHere.current) {
-      afterSignIn.current = 'save';
-      setShowAuthDialog(true);
-      return null;
+  /** Save the story being read to the story library in this browser. */
+  const saveStory = () => {
+    if (!readingStory || readingStory.id) return;
+    const { story: savedStory, problem } = addStory(toSavePayload(readingStory));
+    if (problem) {
+      toast.error(problem);
+      return;
     }
-
-    try {
-      setIsSavingStory(true);
-      const response = await fetch('/api/stories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(toSavePayload(readingStory)),
-      });
-
-      if (response.ok) {
-        const savedStory = await response.json();
-        setStoriesState((current) => ({ ...current, list: [savedStory, ...current.list] }));
-        setReadingStory(savedStory);
-        setGeneratedStory((current) => (current === readingStory ? savedStory : current));
-        toast.success('Story saved.');
-        return savedStory;
-      }
-      toast.error(await responseProblem(response, 'The story could not be saved. Please try again.'));
-      return null;
-    } catch (error) {
-      console.error('Error saving story:', error);
-      toast.error('The story could not be saved. Please try again.');
-      return null;
-    } finally {
-      setIsSavingStory(false);
-    }
-  }, [readingStory, isSignedIn, toast]);
-
-  /** Share asks for an account first, then opens the share form once signed in. */
-  const openShare = () => {
-    if (isSignedIn || signedInHere.current) {
-      setShowShareDialog(true);
-    } else {
-      afterSignIn.current = 'share';
-      setShowAuthDialog(true);
-    }
-  };
-
-  /** Carry on with the save or share that asked for sign-in. The session cookie is set by now. */
-  const handleSignedIn = () => {
-    signedInHere.current = true;
-    setShowAuthDialog(false);
-    const next = afterSignIn.current;
-    afterSignIn.current = null;
-    if (next === 'save') saveStory();
-    if (next === 'share') setShowShareDialog(true);
-  };
-
-  /** Share by email. Unsaved stories are saved first: the link points at the stored copy. */
-  const shareStory = async (event) => {
-    event.preventDefault();
-    if (!shareEmail.trim() || !readingStory) return;
-
-    try {
-      setIsSharing(true);
-      const storyToShare = await saveStory();
-      if (!storyToShare?._id) return;
-
-      const response = await fetch(`/api/stories/${storyToShare._id}/share`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: shareEmail.trim() }),
-      });
-
-      if (response.ok) {
-        toast.success(`Story shared with ${shareEmail.trim()}.`);
-        setShareEmail('');
-        setShowShareDialog(false);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        if (errorData.code === 'EMAIL_NOT_CONFIGURED') {
-          toast.warning('Email sharing is not set up on this site yet.');
-        } else {
-          toast.error(
-            response.status === 401
-              ? "You've been signed out. Sign in again, then share."
-              : errorData.message || 'The story could not be shared. Please try again.'
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Error sharing story:', error);
-      toast.error('The story could not be shared. Please try again.');
-    } finally {
-      setIsSharing(false);
-    }
+    setReadingStory(savedStory);
+    setGeneratedStory((current) => (current === readingStory ? savedStory : current));
+    toast.success('Story saved in this browser.');
   };
 
   // Stories to read again: the newest one made here, then saved ones
   const shelf = useMemo(() => {
-    const list = generatedStory && !generatedStory._id ? [generatedStory] : [];
+    const list = generatedStory && !generatedStory.id ? [generatedStory] : [];
     return [...list, ...savedStories];
   }, [generatedStory, savedStories]);
 
@@ -448,36 +271,8 @@ const SightWordStoryGenerator = () => {
           }}
         />
       )}
-      {showAuthDialog && (
-        <AuthDialog
-          onClose={() => {
-            setShowAuthDialog(false);
-            afterSignIn.current = null;
-          }}
-          onSuccess={handleSignedIn}
-        />
-      )}
-      {showShareDialog && (
-        <Modal title="Share this story" onClose={() => setShowShareDialog(false)} labelledBy="share-title">
-          <form onSubmit={shareStory} className="space-y-4">
-            <label htmlFor="share-email" className="block font-display text-base text-ink">
-              Email address
-            </label>
-            <input
-              id="share-email"
-              type="email"
-              value={shareEmail}
-              onChange={(e) => setShareEmail(e.target.value)}
-              className="field"
-              placeholder="someone@example.com"
-              autoComplete="email"
-            />
-            <p className="font-display text-sm text-ink/70">They get a link to read the story. It&apos;s saved to your account first.</p>
-            <button type="submit" disabled={!shareEmail.trim() || isSharing} className="btn btn-sun w-full">
-              <Send size={20} strokeWidth={2.5} aria-hidden="true" /> {isSharing ? 'Sharing…' : 'Share'}
-            </button>
-          </form>
-        </Modal>
+      {showShareDialog && readingStory && (
+        <StorySharing story={readingStory} onClose={() => setShowShareDialog(false)} />
       )}
       <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
     </>
@@ -492,9 +287,8 @@ const SightWordStoryGenerator = () => {
           actions={{
             onSave: saveStory,
             onPrint: () => window.print(),
-            onShare: openShare,
-            isSaving: isSavingStory,
-            isSaved: !!readingStory._id,
+            onShare: () => setShowShareDialog(true),
+            isSaved: !!readingStory.id,
           }}
         />
         {dialogs}
@@ -529,19 +323,11 @@ const SightWordStoryGenerator = () => {
             onStoryFormatChange={setStoryFormat}
             learningNeeds={learningNeeds}
             onLearningNeedsChange={setLearningNeeds}
-            isSignedIn={isSignedIn}
-            userName={session?.user?.name}
             anthropicKeyHint={anthropicKey ? anthropicKeyHint(anthropicKey) : null}
             onSaveAnthropicKey={saveAnthropicKey}
             onRemoveAnthropicKey={removeAnthropicKey}
-            onDeleteAccount={deleteAccount}
             savedStories={savedStories}
-            isLoadingStories={isLoadingStories}
-            storiesError={storiesError}
-            onRetryStories={retrySavedStories}
             onOpenStory={openStory}
-            onSignIn={() => setShowAuthDialog(true)}
-            onSignOut={handleSignOut}
             onBack={() => setView('home')}
           />
         </main>
