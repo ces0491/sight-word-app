@@ -24,7 +24,7 @@ Short illustrated stories built from the sight words a child is learning, to rea
 - **Stories that use the words**: a Classic story uses each Dolch word on its own, and as many of a longer list as its scenes and up to ten extra sentences allow. The word hunt and highlights use only the words that are on the page
 - **Two story makers**:
   - **Classic** builds a day-in-the-life story from written scenes, in the browser, for free.
-  - **AI** writes a story with Claude Haiku 4.5, using the grown-up's own Anthropic API key, added under AI stories. Anthropic bills their account for each story. The key stays in that browser until it's removed, and goes from the browser straight to Anthropic. If AI generation fails, the app falls back to Classic.
+  - **AI** writes a story with Claude Haiku 4.5, using the grown-up's own Anthropic API key, added under AI stories. Anthropic bills their account for each story. The key stays in that browser until it's removed, and goes from the browser straight to Anthropic. Above the key field, the app says so, says who else could use the key, and suggests a key just for the app that expires, made in a workspace with a low monthly spend limit. If AI generation fails, the app falls back to Classic.
 - **Reading level** from Kindergarten to Grade 3, the span of the Dolch lists. AI stories are written for it; Classic stories are the same at every level and save it as a label for sorting the library.
 - **Sight word style** (highlighted, bold, underlined or plain) and pictures on or off
 - **Learning needs**: settings that change how a story reads (below)

@@ -76,13 +76,12 @@ Reports are confirmed, checked and fixed, and the fix is released before anythin
 3. **Reading storage and links**: saved stories and shared stories are parsed with `savedStorySchema` and `sharedStorySchema` ([`lib/validation.js`](lib/validation.js)), which apply the story limits and drop unknown fields. Saved entries that don't parse aren't shown.
 4. **Share links** ([`lib/shareLink.js`](lib/shareLink.js)): the story is compressed into the part of the link after `#`, which browsers don't send to the server. Learning needs, which describe the child, are left out. A link refuses data over 100,000 characters and stops unpacking past 200,000 bytes, so a crafted link can't make the browser expand a huge payload. A link can't be revoked: it holds the story itself.
 5. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
-6. **Anthropic API keys**: AI stories use each grown-up's own key. It is kept in their browser's localStorage until they remove it, and sent from the browser straight to Anthropic ([`lib/anthropicKey.js`](lib/anthropicKey.js), [`lib/aiStory.js`](lib/aiStory.js)). Anyone using the same browser can use it. Keys saved per account by earlier versions are removed when the app loads.
+6. **Anthropic API keys**: AI stories use each grown-up's own key. It is kept in their browser's localStorage until they remove it, and sent from the browser straight to Anthropic ([`lib/anthropicKey.js`](lib/anthropicKey.js), [`lib/aiStory.js`](lib/aiStory.js)). Anyone using the same browser can use it. A notice above the key field says this before a key is saved, and suggests a key just for the app that expires, made in a workspace with a low monthly spend limit, so a copied key is worth little. Keys saved per account by earlier versions are removed when the app loads.
 7. **Security headers**: a Content-Security-Policy on every page, set in [`next.config.js`](next.config.js). Scripts run only from this site and the exact jsDelivr paths of the OCR engine, so an injected inline script doesn't run. Requests can go only to this site, the Anthropic API and the OCR language data; the policy doesn't cover a script navigating the page to another site. Also `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: DENY`. `style-src` allows inline styles, because server-rendered markup carries style attributes.
 
 ### Areas for Improvement
 
-- [ ] The API key and saved stories are in localStorage, where any script running on the site can read them. The Content-Security-Policy is what keeps other scripts out
-- [ ] No error monitoring; errors reach only the browser console
+- [ ] The API key and saved stories are in localStorage, where any script running on the site can read them, including a browser extension allowed on the site. The Content-Security-Policy keeps out other scripts, but extensions aren't bound by it
 
 ## Security Headers
 

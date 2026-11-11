@@ -10,7 +10,6 @@ The app is ready for a public launch when each of these holds on [sightwords.she
 
 - [ ] A privacy page says what stays in the browser (saved stories with their learning needs, the API key), what a share link carries, which outside services are involved, how to remove things and who to contact. The Grown-ups area links to it.
 - [ ] Ces has checked the privacy page against POPIA's rules on children's and health information, and the app does what the page says.
-- [ ] Browser errors reach an error-monitoring service that alerts Ces. Events carry no story text or Anthropic API keys, the Content-Security-Policy allows the service, and the privacy page names it.
 - [ ] The checks under "Checks after deploying" in [`docs/PRODUCTION_READY.md`](docs/PRODUCTION_READY.md) pass on the live site, including an AI story made with Ces's own key.
 - [ ] CI passes on `main`: lint, tests, build and the production `npm audit`.
 - [ ] [`README.md`](README.md), [`SECURITY.md`](SECURITY.md) and [`docs/PRODUCTION_READY.md`](docs/PRODUCTION_READY.md) describe the app as shipped, and the readiness status reads ready.
@@ -20,6 +19,7 @@ The app is ready for a public launch when each of these holds on [sightwords.she
 - Accounts, a database and server code. Stories stay in the browser that saved them, a share link carries its story, and the app sends no email. [`docs/ACCOUNTS.md`](docs/ACCOUNTS.md) records the version with accounts and what bringing them back would take.
 - Syncing stories between devices. A story moves by sharing it and saving it from the link.
 - Revoking share links. A link holds the story itself.
+- Error monitoring. Errors stay in the browser console, so the app adds no outside service for them.
 - Browsers older than Safari 16.4, Chrome 111 and Firefox 128, the floor Tailwind CSS 4 sets.
 - A site-wide Anthropic API key. AI stories stay on each grown-up's own key.
 - Accounts for children. Children use the app with a grown-up.
@@ -38,3 +38,4 @@ Ces decides when each item holds. Once they all do, the status in [`docs/PRODUCT
 - 2026-11-06: the email, error-monitoring and backup items also bring the privacy page up to date
 - 2026-11-06: email goes through Resend, as in Sheet Solved's other apps
 - 2026-11-10: no accounts, database or email. Stories stay in the browser and share links carry the story, so the write-limit, email, password-reset, email-verification and backup items go
+- 2026-11-11: error monitoring goes, so the app adds no outside service for it

@@ -2,11 +2,11 @@
 
 Until November 2026 the app had accounts, a MongoDB database and server code. Now saved stories stay in the browser and a share link carries its story. This page records what that version had, the launch plan it was following, and what bringing accounts back would take.
 
-The last commit with accounts is `caa73d1` on `main` (the merge of pull request #12). To read or restore a file from it:
+The last commit with accounts is `caa73d1` on `main` (the merge of pull request #12), tagged `accounts-final`. To read or restore a file from it:
 
 ```bash
-git show caa73d1:lib/authOptions.js
-git checkout caa73d1 -- pages/api
+git show accounts-final:lib/authOptions.js
+git checkout accounts-final -- pages/api
 ```
 
 ## Why they went

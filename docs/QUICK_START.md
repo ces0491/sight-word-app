@@ -35,7 +35,7 @@ Open [http://localhost:3000](http://localhost:3000). From there:
 2. **Choose words**: tap **Grown-ups**, answer the sum, and type words or pick them from the Dolch lists.
 3. **Save a story**: tap **Save** on the last page of a story. Saved stories are kept in this browser, in the story library.
 4. **Share a story**: tap **Share** on the last page and copy the link. Open it in a private window to see what someone else gets.
-5. **Try AI stories**: add your own Anthropic API key under Grown-ups → AI stories, then choose **AI** under Story maker.
+5. **Try AI stories**: add your own Anthropic API key under Grown-ups → AI stories, then choose **AI** under Story maker. The key is saved in the browser, so use one made just for the app that expires, in a workspace with a low monthly spend limit. The notice above the key field explains why.
 
 ---
 

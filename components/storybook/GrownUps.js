@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Upload, Camera, Plus, Trash2, BookOpen } from 'lucide-react';
+import { ArrowLeft, Upload, Camera, Plus, Trash2, BookOpen, KeyRound } from 'lucide-react';
 import WordCard from './WordCard';
 import ImageUpload from '../ImageUpload';
 import { DOLCH_LISTS } from '../../lib/wordLists';
@@ -15,6 +15,7 @@ const GRADES = [
 ];
 
 const ANTHROPIC_KEYS_URL = 'https://platform.claude.com/settings/keys';
+const ANTHROPIC_WORKSPACES_URL = 'https://platform.claude.com/settings/workspaces';
 
 const FORMATS = [
   { value: 'highlighted', label: 'Highlighted', sample: <span className="highlighted-text"><span className="highlight">see</span></span> },
@@ -101,6 +102,50 @@ const WordListPicker = ({ words, onAddWords, onRemoveWord }) => {
   );
 };
 
+const ConsoleLink = ({ href, children }) => (
+  <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+    {children}
+  </a>
+);
+
+/**
+ * Where the key is kept, who else could use it, and how to limit what it
+ * could cost. Shown above the key field, so it's read before a key is saved.
+ */
+const KeyNotice = () => (
+  <div className="space-y-3 rounded-xl border-2 border-ink/20 bg-mist p-4 font-display text-base text-ink">
+    <h3 className="flex items-center gap-2 text-lg font-semibold">
+      <KeyRound size={20} aria-hidden="true" /> Where your key is kept
+    </h3>
+    <p id="key-notice-where">
+      The key is saved in this browser, on this device, until you press Remove key. The browser sends it only to
+      Anthropic, when it asks for a story. This site never receives it.
+    </p>
+    <p id="key-notice-who">
+      While it&apos;s saved, anyone using this browser can make stories billed to you, and a browser extension that
+      can read this site could copy the key. On a computer other people use, remove the key when you&apos;re done.
+    </p>
+    <p>
+      To limit what a key could cost you, set it up in the{' '}
+      <ConsoleLink href={ANTHROPIC_KEYS_URL}>Anthropic Console</ConsoleLink>:
+    </p>
+    <ul className="list-disc space-y-1 pl-6">
+      <li>
+        Make a key just for this app, and choose an expiry when you create it, such as 7 or 30 days. The expiry
+        can&apos;t be changed later, so make a new key when it runs out.
+      </li>
+      <li>
+        Create the key in a <ConsoleLink href={ANTHROPIC_WORKSPACES_URL}>workspace</ConsoleLink> of its own, and
+        give that workspace a low monthly spend limit.
+      </li>
+      <li>
+        If you think someone else has the key, delete it in the Console. Remove key here only takes it out of this
+        browser.
+      </li>
+    </ul>
+  </div>
+);
+
 /** Add or remove the grown-up's own Anthropic API key, used for AI stories. */
 const AnthropicKeySettings = ({ keyHint, onSave, onRemove }) => {
   const [draft, setDraft] = useState('');
@@ -110,41 +155,41 @@ const AnthropicKeySettings = ({ keyHint, onSave, onRemove }) => {
     if (onSave(draft)) setDraft('');
   };
 
-  return (
-    <div className="space-y-3">
-      {keyHint ? (
+  if (keyHint) {
+    return (
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="font-display text-base text-ink">A key ending in {keyHint} is saved in this browser.</p>
           <button type="button" onClick={onRemove} className="btn-quiet">
             <Trash2 size={18} aria-hidden="true" /> Remove key
           </button>
         </div>
-      ) : (
-        <form onSubmit={save} className="flex gap-2">
-          <label htmlFor="anthropic-key" className="sr-only">
-            Anthropic API key
-          </label>
-          <input
-            id="anthropic-key"
-            type="password"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="field"
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <button type="submit" disabled={!draft.trim()} className="btn btn-sun shrink-0">
-            Save key
-          </button>
-        </form>
-      )}
-      <p className="font-display text-sm text-ink/70">
-        On a computer other people use, remove the key when you&apos;re done. Create a key in the{' '}
-        <a href={ANTHROPIC_KEYS_URL} target="_blank" rel="noopener noreferrer" className="underline">
-          Anthropic Console
-        </a>
-        .
-      </p>
+        <KeyNotice />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <KeyNotice />
+      <form onSubmit={save} className="flex flex-wrap gap-2">
+        <label htmlFor="anthropic-key" className="sr-only">
+          Anthropic API key
+        </label>
+        <input
+          id="anthropic-key"
+          type="password"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          aria-describedby="key-notice-where key-notice-who"
+          className="field min-w-0 flex-1 basis-56"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <button type="submit" disabled={!draft.trim()} className="btn btn-sun shrink-0">
+          Save key in this browser
+        </button>
+      </form>
     </div>
   );
 };
@@ -422,7 +467,7 @@ const GrownUps = ({
         <Section
           id="ai-title"
           title="AI stories"
-          description="AI stories use your own Anthropic API key, and Anthropic bills your account for each one. The key stays in this browser until you remove it, and goes straight to Anthropic when a story is made."
+          description="AI stories use your own Anthropic API key, and Anthropic bills your account for each one."
         >
           <AnthropicKeySettings keyHint={anthropicKeyHint} onSave={onSaveAnthropicKey} onRemove={onRemoveAnthropicKey} />
         </Section>

@@ -260,7 +260,7 @@ describe('Anthropic API key', () => {
     expect(screen.getByText('Add your Anthropic API key under AI stories to use them.')).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Anthropic API key'), `  ${testKey} `);
-    await user.click(screen.getByRole('button', { name: 'Save key' }));
+    await user.click(screen.getByRole('button', { name: 'Save key in this browser' }));
 
     expect(screen.getByRole('button', { name: 'AI' })).toBeEnabled();
     expect(screen.getByText('A key ending in abcd is saved in this browser.')).toBeInTheDocument();
@@ -270,6 +270,33 @@ describe('Anthropic API key', () => {
 
     expect(screen.getByRole('button', { name: 'AI' })).toBeDisabled();
     expect(loadAnthropicKey()).toBeNull();
+  });
+
+  it('says where the key is kept and how to limit it, before and after a key is saved', async () => {
+    const user = userEvent.setup();
+    render(<SightWordStoryGenerator />);
+    await openGrownUps(user);
+
+    const field = screen.getByLabelText('Anthropic API key');
+    expect(screen.getByRole('heading', { name: 'Where your key is kept' })).toBeInTheDocument();
+    expect(field).toHaveAccessibleDescription(/saved in this browser, on this device, until you press Remove key/);
+    expect(field).toHaveAccessibleDescription(/anyone using this browser can make stories billed to you/);
+    expect(screen.getByText(/choose an expiry when you create it/)).toBeInTheDocument();
+    expect(screen.getByText(/give that workspace a low monthly spend limit/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Anthropic Console' })).toHaveAttribute(
+      'href',
+      'https://platform.claude.com/settings/keys'
+    );
+    expect(screen.getByRole('link', { name: 'workspace' })).toHaveAttribute(
+      'href',
+      'https://platform.claude.com/settings/workspaces'
+    );
+
+    await user.type(field, testKey);
+    await user.click(screen.getByRole('button', { name: 'Save key in this browser' }));
+
+    expect(screen.getByRole('heading', { name: 'Where your key is kept' })).toBeInTheDocument();
+    expect(screen.getByText(/Remove key here only takes it out of this browser/)).toBeInTheDocument();
   });
 
   it('uses a key saved earlier in this browser', async () => {

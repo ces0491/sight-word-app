@@ -6,7 +6,7 @@ import GrownUpPage from '../components/storybook/GrownUpPage';
 const PRIVACY_CONTACT = 'cesaire@sheetsolved.com';
 
 /** Change this whenever the page's content changes. */
-const LAST_UPDATED = '10 November 2026';
+const LAST_UPDATED = '11 November 2026';
 
 const Section = ({ id, title, children }) => (
   <section aria-labelledby={id} className="space-y-3 rounded-2xl border-2 border-ink/15 bg-paper p-5 sm:p-6">
@@ -87,9 +87,10 @@ export default function PrivacyPage() {
             <li>Photos you scan for words. They&apos;re read on your device and never uploaded.</li>
           </List>
           <p>
-            Anyone else who uses this browser can open the saved stories and use the key. The grown-up check keeps a
-            young child out, but it isn&apos;t a lock. On a computer other people use, remove the key when you&apos;re
-            done. The app sets no cookies.
+            Anyone else who uses this browser can open the saved stories and use the key, and a browser extension that
+            can read this site could copy them. The grown-up check keeps a young child out, but it isn&apos;t a lock. On
+            a computer other people use, remove the key when you&apos;re done. Grown-ups → AI stories explains how to
+            make a key that expires, in a workspace with a monthly spend limit. The app sets no cookies.
           </p>
         </Section>
 
@@ -134,7 +135,10 @@ export default function PrivacyPage() {
         <Section id="privacy-rights" title="Your choices">
           <List>
             <li>Read, edit and delete saved stories in the story library.</li>
-            <li>Remove your API key under Grown-ups → AI stories.</li>
+            <li>
+              Remove your API key under Grown-ups → AI stories. That takes it out of this browser; to stop the key
+              working anywhere, delete it in the Anthropic Console.
+            </li>
             <li>Clear this site&apos;s data in your browser&apos;s settings to remove everything the app keeps there.</li>
             <li>
               With any question about your information, email <ContactLink />.
