@@ -29,11 +29,10 @@ const NEEDS = [
  *
  * @param {object} props
  * @param {object} [props.story] - The story to edit; none for a new story
- * @param {(story: object) => Promise<void>} props.onSave
+ * @param {(story: object) => Promise<void> | void} props.onSave
  * @param {() => void} props.onCancel
- * @param {string} [props.notice] - Shown above the form, e.g. that the session ended
  */
-const StoryEditor = ({ story, onSave, onCancel, notice }) => {
+const StoryEditor = ({ story, onSave, onCancel }) => {
   const initial = useMemo(
     () => ({
       title: story?.title ?? '',
@@ -108,11 +107,6 @@ const StoryEditor = ({ story, onSave, onCancel, notice }) => {
         </button>
       </div>
 
-      {notice && (
-        <p role="status" className="rounded-xl bg-sun/40 p-3 text-ink">
-          {notice}
-        </p>
-      )}
       {problem && (
         <p role="alert" className="rounded-xl bg-berry/15 p-3 text-ink">
           {problem}

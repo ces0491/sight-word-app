@@ -47,15 +47,15 @@ describe('StoryEditor', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it("shows the server's reason when saving fails", async () => {
+  it('shows why saving failed', async () => {
     const user = userEvent.setup();
     jest.spyOn(console, 'error').mockImplementation(() => {});
-    const onSave = jest.fn().mockRejectedValue(new Error("You've been signed out. Sign in again in another tab, then try again."));
+    const onSave = jest.fn().mockRejectedValue(new Error('This browser has no room for more stories. Delete some from the story library, then try again.'));
     render(<StoryEditor story={story} onSave={onSave} onCancel={() => {}} />);
 
     await user.click(screen.getByRole('button', { name: 'Save story' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent("You've been signed out.");
+    expect(await screen.findByRole('alert')).toHaveTextContent('This browser has no room for more stories.');
   });
 
   it('names its icon buttons and cleans added words', async () => {

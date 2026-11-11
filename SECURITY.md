@@ -2,12 +2,10 @@
 
 ## Supported Versions
 
-These versions get security updates:
-
 | Version | Supported |
 | --- | --- |
-| `main` and 1.1.x | Yes |
-| < 1.1 | No |
+| `main` | Yes |
+| Earlier versions, which had accounts and a server | No |
 
 ## Reporting a Vulnerability
 
@@ -19,7 +17,7 @@ Use GitHub's private vulnerability reporting: [report a vulnerability](https://g
 
 ### What to Include
 
-- **Type of vulnerability** (e.g., query injection, XSS, authentication bypass)
+- **Type of vulnerability** (e.g., XSS, a share link that breaks the reader)
 - **Location** (file path, URL, or component)
 - **Steps to reproduce** the issue
 - **Potential impact**
@@ -28,17 +26,18 @@ Use GitHub's private vulnerability reporting: [report a vulnerability](https://g
 ### Example Report
 
 ```text
-Subject: [SECURITY] Query operator accepted in sign-in
+Subject: [SECURITY] Script runs from a share link
 
 Steps to Reproduce:
-1. Open /auth/signin
-2. Send {"email": {"$ne": null}, "password": "x"} as the sign-in body
+1. Make a share link for a story titled <img src=x onerror=alert(1)>
+2. Open the link
 
 Impact:
-An attacker could sign in without knowing an email address.
+Code from a link would run in the reader's browser, where it could read
+their saved stories and Anthropic API key.
 
 Suggested Fix:
-Check that the email is a string before it reaches the query.
+Render the title as text.
 ```
 
 ## Response and Disclosure
@@ -51,88 +50,43 @@ Reports are confirmed, checked and fixed, and the fix is released before anythin
 
 ### For Administrators
 
-1. **Keep software updated**
-   - Update dependencies regularly
-   - Watch the repository on GitHub for security advisories
-
-2. **Secure your environment**
-   - Use strong, unique passwords
-   - Turn on two-factor authentication for the GitHub, Vercel and MongoDB Atlas accounts
-   - Keep secrets in environment variables; `.env.local` is git-ignored and stays out of version control
-
-3. **Rotate credentials**
-   - Change database passwords regularly
-   - Change `NEXTAUTH_SECRET` if it may have leaked; this signs everyone out
-
-4. **Database**
-   - Restrict the Atlas IP access list if the host has fixed outbound IPs
-   - Use TLS for database connections
-   - Give the database user only the permissions the app needs
-
-5. **Email**
-   - Give the Resend API key the narrowest permission that can send, restricted to the sending domain
-   - Keep the key in the hosting environment only; it can send email as the app
+- Update dependencies regularly, and watch the repository on GitHub for security advisories
+- Turn on two-factor authentication for the GitHub and Vercel accounts: whoever controls either can change what the site serves
 
 ### For Developers
 
 1. **Code**
-   - Validate request bodies with the Zod schemas in [`lib/validation.js`](lib/validation.js) before they reach a query. Mongoose passes query operators such as `$regex` through, so an unvalidated `{ "email": { "$regex": "^a" } }` becomes part of the query
    - Render user text as React text, never as HTML
-   - Rate-limit endpoints that send email or check passwords ([`lib/rateLimit.js`](lib/rateLimit.js))
+   - Treat anything read from browser storage or a share link as untrusted: parse it with the schemas in [`lib/validation.js`](lib/validation.js)
+   - A new outside service the browser talks to needs adding to the Content-Security-Policy and naming on the privacy page
 
-2. **Authentication**
-   - Use bcrypt with salt rounds ≥ 10
-   - Leave session and JWT handling to NextAuth ([`lib/authOptions.js`](lib/authOptions.js))
-
-3. **Dependencies**
+2. **Dependencies**
    - Run `npm audit` regularly
    - Review dependencies before adding them
 
-4. **Testing**
-   - Test authentication, authorization and input validation
+3. **Testing**
+   - Test what the app reads from storage and links, as well as what it writes
 
 ## Known Security Considerations
 
 ### Current Implementation
 
-1. **Password storage**: bcrypt with 10 salt rounds.
-2. **Sessions**: JWT-based with NextAuth. API routes read the session with `getServerSession`.
-3. **Input validation**: Zod schemas on registration, account deletion, the story, share and analytics routes, and AI story input ([`lib/validation.js`](lib/validation.js)), checked before any query. Unknown fields are dropped, so clients can't set `userId`, `shareToken` or `sharedWith`.
-   - Registration: names of up to 60 letters, spaces, apostrophes, hyphens and full stops (they appear in share emails), passwords of 8 to 72 bytes, and emails stored lower-cased and looked up case-insensitively.
-4. **Story rendering**: story text is rendered as React text, never as HTML, wherever it came from (scene generator, AI, database).
-5. **Share links**: a random 256-bit token per story, compared in constant time, created once even when two shares start together. Wrong tokens and missing stories get the same 404. The owner can stop sharing from the story library, which removes the token. The shared story leaves out the learning needs, which describe the child.
-6. **Share email**: user text is HTML-escaped, and line breaks are removed from the subject.
-7. **Rate limiting**, counted in MongoDB ([`lib/limits.js`](lib/limits.js)):
-   - Registration, per IP address
-   - Sign-in, per IP address and per email address (stored hashed). Someone who knows an address can use up its attempts and hold its owner off for up to 15 minutes
-   - Story saves and edits (counted together), share emails, word-usage updates and account deletion, per account
-   - Saved stories, capped per account so one account can't fill the database
-8. **Word usage** is shared by every signed-in teacher, so it counts Dolch words only: other words, such as a child's name, never reach it.
-9. **Sign-in redirects**: after sign-in, the `callbackUrl` is followed only if it resolves to a page on this site ([`lib/safeRedirect.js`](lib/safeRedirect.js)). A prefix check isn't enough, because URL parsing drops tabs and turns `/<tab>/evil.example` into another site.
-10. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
-11. **Anthropic API keys**: AI stories use each grown-up's own key. It is kept in their browser's localStorage under their account id, removed on sign-out, and sent from the browser straight to Anthropic; the app's server never receives it ([`lib/anthropicKey.js`](lib/anthropicKey.js), [`lib/aiStory.js`](lib/aiStory.js)).
-12. **Account deletion**: asks for the password again, then deletes the account and its saved stories ([`pages/api/account.js`](pages/api/account.js)).
-13. **CSRF**: NextAuth protects its own auth routes. The session cookie is `SameSite=Lax`, so other sites' pages can't send it with the app's API requests.
-14. **Security headers**: a Content-Security-Policy on every page, set in [`next.config.js`](next.config.js). Scripts run only from this site and the exact jsDelivr paths of the OCR engine, so an injected inline script doesn't run. Requests can go only to this site, the Anthropic API and the OCR language data; the policy doesn't cover a script navigating the page to another site. Also `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: DENY`. `style-src` allows inline styles, because server-rendered markup carries style attributes.
+1. **No server-side data**: there are no accounts, no database and no API routes. Every page is static, and saved stories and the API key stay in the browser.
+2. **Story rendering**: story text is rendered as React text, never as HTML, wherever it came from (scene generator, AI, browser storage, a share link).
+3. **Reading storage and links**: saved stories and shared stories are parsed with `savedStorySchema` and `sharedStorySchema` ([`lib/validation.js`](lib/validation.js)), which apply the story limits and drop unknown fields. Saved entries that don't parse aren't shown.
+4. **Share links** ([`lib/shareLink.js`](lib/shareLink.js)): the story is compressed into the part of the link after `#`, which browsers don't send to the server. Learning needs, which describe the child, are left out. A link refuses data over 100,000 characters and stops unpacking past 200,000 bytes, so a crafted link can't make the browser expand a huge payload. A link can't be revoked: it holds the story itself.
+5. **AI prompt input**: words are restricted to letters, apostrophes and hyphens before they reach the prompt.
+6. **Anthropic API keys**: AI stories use each grown-up's own key. It is kept in their browser's localStorage until they remove it, and sent from the browser straight to Anthropic ([`lib/anthropicKey.js`](lib/anthropicKey.js), [`lib/aiStory.js`](lib/aiStory.js)). Anyone using the same browser can use it. Keys saved per account by earlier versions are removed when the app loads.
+7. **Security headers**: a Content-Security-Policy on every page, set in [`next.config.js`](next.config.js). Scripts run only from this site and the exact jsDelivr paths of the OCR engine, so an injected inline script doesn't run. Requests can go only to this site, the Anthropic API and the OCR language data; the policy doesn't cover a script navigating the page to another site. Also `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: DENY`. `style-src` allows inline styles, because server-rendered markup carries style attributes.
 
 ### Areas for Improvement
 
-- [ ] Sessions can't be revoked: a copied session cookie keeps working until it expires (30 days), even after sign-out or account deletion
-- [ ] No email verification at registration
-- [ ] No audit logging
-- [ ] No error monitoring; errors reach only the server logs
+- [ ] The API key and saved stories are in localStorage, where any script running on the site can read them. The Content-Security-Policy is what keeps other scripts out
+- [ ] No error monitoring; errors reach only the browser console
 
 ## Security Headers
 
 The headers are set in `headers()` in [`next.config.js`](next.config.js), and [`test/config/securityHeaders.test.js`](test/config/securityHeaders.test.js) checks the policy. A new external service the browser talks to needs adding to `connect-src` (and `script-src` if it serves code), or the browser blocks it.
-
-## Environment Checklist
-
-- [ ] Secrets in environment variables
-- [ ] Different credentials for development and production
-- [ ] A long random `NEXTAUTH_SECRET` (`openssl rand -base64 32`)
-- [ ] Database connection over TLS
-- [ ] A Resend API key restricted to the sending domain
 
 ## Contact
 
@@ -140,4 +94,4 @@ For security concerns, use [private vulnerability reporting](https://github.com/
 
 ---
 
-Last updated: 2026-11-06
+Last updated: 2026-11-10

@@ -28,7 +28,6 @@ Contributors are expected to:
 
 - Node.js 24 (the version in `engines` in `package.json`)
 - npm
-- MongoDB (local or Atlas account)
 - Git
 
 ### Setup for Development
@@ -47,23 +46,15 @@ Contributors are expected to:
    npm install
    ```
 
-3. **Set up environment variables**
-
-   ```bash
-   # Copy the example environment file
-   cp .env.example .env.local
-
-   # Edit .env.local with your actual values
-   # See .env.example for required variables
-   ```
-
-4. **Run the development server**
+3. **Run the development server**
 
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
+   The app has no database and needs no environment variables.
+
+4. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Development Workflow
@@ -179,9 +170,9 @@ Tests use Jest and React Testing Library, and go in:
 
 - `lib/__tests__/` for library functions
 - `components/__tests__/` for components
-- `test/api/` for API routes (not under `pages/`, where Next.js would treat them as routes)
+- `test/pages/` for pages (not under `pages/`, where Next.js would treat them as routes)
 
-API route tests mock the database, session and external services; [`test/apiTestUtils.js`](test/apiTestUtils.js) has request and response stand-ins. Add `/** @jest-environment node */` at the top of server-side tests.
+The story library and share links run for real in tests: jsdom provides `localStorage`, and [`jest.setup.js`](jest.setup.js) adds the compression and text-encoding APIs that jsdom leaves out.
 
 ```javascript
 import { findUsedWords } from '../sightWords';

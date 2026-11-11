@@ -1,5 +1,4 @@
 import { Andika, Fredoka } from 'next/font/google';
-import { SessionProvider } from 'next-auth/react';
 import '../styles/globals.css';
 import '../styles/learningAdaptations.css';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -8,15 +7,13 @@ import ErrorBoundary from '../components/ErrorBoundary';
 const andika = Andika({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-andika', display: 'swap' });
 const fredoka = Fredoka({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-fredoka', display: 'swap' });
 
-function MyApp({ Component, pageProps: { session, ...pageProps } }) {
+function MyApp({ Component, pageProps }) {
   return (
-    <SessionProvider session={session}>
-      <ErrorBoundary>
-        <div className={`${andika.variable} ${fredoka.variable} min-h-screen`}>
-          <Component {...pageProps} />
-        </div>
-      </ErrorBoundary>
-    </SessionProvider>
+    <ErrorBoundary>
+      <div className={`${andika.variable} ${fredoka.variable} min-h-screen`}>
+        <Component {...pageProps} />
+      </div>
+    </ErrorBoundary>
   );
 }
 

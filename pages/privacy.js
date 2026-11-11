@@ -1,17 +1,12 @@
 import React from 'react';
 import Head from 'next/head';
 import GrownUpPage from '../components/storybook/GrownUpPage';
-import { RATE_LIMITS } from '../lib/limits';
 
-/** Who answers privacy requests. Also on sheetsolved.com. */
+/** Who answers privacy questions. Also on sheetsolved.com. */
 const PRIVACY_CONTACT = 'cesaire@sheetsolved.com';
 
 /** Change this whenever the page's content changes. */
-const LAST_UPDATED = '6 November 2026';
-
-/** A rate-limit count is deleted when its window ends, so the longest window is how long one can last. */
-const longestWindowHours = Math.max(...Object.values(RATE_LIMITS).map(({ windowMs }) => windowMs)) / (60 * 60 * 1000);
-const COUNT_LIFETIME = longestWindowHours === 1 ? 'an hour' : `${longestWindowHours} hours`;
+const LAST_UPDATED = '10 November 2026';
 
 const Section = ({ id, title, children }) => (
   <section aria-labelledby={id} className="space-y-3 rounded-2xl border-2 border-ink/15 bg-paper p-5 sm:p-6">
@@ -38,9 +33,10 @@ const ContactLink = () => (
 
 /**
  * What the app keeps, where it goes and how to remove it. Keep this in step
- * with the code: the models in models/, browser storage in lib/anthropicKey.js,
+ * with the code: browser storage in lib/storyLibrary.js, lib/anthropicKey.js,
  * components/SightWordStoryGenerator.js and components/storybook/ParentGate.js,
- * and the outside services allowed in next.config.js.
+ * share links in lib/shareLink.js, and the outside services allowed in
+ * next.config.js.
  */
 export default function PrivacyPage() {
   return (
@@ -50,93 +46,72 @@ export default function PrivacyPage() {
       </Head>
       <div className="space-y-6 text-base leading-relaxed text-ink">
         <p>
-          Sight Word Stories is made by Sheet Solved, which is responsible for the information the app keeps. This page
-          says what that is, where it goes and how to remove it. Questions go to <ContactLink />.
+          Sight Word Stories is made by Sheet Solved. It has no accounts and no database: the stories you make and save
+          stay in your browser. This page says what goes where and how to remove it. Questions go to <ContactLink />.
         </p>
         <p className="text-ink/70">Last updated {LAST_UPDATED}.</p>
 
         <Section id="privacy-children" title="Children">
           <p>
-            Children use the app with a grown-up and never have accounts. The app doesn&apos;t ask for a child&apos;s
-            name, age or school. Two things a grown-up saves can still be about a child:
+            Children use the app with a grown-up. The app doesn&apos;t ask for a child&apos;s name, age or school. Two
+            things a grown-up chooses can still be about a child:
           </p>
           <List>
             <li>
               <strong>Learning needs</strong> (ADHD, dyslexia, autism, learning English, visual processing). These can
-              say something about a child&apos;s health or development, so only the account that saved the story can
-              see them, and they&apos;re left out when a story is shared.
+              say something about a child&apos;s health or development. They&apos;re saved only in your browser, left out
+              of share links, and sent to Anthropic only when you make an AI story.
             </li>
             <li>
               <strong>Practice words, and stories you write yourself.</strong> A child&apos;s name typed into either is
-              saved with the story. A first name is enough.
+              saved with the story, goes with it in a share link, and is sent to Anthropic for an AI story. A first name
+              is enough.
             </li>
           </List>
           <p>
             If you aren&apos;t the child&apos;s parent or guardian, for example as a teacher, check with them before
-            saving learning needs.
-          </p>
-        </Section>
-
-        <Section id="privacy-kept" title="What the app keeps">
-          <p>
-            Without an account, Classic stories are made and read in your browser, and nothing about them reaches the
-            app&apos;s server.
-          </p>
-          <p>With an account, the app&apos;s database keeps:</p>
-          <List>
-            <li>your name and email address</li>
-            <li>your password, stored only as a bcrypt hash, so it can&apos;t be read back</li>
-            <li>
-              your saved stories: the title, sentences, words, reading level, display settings, learning needs and the
-              date
-            </li>
-            <li>the email addresses you share a story with, until you stop sharing it or delete it</li>
-          </List>
-          <p>
-            To stop misuse, it also counts sign-ups and sign-ins by IP address, sign-ins by a hash of the email address,
-            and saves and shares by account. Each count is deleted once its time window, at most {COUNT_LIFETIME}, has
-            passed.
-          </p>
-          <p>
-            When you make a story while signed in, its words go to the server, which counts the Dolch sight words among
-            them for the word usage dashboard and keeps none of the others. The counts aren&apos;t linked to anyone.
+            choosing learning needs.
           </p>
         </Section>
 
         <Section id="privacy-browser" title="What stays in your browser">
           <List>
             <li>
-              A cookie that keeps you signed in. It lasts 30 days and is removed when you sign out. Signing in also uses
-              two short-lived cookies of its own. The app sets no advertising or tracking cookies.
+              Saved stories: the title, sentences, words, reading level, display settings, learning needs and the date.
+              They stay until you delete them or clear this site&apos;s data.
             </li>
             <li>
-              Your Anthropic API key, if you add one. It&apos;s kept in this browser for your account, removed when you
-              sign out, and sent only to Anthropic.
+              Your Anthropic API key, if you add one, until you remove it. It&apos;s sent only to Anthropic.
             </li>
             <li>The words, settings and newest unsaved story, and the grown-up check, until you close the tab.</li>
             <li>Photos you scan for words. They&apos;re read on your device and never uploaded.</li>
           </List>
+          <p>
+            Anyone else who uses this browser can open the saved stories and use the key. The grown-up check keeps a
+            young child out, but it isn&apos;t a lock. On a computer other people use, remove the key when you&apos;re
+            done. The app sets no cookies.
+          </p>
+        </Section>
+
+        <Section id="privacy-sharing" title="Sharing a story">
+          <p>
+            A share link holds the story itself: the title, sentences, words, reading level and display settings, but not
+            the learning needs. The story is in the part of the link after &ldquo;#&rdquo;, which browsers don&apos;t send
+            to the app&apos;s server, so the app never receives it.
+          </p>
+          <p>
+            Anyone the link reaches can read the story, including anyone it&apos;s passed on to. Nothing about the link is
+            stored, so it can&apos;t be switched off later. The app sends nothing itself: you send the link however you
+            choose.
+          </p>
         </Section>
 
         <Section id="privacy-services" title="Other services">
           <List>
             <li>
-              <strong>Vercel</strong> runs the app&apos;s server code in the United States (Washington, D.C.), so
-              requests to the app, including the stories you save, pass through there. Vercel keeps logs of requests for
-              a limited time. See{' '}
+              <strong>Vercel</strong>, a United States company, hosts the app and serves its pages. Its logs of requests
+              to the app include IP addresses and are kept for a limited time. See{' '}
               <ExternalLink href="https://vercel.com/legal/privacy-notice">Vercel&apos;s privacy notice</ExternalLink>.
-            </li>
-            <li>
-              <strong>MongoDB Atlas</strong> holds the database, in South Africa (Cape Town). See{' '}
-              <ExternalLink href="https://www.mongodb.com/legal/privacy/privacy-policy">
-                MongoDB&apos;s privacy policy
-              </ExternalLink>
-              .
-            </li>
-            <li>
-              <strong>Resend</strong> sends share emails. It receives the recipient&apos;s address, your name, the
-              story&apos;s title and reading level, your message and the link, and keeps its records of each email in the
-              United States. See <ExternalLink href="https://resend.com/legal/privacy-policy">Resend&apos;s privacy policy</ExternalLink>.
             </li>
             <li>
               <strong>Anthropic</strong>, only when you make an AI story. Your browser sends the words, reading level and
@@ -153,44 +128,22 @@ export default function PrivacyPage() {
               of its own, the browser may use an online voice, and the browser&apos;s maker receives the text being read.
             </li>
           </List>
-          <p>
-            The app has no analytics, advertising or tracking, and its fonts are served from this site. Sheet Solved
-            doesn&apos;t sell your information or use it for marketing.
-          </p>
-        </Section>
-
-        <Section id="privacy-retention" title="How long it's kept">
-          <List>
-            <li>
-              Your account and stories, until you delete them. Deleting your account deletes its stories with it.
-            </li>
-            <li>The addresses a story was shared with, until you stop sharing it or delete it.</li>
-            <li>Misuse counts, for at most {COUNT_LIFETIME}.</li>
-            <li>Word usage counts are kept, as they aren&apos;t linked to anyone.</li>
-            <li>Request logs, for as long as Vercel keeps them.</li>
-          </List>
+          <p>The app has no analytics, advertising or tracking, and its fonts are served from this site.</p>
         </Section>
 
         <Section id="privacy-rights" title="Your choices">
           <List>
-            <li>See, edit and delete your saved stories in the story library, and stop sharing any of them.</li>
-            <li>Delete your account under Grown-ups → Account. Its stories go with it.</li>
+            <li>Read, edit and delete saved stories in the story library.</li>
+            <li>Remove your API key under Grown-ups → AI stories.</li>
+            <li>Clear this site&apos;s data in your browser&apos;s settings to remove everything the app keeps there.</li>
             <li>
-              For a copy of what the app holds about you, to correct your name or email address, or with any other
-              question about your information, email <ContactLink />.
+              With any question about your information, email <ContactLink />.
             </li>
             <li>
               If you&apos;re unhappy with how your information is handled, you can complain to South Africa&apos;s{' '}
               <ExternalLink href="https://inforegulator.org.za/">Information Regulator</ExternalLink>.
             </li>
           </List>
-        </Section>
-
-        <Section id="privacy-security" title="Keeping it safe">
-          <p>
-            The app is served over HTTPS, passwords are hashed, each account can reach only its own stories, and a share
-            link carries a random token that stops working when you stop sharing the story.
-          </p>
         </Section>
 
         <p className="text-ink/70">

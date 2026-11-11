@@ -8,7 +8,8 @@ How to run Sight Word Stories on your own machine.
 
 - Node.js 24 (the version in `engines` in `package.json`, which CI and Vercel also use)
 - npm (comes with Node.js)
-- A MongoDB database, for example the free tier of [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+
+The app has no database and needs no environment variables.
 
 ---
 
@@ -22,45 +23,7 @@ npm install
 
 ---
 
-## Step 2: Environment
-
-```bash
-cp .env.example .env.local
-```
-
-Then edit `.env.local`. It is listed in `.gitignore`; never commit it.
-
-### Required variables
-
-```bash
-# MongoDB connection string, from the Atlas dashboard
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/
-# The database inside the cluster that the app uses
-MONGODB_DB=sight-word-stories
-
-# The app's base URL
-NEXTAUTH_URL=http://localhost:3000
-
-# A random secret: generate one with  openssl rand -base64 32
-NEXTAUTH_SECRET=<generated-secret>
-```
-
-### Optional variables
-
-```bash
-# Email through Resend, only needed for sharing stories by email.
-# EMAIL_FROM must be at a domain verified in Resend.
-RESEND_API_KEY=<your-resend-api-key>
-EMAIL_FROM="Sight Word Stories <stories@your-verified-domain>"
-```
-
-To try sharing without sending real email, set `RESEND_BASE_URL` to a local server: the Resend SDK reads it, so the request arrives there instead.
-
-AI stories need no variable. A signed-in grown-up adds their own Anthropic API key under Grown-ups → Account, and Anthropic bills their account.
-
----
-
-## Step 3: Run the app
+## Step 2: Run the app
 
 ```bash
 npm run dev
@@ -70,24 +33,21 @@ Open [http://localhost:3000](http://localhost:3000). From there:
 
 1. **Make a story**: tap **Try some words**, then **Make my story**.
 2. **Choose words**: tap **Grown-ups**, answer the sum, and type words or pick them from the Dolch lists.
-3. **Create an account**: under Grown-ups → Account, tap **Sign in**, then **Create one**.
-4. **Save a story**: tap **Save** on the last page of a story. Saved stories are in the story library.
+3. **Save a story**: tap **Save** on the last page of a story. Saved stories are kept in this browser, in the story library.
+4. **Share a story**: tap **Share** on the last page and copy the link. Open it in a private window to see what someone else gets.
+5. **Try AI stories**: add your own Anthropic API key under Grown-ups → AI stories, then choose **AI** under Story maker.
 
 ---
 
 ## Common Issues
 
-### MongoDB connection failed
+### Saved stories disappeared
 
-Check `MONGODB_URI` in `.env.local`: the username and password, and that Atlas allows connections from your IP address.
+They're kept in the browser that saved them, for this address. A different browser, a private window, `127.0.0.1` in place of `localhost`, or clearing site data each start with an empty library.
 
-### Sign-in errors
+### A share link says it's damaged
 
-Make sure `NEXTAUTH_SECRET` is set. Generate one with `openssl rand -base64 32`.
-
-### Email sharing not working
-
-Expected until email is set up. Without `RESEND_API_KEY` and `EMAIL_FROM` the app says email sharing isn't set up; see [.env.example](../.env.example). If they're set and sharing fails, the server log has Resend's reason, such as a sending domain that isn't verified.
+The story is in the part of the link after `#`. Some apps cut long links short; copy the whole link again.
 
 ### Port 3000 already in use
 
@@ -113,14 +73,13 @@ npx next dev -p 3001
 ## Project Structure
 
 ```text
-components/   React components: storybook/ (the child-facing screens), story/, auth/, analytics/
-hooks/        React hooks (speech, toasts, sign-in, unsaved changes)
-lib/          Story engine, word matching, illustrations, OCR, validation, AI stories
-models/       Mongoose schemas: User, Story, WordAnalytics, RateLimit
-pages/        Next.js pages; pages/api/ holds the API routes
+components/   React components: storybook/ (the child-facing screens) and story/ (editor, sharing, story text)
+hooks/        React hooks (speech, toasts, the saved stories, unsaved changes)
+lib/          Story engine, word matching, illustrations, OCR, the story library, share links, AI stories
+pages/        Next.js pages
 public/       Static files
 styles/       Global CSS and the learning-needs styles
-test/         API route tests and test helpers
+test/         Page tests and test helpers
 ```
 
 ---
@@ -132,7 +91,6 @@ The [README](../README.md#deploying-to-vercel) covers deploying to Vercel, and [
 ## More Documentation
 
 - [README](../README.md): project overview
-- [API documentation](API.md)
 - [Contributing](../CONTRIBUTING.md)
 - [Security policy](../SECURITY.md)
 
